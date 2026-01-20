@@ -1,3 +1,6 @@
+# 15.1.33
+ * Updated to Microsoft.CodeAnalysis.VisualBasic version 5.0.0
+
 # 15.1.32
  * Fixed missing string resources in NETCore package
 
