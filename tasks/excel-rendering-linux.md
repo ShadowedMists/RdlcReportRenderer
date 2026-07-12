@@ -20,7 +20,7 @@ Current Excel rendering uses Windows-specific COM interop and Excel application 
 - No dependency on Windows Excel installation
 
 ### Implementation Notes
-- Use NPOI or similar library for spreadsheet processing
+- Use ClosedXML or similar library for spreadsheet processing
 - Implement cell formatting algorithms independently of rendering engine
 - Maintain identical column widths/row heights as Windows implementation
 
