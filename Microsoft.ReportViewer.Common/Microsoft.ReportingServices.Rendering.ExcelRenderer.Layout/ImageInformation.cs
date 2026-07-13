@@ -1,7 +1,7 @@
 using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Drawing.Imaging;
 using System.IO;
 
@@ -276,14 +276,43 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			if (m_imageData != null && m_imageData.Length != 0L)
 			{
 				m_imageData.Position = 0L;
-				System.Drawing.Image image = System.Drawing.Image.FromStream(m_imageData);
-				m_imageFormat = image.RawFormat;
-				Width = image.Width;
-				Height = image.Height;
-				HorizontalResolution = image.HorizontalResolution;
-				VerticalResolution = image.VerticalResolution;
-				image.Dispose();
+				var imageInfo = SixLabors.ImageSharp.Image.Identify(m_imageData);
+				if (imageInfo != null)
+				{
+					m_imageData.Position = 0L;
+					Width = imageInfo.Width;
+					Height = imageInfo.Height;
+					HorizontalResolution = (float)imageInfo.Metadata.HorizontalResolution;
+					VerticalResolution = (float)imageInfo.Metadata.VerticalResolution;
+					if (m_imageFormat == null)
+					{
+						m_imageFormat = DetermineImageFormat();
+					}
+				}
 			}
+		}
+
+		private ImageFormat DetermineImageFormat()
+		{
+			if (m_imageData == null || m_imageData.Length == 0)
+			{
+				return ImageFormat.Png;
+			}
+			m_imageData.Position = 0L;
+			var imageInfo = SixLabors.ImageSharp.Image.Identify(m_imageData);
+			if (imageInfo != null)
+			{
+				m_imageData.Position = 0L;
+				string format = imageInfo.Metadata.DecodedImageFormat?.Name.ToLowerInvariant() ?? "png";
+				return format switch
+				{
+					"gif" => ImageFormat.Gif,
+					"jpeg" => ImageFormat.Jpeg,
+					"bmp" => ImageFormat.Bmp,
+					_ => ImageFormat.Png
+				};
+			}
+			return ImageFormat.Png;
 		}
 	}
 }
