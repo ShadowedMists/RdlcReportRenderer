@@ -1,3 +1,6 @@
+# Initialization
+Read the `AGENTS.md` file.
+
 # Update to .NET 10
 
 1. Update the following `csproj` files to support the latest .NET 10 platform. Remove targeting for .NET 8 and 9

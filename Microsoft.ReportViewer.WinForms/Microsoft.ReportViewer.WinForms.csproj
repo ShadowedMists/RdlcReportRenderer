@@ -2,10 +2,10 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.ReportViewer.WinForms</AssemblyName>
     <UseWindowsForms>True</UseWindowsForms>
-    <TargetFrameworks>net8.0-windows7;net9.0-windows7;net10.0-windows7</TargetFrameworks>
+    <TargetFramework>net10.0-windows7</TargetFramework>
   </PropertyGroup>
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <RootNamespace></RootNamespace>
     <PackageId>ReportViewerCore.WinForms</PackageId>
@@ -14,7 +14,7 @@
     <Version>15.1.33</Version>
     <Company>Microsoft</Company>
     <Product>ReportViewer Core</Product>
-    <Description>SQL Server Reporting Services WinForms ReportViewer decompiled and recompiled for .NET 8. Based on ReportViewer 15.0.1404.0</Description>
+    <Description>SQL Server Reporting Services WinForms ReportViewer decompiled and recompiled for .NET 10. Based on ReportViewer 15.0.1404.0</Description>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -22,13 +22,7 @@
     <EmbeddedResource Include="**\*.gif" />
     <EmbeddedResource Include="**\*.png" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows7'">
-    <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows7'">
-    <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows7'">
+  <ItemGroup>
     <PackageReference Include="System.ServiceModel.Http" Version="10.0.652802" />
   </ItemGroup>
   <ItemGroup>
