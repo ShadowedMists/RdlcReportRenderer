@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>Microsoft.ReportViewer.NETCore</AssemblyName>
     <RootNamespace>Microsoft.ReportViewer.NETCore</RootNamespace>
     <PackageId>ReportViewerCore.NETCore</PackageId>
@@ -9,22 +9,13 @@
     <Authors>Microsoft, lkosson</Authors>
     <Company>Microsoft</Company>
     <Product>ReportViewer Core</Product>
-    <Description>SQL Server Reporting Services engine decompiled and recompiled for .NET 8. Based on ReportViewer 15.0.1404.0</Description>
+    <Description>SQL Server Reporting Services engine decompiled and recompiled for .NET 10. Based on ReportViewer 15.0.1404.0</Description>
     <PackageProjectUrl>https://github.com/lkosson/reportviewercore</PackageProjectUrl>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-    <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
-    <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+  <ItemGroup>
     <PackageReference Include="System.ServiceModel.Http" Version="10.0.652802" />
   </ItemGroup>
 
