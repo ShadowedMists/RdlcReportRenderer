@@ -4,29 +4,32 @@
 
 ## Mission
 
-Your primary objective is **to investigate, document, and improve the architecture of ReportViewerCore while preserving backwards compatibility**. The long-term vision is to transform ReportViewerCore from a Windows-centric rendering engine into a modular, extensible, cross-platform reporting platform. This investigation takes precedence over feature implementation. Always prefer understanding existing behavior before proposing changes.
+Your primary objective is **to implement cross-platform Excel and PDF rendering for ReportViewerCore, enabling the reporting engine to run on both Windows and Linux platforms while preserving backwards compatibility**. The long-term vision is to transform ReportViewerCore from a Windows-centric rendering engine into a modular, extensible, cross-platform reporting platform that supports Windows, Linux, and macOS. Always refer to architectural documentation before proposing changes, and prioritize implementation efficiency while maintaining code quality.
 
 ---
 
 # Current Project Goals
 
-## Phase 1 – Investigation
+## Immediate Priorities
 
-The immediate goal is architectural discovery.
+The current focus is on implementing cross-platform Excel and PDF rendering:
 
-Deliverables include:
+**Excel Rendering (Primary - Low Risk):**
+- Phase 4: ImageFormatType enum implementation (2-3 days)
+- Phase 5: IImageProvider abstraction for chart images (3-4 days)
+- Phase 6: Testing and cross-platform validation (2-3 days)
+- **Status:** 60% complete (core infrastructure + analysis done)
 
-- Rendering pipeline documentation
-- Call graphs
-- Windows dependency inventory
-- PDF rendering architecture
-- Excel rendering architecture
-- Font subsystem analysis
-- Graphics subsystem analysis
-- Cross-platform abstraction opportunities
-- Technical feasibility assessment
+**PDF Rendering (Secondary - High Risk):**
+- Phase 1: SkiaSharp graphics library migration (2-3 weeks)
+- Phase 2: Font handling abstraction (3-5 days)
+- Phase 3: Image encoding migration (2-3 days)
+- Phase 4: Platform abstraction (1-2 days)
+- **Status:** Analysis complete, implementation planning ready
 
-Do not implement new features during this phase unless explicitly requested.
+**Shared Challenges (Both renderers):**
+- Chart library evaluation and replacement (blocking both)
+- See: `tasks/chart-image-abstraction-analysis.md` for details
 
 ---
 
@@ -338,19 +341,147 @@ Write code that is:
 
 ---
 
-# Investigation Workflow
+# Git & Commit Guidelines
 
-Investigation research is located in the `investigation` directory.
+**CRITICAL:** Do not make any commits to the repository unless explicitly instructed.
 
-1. Read existing code.
-2. Identify responsibilities.
-3. Build call graph.
-4. Identify Windows dependencies.
-5. Document findings.
-6. Identify abstraction opportunities.
-7. Evaluate risks.
-8. Recommend incremental improvements.
-9. Only implement changes when explicitly requested.
+- All work should be left in the working copy for review
+- Document changes in `TODO.md` as you progress
+- Create internal documentation in the `docs` folder
+- Ensure `docs` folder reflects current codebase state
+- Use feature branches ONLY when user explicitly requests commits
+
+---
+
+# Documentation Guidelines
+
+## Work Summaries: Keep Brief & Executive-Focused
+
+When communicating work completed, summaries ARE acceptable IF kept brief and focused on executive information.
+
+### ✅ DO Create Brief Work Summaries When:
+- Reporting to the user at end of significant tasks
+- Documenting major changes in working copy
+- Providing quick status update with changes made
+- Communicating results of multi-step work
+
+### ✅ Brief Summary Format:
+```markdown
+## ✅ Task Completed: [Task Name]
+
+### Changes Made
+| Item | Status | Details |
+|------|--------|---------|
+| Item 1 | ✅ Done | Brief description |
+| Item 2 | ✅ Done | Brief description |
+
+### Key Points
+- 📝 Brief summary of what was done
+- 📝 What's next
+```
+
+**Keep it short:** 100-300 lines max, focus on executive summary + tables.
+
+### ❌ Do NOT Create Standalone Summary Files
+
+Do not create separate summary markdown files that duplicate information or exist only as documentation (e.g., `*_SUMMARY.md`, `*_UPDATE_SUMMARY.md`, `WORK_SUMMARY.md`, etc.).
+
+**Why:** Separate summary files create clutter and should have authoritative information in `TODO.md` or `docs/` instead.
+
+**Examples to avoid:**
+- `AGENTS_UPDATE_SUMMARY.md` (standalone file)
+- `CHANGES_SUMMARY.md` (standalone file)
+- `PROGRESS_SUMMARY.md` (standalone file)
+- `UPDATE_NOTES.md` (standalone file)
+
+**Instead:**
+- Update `TODO.md` with task progress and status
+- Update `docs/` folder with architectural changes
+- If summarizing to user: use brief inline summary in conversation
+
+**Exception:** Standalone summary files may be created if explicitly requested by the user in the current task.
+
+### ✅ Style Guidelines for Summaries
+
+- Use **emojis** liberally (✅, ❌, 🎯, 📝, etc.)
+- Use **tables** for lists (much clearer than bullet points)
+- Keep **formatting clean** with clear sections
+- Include **executive summary** of changes
+- Stay **brief and actionable** (no unnecessary detail)
+
+---
+
+# Progress Tracking
+
+## Task Documentation
+
+Use `TODO.md` for:
+- Discrete task lists with checkboxes
+- Progress tracking per phase
+- Blocking issues and dependencies
+- Current work status
+- Completed task markers
+
+Update `TODO.md` continuously as you:
+1. Identify new tasks
+2. Begin work on a phase
+3. Complete milestones
+4. Hit blockers
+5. Change priorities
+
+---
+
+# Internal Documentation
+
+## Documentation Folder (`docs/`)
+
+The `docs` folder contains developer-facing documentation that must be kept current with the codebase.
+
+**Purpose:** Enable developers to understand the rendering architecture without reading the full codebase.
+
+**Structure:**
+
+```
+docs/
+├── ARCHITECTURE.md            - System architecture overview
+├── RENDERING_PIPELINE.md      - Detailed rendering flow
+├── WINDOWS_DEPENDENCIES.md    - Current Windows dependency inventory
+├── CROSS_PLATFORM_STRATEGY.md - Plan for cross-platform support
+├── EXCEL_RENDERING.md         - Excel-specific details
+├── PDF_RENDERING.md           - PDF-specific details
+├── CHART_RENDERING.md         - Chart/gauge rendering analysis
+├── IMPLEMENTATION_PLAN.md     - Current implementation roadmap
+└── API_REFERENCE.md           - Key interfaces and patterns
+```
+
+**Keep Up-To-Date:**
+- After implementing major features, update relevant docs
+- When discovering new Windows dependencies, update WINDOWS_DEPENDENCIES.md
+- When changing architecture, update ARCHITECTURE.md
+- Before code review, verify docs match implementation
+- Link to specific files and line numbers in docs
+
+**Usage:**
+- Developers read `docs/ARCHITECTURE.md` first
+- Agents reference docs before proposing changes
+- Code reviews check docs for accuracy
+- New team members use docs as onboarding
+
+---
+
+# Implementation Workflow
+
+Implementation follows the current project goals:
+
+1. Review relevant `docs/` files
+2. Check `TODO.md` for current phase
+3. Read existing code and architecture
+4. Identify Windows dependencies
+5. Refer to analysis documents (tasks/ folder)
+6. Implement changes incrementally
+7. Update `docs/` folder to reflect changes
+8. Mark tasks complete in `TODO.md`
+9. Leave work in working copy (no commits)
 
 ---
 
@@ -370,9 +501,35 @@ Success is measured by:
 
 ---
 
-# Final Instruction
+# Key Documentation References
 
-- Act as a senior software architect.
-- Prefer thoughtful analysis over rapid implementation.
-- Always explain trade-offs.
-- Design for the next decade rather than the next release.
+Before starting work, review these files in order:
+
+1. **ANALYSIS_DELIVERABLES.md** - Master index of all analysis
+2. **ANALYSIS_STATUS.md** - Completion status and next steps
+3. **TODO.md** - Current tasks and progress
+4. **tasks/rendering-comparison-analysis.md** - Excel vs PDF scope
+5. **tasks/excel-render-callstack-analysis.md** - Excel details
+6. **tasks/pdf-render-callstack-analysis.md** - PDF details
+7. **tasks/chart-image-abstraction-analysis.md** - Shared challenge
+
+These contain:
+- Complete call stack analysis
+- Windows dependency inventory
+- Implementation roadmaps with effort estimates
+- Risk assessments
+- Success criteria
+- Specific file references and line numbers
+
+---
+
+# Final Instructions
+
+- Act as a senior software architect and implementation lead
+- Always refer to architectural documentation before proposing changes
+- Keep `TODO.md` and `docs/` folder synchronized with current work
+- Prefer incremental implementation over large rewrites
+- Always explain trade-offs and risks
+- Design for cross-platform maintainability
+- Leave all code in working copy (no commits unless explicitly instructed)
+- Track progress continuously in `TODO.md`

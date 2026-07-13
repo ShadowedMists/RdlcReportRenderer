@@ -1,84 +1,130 @@
 # TODO
 
-## Current Work: .NET 10 Upgrade & System.Drawing Replacement
+## Project Status Summary
 
-### Phase 1: Update to .NET 10
+**Overall Progress:** 60% - Infrastructure complete, analysis complete, implementation pending
 
-#### Step 1: Update Target Framework in All Projects
-- [x] Update Microsoft.ReportViewer.Common.csproj to net10.0
-- [x] Update Microsoft.ReportViewer.DataVisualization.csproj to net10.0
-- [x] Update Microsoft.ReportViewer.NETCore.csproj to net10.0
-- [x] Update Microsoft.ReportViewer.ProcessingObjectModel.csproj to net10.0
-- [x] Update Microsoft.ReportViewer.WinForms.csproj to net10.0-windows7
-- [x] Update ReportViewerCore.Sample.AspNetCore.csproj to net10.0
-- [x] Update ReportViewerCore.Sample.Console.csproj to net10.0
-- [x] Update ReportViewerCore.Sample.WinForms.csproj to net10.0-windows
-- [x] Update ReportViewerCore.Sample.WinFormsServer.csproj to net10.0-windows
-- [x] Update ReportViewerCore.LinuxRenderers.Tests.csproj to net10.0
+### Current Priorities
 
-#### Step 2: Update NuGet Package References
-- [x] Updated all top-level packages to latest versions compatible with .NET 10
-- [x] Updated Microsoft.CodeAnalysis.VisualBasic to 5.0.0 for net10.0 targets
-- [x] Updated System.* packages to 10.0.0 versions where available
-- [ ] Address System.Security.Cryptography.Xml vulnerabilities (GHSA-37gx-xxp4-5rgx, GHSA-w3x6-4m5h-cxqf)
+| Priority | Phase | Status | Timeline | Risk |
+|----------|-------|--------|----------|------|
+| 🔴 **HIGH** | Excel Phase 4: ImageFormatType Enum | 🔄 PENDING | 2-3 days | LOW |
+| 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | 🔄 PENDING | 3-4 days | MEDIUM |
+| 🟡 **MEDIUM** | Chart Library Evaluation | 📋 BLOCKED | 2-3 weeks | HIGH |
+| 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 PENDING | 2-3 weeks | VERY HIGH |
 
-#### Step 3: Build & Fix Compilation Errors
-- [x] Run `dotnet build` - Build succeeded
-- [x] Fixed compilation errors (removed net8.0/net9.0 from TargetFrameworks)
-- [x] All tests passing (5/5 passed in ReportViewerCore.LinuxRenderers.Tests)
+---
 
-### Phase 2: Replace System.Drawing with SixLabors.ImageSharp
+## Next Tasks
 
-#### Step 1: Analyze System.Drawing Usage
-- [ ] Identify all System.Drawing usages across projects
-- [ ] Map each usage to ImageSharp equivalents
-- [ ] Review the referenced PR #146 implementation for Excel rendering
+### Excel Phase 4: ImageFormatType Enum (READY TO START)
 
-#### Step 2: Implement Excel Rendering with ImageSharp
-- [ ] Implement CalculateMetrics method in Microsoft.ReportViewer.Common/Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout/ImageInformation.cs using SixLabors.ImageSharp
-- [ ] Replace System.Drawing.Common dependency with SixLabors.ImageSharp
-- [ ] Update all image dimension calculations to use ImageSharp APIs
+**Status:** Design complete, ready for implementation  
+**Effort:** 2-3 days  
+**Risk:** LOW (internal API only, no public breaking changes)  
+**Files to Create:** `ImageFormatType.cs`  
+**Files to Modify:** IExcelGenerator.cs, ImageInformation.cs, OpenXmlGenerator.cs
 
-#### Step 3: Replace Remaining System.Drawing Dependencies
-- [ ] Update Microsoft.ReportViewer.DataVisualization to use ImageSharp
-- [ ] Replace System.Drawing.Common in all other projects
-- [ ] Update graphics/bitmap operations to use ImageSharp equivalents
+- [ ] Create ImageFormatType enum with cross-platform values
+- [ ] Implement ImageFormatTypeHelper static class with conversion methods
+- [ ] Update IExcelGenerator interface signature
+- [ ] Modify ImageInformation.cs to use new enum
+- [ ] Update OpenXmlGenerator.cs format detection logic
+- [ ] Write unit tests for format detection and conversion
+- [ ] Verify Excel XLSX output remains unchanged
 
-#### Step 4: Build & Test
-- [ ] Run `dotnet build` and resolve any remaining errors
-- [ ] Run `dotnet test` to ensure all tests pass
-- [ ] Verify Excel rendering output with EXCELOPENXML format
+**Reference:** `tasks/imagetype-enum-implementation.md` (complete 11-item checklist provided)
 
-### Phase 3: Verification
+### Excel Phase 5: IImageProvider Abstraction (READY TO START)
 
-- [ ] Verify all projects compile without errors
-- [ ] Verify all tests pass
-- [ ] Test rendering output for PDF, Excel, and other formats
-- [ ] Verify no new compiler warnings introduced
+**Status:** Design complete, ready for implementation  
+**Effort:** 3-4 days  
+**Risk:** MEDIUM (architectural change, affects chart handling)  
+**Files to Create:** IImageProvider.cs, ImageMetadata.cs, WindowsImageProvider.cs, CrossPlatformImageProvider.cs, ImageProviderFactory.cs  
+**Files to Modify:** ChartMapper.cs, GaugeMapper.cs, ImageInformation.cs, MainEngine.cs
 
-## Completed Tasks
-- Created documentation for all investigation goals (00-goals.md to 08-feasibility.md)
-- Identified Windows-specific dependencies across the codebase
-- Proposed Linux-compatible solutions for PDF/Excel rendering
-- Designed abstraction layers for cross-platform rendering
-- Estimated migration effort and timeline
-- Implemented PDF rendering on Linux
-- Implemented Excel rendering on Linux
-- Updated unit tests for cross-platform compatibility
-- Reduced Windows-specific analyzer warnings
-- Replaced first System.Drawing-based resource-loading path with cross-platform adapter
+- [ ] Create IImageProvider interface with LoadImage and GetImageForChart methods
+- [ ] Create ImageMetadata class for image dimensions and format
+- [ ] Implement WindowsImageProvider (System.Drawing wrapper)
+- [ ] Implement CrossPlatformImageProvider (SixLabors.ImageSharp wrapper)
+- [ ] Create ImageProviderFactory for platform-specific selection
+- [ ] Inject IImageProvider into ChartMapper and GaugeMapper
+- [ ] Refactor image handling to use abstraction
+- [ ] Test chart rendering on Windows
+- [ ] Test embedded images on cross-platform
 
-## Documentation Tasks (Already Complete)
-- [x] Add an architecture map for the reporting and rendering flow
-- [x] Add a platform support matrix for Windows, Linux, and macOS
-- [x] Add a build and test guide for local validation
-- [x] Add an ADR-style decision log for the abstraction choices
-- [x] Add an extension guide for introducing new renderers
-- [x] Add a troubleshooting guide for common issues
-- [x] Add concrete usage examples for the new abstractions
+**Reference:** `tasks/chart-image-abstraction-analysis.md` (complete design patterns and roadmap provided)
+
+### Chart Library Evaluation (BLOCKING BOTH EXCEL & PDF)
+
+**Status:** Analysis complete, decision needed  
+**Effort:** 2-3 weeks research + decision  
+**Impact:** Affects both Excel chart rendering and PDF chart rendering  
+**Blocker:** Microsoft.Reporting.Chart.WebForms requires System.Drawing, has no cross-platform alternative
+
+**Actions needed:**
+- [ ] Evaluate alternative chart libraries (LiveCharts2, OxyPlot, XyChart)
+- [ ] Assess licensing, API stability, feature parity
+- [ ] Determine migration effort and timeline
+- [ ] Create RFP or decision document
+- [ ] Executive decision on chart library replacement
+
+**Reference:** `tasks/chart-image-abstraction-analysis.md` (includes strategic considerations and alternatives)
+
+### PDF Phase 1: SkiaSharp Graphics Migration (LOWER PRIORITY)
+
+**Status:** Analysis complete, strategic decision pending  
+**Effort:** 2-3 weeks  
+**Risk:** VERY HIGH (complete graphics stack replacement)  
+**Timeline:** Start after Excel phases 4-5 and chart decision  
+**Blocker:** Metafile/EMF generation has NO cross-platform equivalent
+
+**Recommendation:** Complete Excel work first, then decide on PDF strategy
+
+**Reference:** `tasks/pdf-render-callstack-analysis.md` (complete 5-phase roadmap with implementation details)
+
+---
+
+## Completed Analysis & Documentation
+
+| Category | Status | Details |
+|----------|--------|---------|
+| ✅ **.NET 10 Upgrade** | COMPLETE | All projects migrated, tests passing |
+| ✅ **ImageSharp Integration** | COMPLETE | Image metrics cross-platform |
+| ✅ **Excel Call Stack Analysis** | COMPLETE | 800+ lines, 3 major dependencies |
+| ✅ **PDF Call Stack Analysis** | COMPLETE | 700+ lines, 7 major dependencies |
+| ✅ **Dependency Inventory** | COMPLETE | All Windows deps documented |
+| ✅ **Implementation Guides** | COMPLETE | 5 comprehensive guides created |
+| ✅ **AGENTS.md Updated** | COMPLETE | Mission, guidelines, documentation standards |
+| ✅ **Documentation Policy** | COMPLETE | No summary files, use TODO.md + docs/ |
+| ✅ **Investigation Cleanup** | COMPLETE | Old templates removed |
+
+---
+
+## Documentation Available
+
+**For Decision Makers:**
+- `AGENTS.md` - Project mission and immediate priorities
+- `tasks/rendering-comparison-analysis.md` - Excel vs PDF scope comparison
+
+**For Architects:**
+- `tasks/excel-render-callstack-analysis.md` - Complete Excel analysis
+- `tasks/pdf-render-callstack-analysis.md` - Complete PDF analysis
+- `tasks/chart-image-abstraction-analysis.md` - Architecture design
+
+**For Developers (Phase 4):**
+- `tasks/imagetype-enum-implementation.md` - Step-by-step guide with code examples
+- `tasks/excel-quick-reference.md` - Quick lookup reference
+
+**For Developers (Phase 5):**
+- `tasks/chart-image-abstraction-analysis.md` - Design patterns and implementation roadmap
+
+---
 
 ## Notes
-- All investigation documents are complete and ready for review
-- Migration implementation should follow the proposed abstraction layer design
-- System.Drawing.Common is used in multiple projects and needs systematic replacement
-- SixLabors.ImageSharp is already a dependency and should be the primary replacement
+
+- 🔄 All analysis complete - implementation-ready documentation provided
+- 📋 Chart library replacement is blocking both Excel and PDF work
+- ✅ No commits to repository (working copy only)
+- 📝 Update TODO.md continuously as work progresses
+- 📚 Maintain `docs/` folder synchronized with implementation changes
