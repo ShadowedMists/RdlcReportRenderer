@@ -2,7 +2,7 @@
 
 ## Project Status Summary
 
-**Overall Progress:** 70% - Infrastructure complete, Phases 4-5 complete, abstractions in place
+**Overall Progress:** 72% - Infrastructure complete, Phases 4-5 complete, chart library selected
 
 ### Current Priorities
 
@@ -10,7 +10,7 @@
 |----------|-------|--------|----------|------|
 | 🔴 **HIGH** | Excel Phase 4: ImageFormatType Enum | ✅ COMPLETE | 2-3 days | LOW |
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | 3-4 days | MEDIUM |
-| 🟡 **MEDIUM** | Chart Library Evaluation | 📋 BLOCKED | 2-3 weeks | HIGH |
+| 🟢 **HIGH** | Chart Library Migration (OxyPlot) | 🔄 READY | 8-10 weeks | MEDIUM |
 | 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 PENDING | 2-3 weeks | VERY HIGH |
 
 ---
@@ -59,21 +59,34 @@
 
 **Reference:** `tasks/chart-image-abstraction-analysis.md` (complete design patterns and roadmap provided)
 
-### Chart Library Evaluation (BLOCKING BOTH EXCEL & PDF)
+### Chart Library Migration: OxyPlot 2.1.x (✅ DECISION COMPLETE)
 
-**Status:** Analysis complete, decision needed  
-**Effort:** 2-3 weeks research + decision  
-**Impact:** Affects both Excel chart rendering and PDF chart rendering  
-**Blocker:** Microsoft.Reporting.Chart.WebForms requires System.Drawing, has no cross-platform alternative
+**Status:** Library selected, implementation ready  
+**Library Selected:** OxyPlot 2.1.x (7.8/10 score, MIT license)  
+**Implementation:** 8-10 weeks, 1-2 developers  
+**Risk Level:** MEDIUM (well-scoped, manageable)  
+**Feature Coverage:** 85%+ of RDLC reports without modification
 
-**Actions needed:**
-- [ ] Evaluate alternative chart libraries (LiveCharts2, OxyPlot, XyChart)
-- [ ] Assess licensing, API stability, feature parity
-- [ ] Determine migration effort and timeline
-- [ ] Create RFP or decision document
-- [ ] Executive decision on chart library replacement
+**Why OxyPlot:**
+- Zero core dependencies (SkiaSharp optional, already included)
+- MIT license, full commercial use permitted
+- Proven in production BI/analytical applications
+- Native PDF export capability
+- Excellent documentation and stable API
+- Clear implementation path
 
-**Reference:** `tasks/chart-image-abstraction-analysis.md` (includes strategic considerations and alternatives)
+**Alternatives Evaluated:**
+- LiveCharts2 2.x (7.3/10) - Rejected due to Windows View dependency
+- ScottPlot 5.0.x (6.5/10) - Conditional, finance-only alternative
+
+**Implementation Plan:**
+- [ ] Phase 1: Architecture & adapter design (Weeks 1-2)
+- [ ] Phase 2: Core chart type integration (Weeks 3-4)
+- [ ] Phase 3: Advanced features & workarounds (Weeks 5-6)
+- [ ] Phase 4: Integration & testing (Weeks 7-8)
+- [ ] Phase 5: Polish & documentation (Weeks 9-10)
+
+**Reference:** `tasks/chart-library-decision.md` (complete decision document with implementation plan)
 
 ### PDF Phase 1: SkiaSharp Graphics Migration (LOWER PRIORITY)
 
