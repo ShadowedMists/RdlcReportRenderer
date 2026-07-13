@@ -1,10 +1,10 @@
 using Microsoft.ReportingServices.Diagnostics.Utilities;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.BIFF8;
 using Microsoft.ReportingServices.Rendering.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 
@@ -228,30 +228,30 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 				streamIndex = m_images.Count - 1;
 			}
 
-			internal uint AddImage(Stream imageData, ImageFormat format, string imageName, int workSheetId, out uint startSPID, out ushort dgID)
+			internal uint AddImage(Stream imageData, ImageFormatType format, string imageName, int workSheetId, out uint startSPID, out ushort dgID)
 			{
 				EscherType escherType = EscherType.MSOFBTUNKNOWN;
 				BlipType blipType = BlipType.MSOBLIPUNKNOWN;
 				BlipSignature blipSignature = BlipSignature.MSOBIUNKNOWN;
-				if (format.Equals(ImageFormat.Bmp))
+				if (format == ImageFormatType.Bmp)
 				{
 					escherType = EscherType.MSOFBTBLIP_DIB;
 					blipType = BlipType.MSOBLIPDIB;
 					blipSignature = BlipSignature.MSOBIDIB;
 				}
-				else if (format.Equals(ImageFormat.Jpeg))
+				else if (format == ImageFormatType.Jpeg)
 				{
 					escherType = EscherType.MSOFBTBLIP_JPEG;
 					blipType = BlipType.MSOBLIPJPEG;
 					blipSignature = BlipSignature.MSOBIJFIF;
 				}
-				else if (format.Equals(ImageFormat.Gif))
+				else if (format == ImageFormatType.Gif)
 				{
 					escherType = EscherType.MSOFBTBLIP_GIF;
 					blipType = BlipType.MSOBLIPPNG;
 					blipSignature = BlipSignature.MSOBIPNG;
 				}
-				else if (format.Equals(ImageFormat.Png))
+				else if (format == ImageFormatType.Png)
 				{
 					escherType = EscherType.MSOFBTBLIP_GIF;
 					blipType = BlipType.MSOBLIPPNG;

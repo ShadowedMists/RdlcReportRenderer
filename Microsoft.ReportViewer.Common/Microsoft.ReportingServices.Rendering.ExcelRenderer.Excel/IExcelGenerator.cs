@@ -1,6 +1,5 @@
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
 using System;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 
@@ -59,7 +58,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel
 
 		TypeCode GetCellValueType();
 
-		void AddImage(string imageName, Stream imageData, ImageFormat format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double colEndPercentage, string hyperlinkURL, bool isBookmarkLink);
+		void AddImage(string imageName, Stream imageData, ImageFormatType format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double colEndPercentage, string hyperlinkURL, bool isBookmarkLink);
 
 		void AddMergeCell(int rowStart, int columnStart, int rowStop, int columnStop);
 

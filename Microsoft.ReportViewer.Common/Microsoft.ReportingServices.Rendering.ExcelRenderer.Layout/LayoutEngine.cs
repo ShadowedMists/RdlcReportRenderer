@@ -2197,7 +2197,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 				imageInformation.ImageData = stream;
 				imageInformation.ImageName = rPLDynamicImageProps.UniqueName;
 				imageInformation.Sizings = RPLFormat.Sizings.Fit;
-				imageInformation.ImageFormat = ImageFormat.Png;
+				imageInformation.ImageFormat = ImageFormatType.Png;
 			}
 			RenderImage(imageInformation, item, excel, sharedImageCache, flag, topRow, leftColumn, bottomRow, rightColumn);
 		}
@@ -3584,6 +3584,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 						Stream stream = excel.CreateStream("InvalidImage");
 						image.Save(stream, ImageFormat.Bmp);
 						imageInformation.ImageData = stream;
+						imageInformation.ImageFormat = ImageFormatType.Bmp;
 						imageInformation.ImageSizings = RPLFormat.Sizings.FitProportional;
 						sharedImageCache.Add("InvalidImage", imageInformation);
 						isShared = true;

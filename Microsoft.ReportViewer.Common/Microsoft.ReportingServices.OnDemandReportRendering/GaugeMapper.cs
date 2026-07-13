@@ -2,6 +2,7 @@ using Microsoft.Reporting.Gauge.WebForms;
 using Microsoft.ReportingServices.Common;
 using Microsoft.ReportingServices.Diagnostics.Utilities;
 using Microsoft.ReportingServices.Interfaces;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer;
 using Microsoft.ReportingServices.ReportProcessing;
 using System;
 using System.Collections.Generic;
@@ -143,6 +144,8 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private ActionInfoWithDynamicImageMapCollection m_actions = new ActionInfoWithDynamicImageMapCollection();
 
+		private IImageProvider m_imageProvider;
+
 		private Formatter m_formatter;
 
 		private static string m_CircularGaugesName = "CircularGauges";
@@ -167,6 +170,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			: base(defaultFontFamily)
 		{
 			m_gaugePanel = gaugePanel;
+			m_imageProvider = ImageProviderFactory.CreateProvider();
 		}
 
 		public void RenderGaugePanel()
@@ -3828,7 +3832,10 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			{
 				return null;
 			}
-			return System.Drawing.Image.FromStream(new MemoryStream(baseGaugeImage.Instance.ImageData, writable: false));
+			using (var stream = new MemoryStream(baseGaugeImage.Instance.ImageData, writable: false))
+			{
+				return (System.Drawing.Image)m_imageProvider.GetImageForChart(stream);
+			}
 		}
 
 		private string GetBuiltInFormulaValueSourceName(InputValue inputValue, GaugeInputValue gaugeInputValue, GaugeInputValueFormulas formula)

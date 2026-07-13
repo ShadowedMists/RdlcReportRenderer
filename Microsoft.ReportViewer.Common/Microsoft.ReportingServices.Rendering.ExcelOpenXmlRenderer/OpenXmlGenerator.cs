@@ -9,7 +9,6 @@ using Microsoft.ReportingServices.Rendering.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -640,7 +639,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelOpenXmlRenderer
 			return TypeCode.String;
 		}
 
-		public void AddImage(string imageName, Stream imageData, ImageFormat format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double colEndPercentage, string hyperlinkURL, bool isBookmarkLink)
+		public void AddImage(string imageName, Stream imageData, ImageFormatType format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double colEndPercentage, string hyperlinkURL, bool isBookmarkLink)
 		{
 			if (imageData.CanSeek)
 			{
@@ -668,7 +667,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelOpenXmlRenderer
 			LimitPercentage(ref colEndPercentage);
 			Anchor startPosition = _currentSheet.CreateAnchor(rowStart, columnStart, columnStartPercentage, rowStartPercentage);
 			Anchor endPosition = _currentSheet.CreateAnchor(rowEnd, columnEnd, colEndPercentage, rowEndPercentage);
-			string extension = (format.Guid == ImageFormat.Bmp.Guid) ? "bmp" : ((format.Guid == ImageFormat.Gif.Guid) ? "gif" : ((!(format.Guid == ImageFormat.Jpeg.Guid)) ? "png" : "jpg"));
+			string extension = ImageFormatTypeHelper.ToFileExtension(format);
 			string uniqueId = Convert.ToBase64String(new OfficeImageHasher(imageData).Hash);
 			imageData.Seek(0L, SeekOrigin.Begin);
 			Picture picture = _currentSheet.Pictures.CreatePicture(uniqueId, extension, imageData, startPosition, endPosition);

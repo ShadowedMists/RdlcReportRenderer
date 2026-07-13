@@ -1,3 +1,4 @@
+using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIFF8;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIFF8.Records;
@@ -7,7 +8,6 @@ using Microsoft.ReportingServices.Rendering.RPLProcessing;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -452,7 +452,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.BIFF8
 			return m_cellValueType;
 		}
 
-		public void AddImage(string imageName, Stream imageData, ImageFormat format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double columnEndPercentage, string hyperlinkURL, bool isBookmarkLink)
+		public void AddImage(string imageName, Stream imageData, ImageFormatType format, int rowStart, double rowStartPercentage, int columnStart, double columnStartPercentage, int rowEnd, double rowEndPercentage, int columnEnd, double columnEndPercentage, string hyperlinkURL, bool isBookmarkLink)
 		{
 			if (imageData != null && imageData.Length != 0L)
 			{
