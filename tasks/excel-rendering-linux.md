@@ -11,7 +11,7 @@ Current Excel rendering uses Windows-specific COM interop and Excel application 
 ### Technical Requirements
 - Implement `IExcelRenderer` interface
 - Create `LinuxExcelRenderer` class implementing `IExcelRenderer`
-- Replace COM interop with open-source spreadsheet library
+- Replace COM interop with ClosedXML library
 - Maintain identical cell formatting and data positioning
 
 ### Acceptance Criteria
@@ -20,7 +20,7 @@ Current Excel rendering uses Windows-specific COM interop and Excel application 
 - No dependency on Windows Excel installation
 
 ### Implementation Notes
-- Use ClosedXML or similar library for spreadsheet processing
+- Use ClosedXML for spreadsheet processing and formatting
 - Implement cell formatting algorithms independently of rendering engine
 - Maintain identical column widths/row heights as Windows implementation
 

@@ -1,3 +1,4 @@
+using Microsoft.ReportViewer.Common.Renderers;
 using Microsoft.ReportingServices.Common;
 using Microsoft.ReportingServices.Diagnostics;
 using Microsoft.ReportingServices.Interfaces;
@@ -89,8 +90,8 @@ namespace Microsoft.ReportingServices.Rendering.HtmlRenderer
 		internal static void LoadImageResource(string resourceName, ResourceManager resourceManager, CreateAndRegisterStream createAndRegisterStreamCallback)
 		{
 			Stream stream = createAndRegisterStreamCallback(resourceName, "gif", null, "image/gif", willSeek: false, StreamOper.CreateAndRegister);
-			System.Drawing.Image image = (System.Drawing.Image)resourceManager.GetObject(resourceName);
-			image.Save(stream, image.RawFormat);
+			var adapter = new ImageResourceAdapter();
+			adapter.WriteEmbeddedImage(resourceManager, resourceName, stream);
 		}
 
 		public virtual void SetConfiguration(string configuration)
