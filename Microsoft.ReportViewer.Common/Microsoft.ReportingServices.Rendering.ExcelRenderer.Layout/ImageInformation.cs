@@ -2,7 +2,6 @@ using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
 using SixLabors.ImageSharp;
-using System.Drawing.Imaging;
 using System.IO;
 
 namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
@@ -25,7 +24,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 
 		private RPLFormat.Sizings m_imageSizings = RPLFormat.Sizings.Fit;
 
-		private ImageFormat m_imageFormat;
+		private ImageFormatType m_imageFormat = ImageFormatType.Unknown;
 
 		private string m_imageName;
 
@@ -79,11 +78,11 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			}
 		}
 
-		internal ImageFormat ImageFormat
+		internal ImageFormatType ImageFormat
 		{
 			get
 			{
-				if (m_imageFormat == null)
+				if (m_imageFormat == ImageFormatType.Unknown)
 				{
 					CalculateMetrics();
 				}
@@ -238,7 +237,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 				m_height = image.GDIImageProps.Height;
 				m_verticalResolution = image.GDIImageProps.VerticalResolution;
 				m_horizontalResolution = image.GDIImageProps.HorizontalResolution;
-				m_imageFormat = image.GDIImageProps.RawFormat;
+				m_imageFormat = ImageFormatTypeHelper.FromSystemDrawingImageFormat(image.GDIImageProps.RawFormat);
 			}
 		}
 
@@ -248,27 +247,11 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			{
 				return;
 			}
-			if (mimeType.Equals("image/gif"))
+			m_imageFormat = ImageFormatTypeHelper.FromMimeType(mimeType);
+			if (m_imageFormat == ImageFormatType.Unknown)
 			{
-				m_imageFormat = ImageFormat.Gif;
-				return;
+				throw new ReportRenderingException(ExcelRenderRes.UnknownImageFormat(mimeType));
 			}
-			if (mimeType.Equals("image/png"))
-			{
-				m_imageFormat = ImageFormat.Png;
-				return;
-			}
-			if (mimeType.Equals("image/jpg") || mimeType.Equals("image/jpeg"))
-			{
-				m_imageFormat = ImageFormat.Jpeg;
-				return;
-			}
-			if (mimeType.Equals("image/bmp"))
-			{
-				m_imageFormat = ImageFormat.Png;
-				return;
-			}
-			throw new ReportRenderingException(ExcelRenderRes.UnknownImageFormat(mimeType));
 		}
 
 		private void CalculateMetrics()
@@ -292,27 +275,13 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			}
 		}
 
-		private ImageFormat DetermineImageFormat()
+		private ImageFormatType DetermineImageFormat()
 		{
 			if (m_imageData == null || m_imageData.Length == 0)
 			{
-				return ImageFormat.Png;
+				return ImageFormatType.Png;
 			}
-			m_imageData.Position = 0L;
-			var imageInfo = SixLabors.ImageSharp.Image.Identify(m_imageData);
-			if (imageInfo != null)
-			{
-				m_imageData.Position = 0L;
-				string format = imageInfo.Metadata.DecodedImageFormat?.Name.ToLowerInvariant() ?? "png";
-				return format switch
-				{
-					"gif" => ImageFormat.Gif,
-					"jpeg" => ImageFormat.Jpeg,
-					"bmp" => ImageFormat.Bmp,
-					_ => ImageFormat.Png
-				};
-			}
-			return ImageFormat.Png;
+			return ImageFormatTypeHelper.DetectFromStream(m_imageData);
 		}
 	}
 }

@@ -3,6 +3,7 @@ using Microsoft.Reporting.Chart.WebForms;
 using Microsoft.ReportingServices.Common;
 using Microsoft.ReportingServices.Diagnostics.Utilities;
 using Microsoft.ReportingServices.Interfaces;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer;
 using Microsoft.ReportingServices.ReportProcessing;
 using Microsoft.ReportingServices.ReportPublishing;
 using System;
@@ -469,6 +470,8 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private Microsoft.Reporting.Chart.WebForms.Chart m_coreChart;
 
+		private IImageProvider m_imageProvider;
+
 		private bool m_multiColumn;
 
 		private bool m_multiRow;
@@ -511,6 +514,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			: base(defaultFontFamily)
 		{
 			m_chart = chart;
+			m_imageProvider = ImageProviderFactory.CreateProvider();
 		}
 
 		public void RenderChart()
@@ -5273,7 +5277,10 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			{
 				return null;
 			}
-			return System.Drawing.Image.FromStream(new MemoryStream(backgroundImage.Instance.ImageData, writable: false));
+			using (var stream = new MemoryStream(backgroundImage.Instance.ImageData, writable: false))
+			{
+				return (System.Drawing.Image)m_imageProvider.GetImageForChart(stream);
+			}
 		}
 
 		private void RenderActionInfo(ActionInfo actionInfo, string toolTip, IMapAreaAttributes mapAreaAttributes)
