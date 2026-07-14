@@ -145,8 +145,10 @@ Ordered smallest-blast-radius first so patterns settle before the big ones:
 
 ### Milestone E — Skia adapter & verification
 
+- [x] **E0. Visual regression harness** (pixel-baseline scaffolding, ahead of the Skia work it will eventually verify). 🟢 S
+  **Done** in [`tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/`](../tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/) — MSTest project with `InternalsVisibleTo` access into `Microsoft.ReportViewer.DataVisualization` (new entry added to [AssemblyInfo.cs](../Microsoft.ReportViewer.DataVisualization/Properties/AssemblyInfo.cs#L17), signed with the shared `ReportViewerCore.snk`). `SampleCharts.cs` builds a `Chart` directly against the internal engine API (no `.rdlc`/host needed) for a simple bar chart and line chart; `ImageComparer.cs` does a per-pixel compare (tolerance 2/channel, for encoder rounding only — rendering is otherwise deterministic, confirmed via repeated runs) against a committed PNG in `Baselines/`, writing the actual output and a red/transparent diff PNG to `Results/` (gitignored, under `bin/`) on any mismatch or missing baseline. Two baselines committed (`SimpleBarChart.png`, `SimpleLineChart.png`); both currently pass. This is the mechanism Phase 0's "render one simple bar chart, compare pixels" step and Milestone E2 will both run through — E2 still needs the Skia adapter (E1) and a broader report corpus; this only proves the harness/baseline mechanics work today, against GDI+ output only.
 - [ ] **E1. Implement the Skia adapter set** (`SkiaResourceFactory`, `SkiaPen/Brush/Font/Path/…` over `SKPaint`/`SKPath`/`SKFont`). 🔴 XL
-- [ ] **E2. Visual regression** across a report corpus (Windows GDI+ vs Linux Skia), per Phase 6 of the parent plan. 🟠 L
+- [ ] **E2. Visual regression** across a report corpus (Windows GDI+ vs Linux Skia), per Phase 6 of the parent plan. Extend the E0 harness with more chart types/gauges and a second (Skia) render path once E1 lands. 🟠 L
 
 ---
 

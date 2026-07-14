@@ -1,0 +1,30 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
+{
+    /// <summary>
+    /// Pixel baseline coverage for the chart engine. These tests exist so that the GDI+ ->
+    /// backend-agnostic rendering migration (see tasks/chart-gdi-type-abstraction.md) can be
+    /// checked for byte-for-byte-equivalent output at every milestone, on top of the engine
+    /// still compiling and running.
+    /// </summary>
+    [TestClass]
+    public class ChartVisualRegressionTests
+    {
+        [TestMethod]
+        public void SimpleBarChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderSimpleBarChart();
+            var result = ImageComparer.CompareToBaseline(actual, "SimpleBarChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void SimpleLineChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderSimpleLineChart();
+            var result = ImageComparer.CompareToBaseline(actual, "SimpleLineChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+    }
+}
