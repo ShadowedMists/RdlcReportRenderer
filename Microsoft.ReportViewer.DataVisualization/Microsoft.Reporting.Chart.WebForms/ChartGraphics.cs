@@ -1,4 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.Borders3D;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Drawing;
@@ -17,6 +19,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private SolidBrush solidBrush;
 
 		private Matrix myMatrix;
+
+		// Milestone B1: injectable port for creating rendering resources. Not yet
+		// consumed by the `pen`/`solidBrush`/`myMatrix` fields above or by this
+		// class's many local Pen/Brush/GraphicsPath allocations — those still
+		// depend on the per-type migrations (C1-C8, esp. GraphicsPath/C7 and the
+		// Brush family/C4) landing first. See tasks/chart-gdi-type-abstraction.md.
+		private readonly IDrawingResourceFactory resourceFactory;
 
 		private int width;
 
@@ -2902,8 +2911,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		internal ChartGraphics(CommonElements common)
+			: this(common, null)
+		{
+		}
+
+		internal ChartGraphics(CommonElements common, IDrawingResourceFactory resourceFactory)
 		{
 			this.common = common;
+			this.resourceFactory = resourceFactory ?? new GdiResourceFactory();
 			pen = new Pen(Color.Black);
 			solidBrush = new SolidBrush(Color.Black);
 		}
