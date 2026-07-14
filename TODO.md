@@ -2,16 +2,18 @@
 
 ## Project Status Summary
 
-**Overall Progress:** 72% - Infrastructure complete, Phases 4-5 complete, chart library selected
+**Overall Progress:** Infrastructure complete, Excel Phases 4-5 complete, chart/gauge + PDF cross-platform pending
 
 ### Current Priorities
 
 | Priority | Phase | Status | Timeline | Risk |
 |----------|-------|--------|----------|------|
-| 🔴 **HIGH** | Excel Phase 4: ImageFormatType Enum | ✅ COMPLETE | 2-3 days | LOW |
-| 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | 3-4 days | MEDIUM |
-| 🟢 **HIGH** | Chart Library Migration (OxyPlot) | 🔄 READY | 8-10 weeks | MEDIUM |
+| 🔴 **HIGH** | Excel Phase 4: ImageFormatType Enum | ✅ COMPLETE | — | LOW |
+| 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | — | MEDIUM |
+| 🟡 **HIGH** | Chart & Gauge: re-target GDI+ engines to SkiaSharp | 🔬 SPIKE REQUIRED | TBD (spike first) | HIGH |
 | 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 PENDING | 2-3 weeks | VERY HIGH |
+
+> **Note:** The prior "Chart Library Migration (OxyPlot)" line was retracted — see `tasks/chart-library-decision.md`. Charts are rendered by a vendored GDI+ engine we own, not an external library; the corrected plan re-targets its existing rendering seam to SkiaSharp. A time-boxed spike must size the effort before scheduling.
 
 ---
 
@@ -59,34 +61,28 @@
 
 **Reference:** `tasks/chart-image-abstraction-analysis.md` (complete design patterns and roadmap provided)
 
-### Chart Library Migration: OxyPlot 2.1.x (✅ DECISION COMPLETE)
+### Chart & Gauge Cross-Platform Rendering (🔬 SPIKE REQUIRED)
 
-**Status:** Library selected, implementation ready  
-**Library Selected:** OxyPlot 2.1.x (7.8/10 score, MIT license)  
-**Implementation:** 8-10 weeks, 1-2 developers  
-**Risk Level:** MEDIUM (well-scoped, manageable)  
-**Feature Coverage:** 85%+ of RDLC reports without modification
+**Status:** Prior OxyPlot decision RETRACTED — corrected analysis complete, spike pending  
+**Blocker:** Two vendored GDI+ engines (Chart.WebForms + GaugeContainer) rasterize to PNG/EMF via `System.Drawing`, which throws on Linux
 
-**Why OxyPlot:**
-- Zero core dependencies (SkiaSharp optional, already included)
-- MIT license, full commercial use permitted
-- Proven in production BI/analytical applications
-- Native PDF export capability
-- Excellent documentation and stable API
-- Clear implementation path
+**Corrected finding:** Charts are NOT rendered by a missing library — they are rendered by a **vendored GDI+ chart engine we own**, which already has an `IChartRenderingEngine` seam. The fix is to re-target that seam to SkiaSharp (dual-backend: Windows keeps GDI+, Linux uses Skia), NOT to replace the engine with OxyPlot. See corrected doc for why the OxyPlot decision (fabricated metrics, wrong framing) was retracted.
 
-**Alternatives Evaluated:**
-- LiveCharts2 2.x (7.3/10) - Rejected due to Windows View dependency
-- ScottPlot 5.0.x (6.5/10) - Conditional, finance-only alternative
+**Recommended approach:** Re-target existing engine to SkiaSharp behind `IChartRenderingEngine` — preserves chart model + visual fidelity.
 
 **Implementation Plan:**
-- [ ] Phase 1: Architecture & adapter design (Weeks 1-2)
-- [ ] Phase 2: Core chart type integration (Weeks 3-4)
-- [ ] Phase 3: Advanced features & workarounds (Weeks 5-6)
-- [ ] Phase 4: Integration & testing (Weeks 7-8)
-- [ ] Phase 5: Polish & documentation (Weeks 9-10)
+- [ ] Phase 0: Time-boxed spike to measure real effort (~1 week) — REQUIRED FIRST
+- [ ] Phase 1: Platform selection + graceful degradation (no crash on Linux)
+- [ ] Phase 2: Abstract the pixel/output boundary (Bitmap/Graphics → SKSurface)
+- [ ] Phase 3: Implement `SkiaChartGraphics : IChartRenderingEngine`
+- [ ] Phase 4: Backend factory + integration
+- [ ] Phase 5: Apply same pattern to gauge engine
+- [ ] Phase 6: Visual regression testing (build report corpus — no coverage % until then)
 
-**Reference:** `tasks/chart-library-decision.md` (complete decision document with implementation plan)
+**References:**
+- `tasks/chart-cross-platform-implementation.md` (corrected technical instructions with line refs)
+- `tasks/chart-gdi-type-abstraction.md` (per-type task scope for replacing GDI+ types with interfaces + factory)
+- `tasks/chart-library-decision.md` (retraction notice explaining why OxyPlot was dropped)
 
 ### PDF Phase 1: SkiaSharp Graphics Migration (LOWER PRIORITY)
 
