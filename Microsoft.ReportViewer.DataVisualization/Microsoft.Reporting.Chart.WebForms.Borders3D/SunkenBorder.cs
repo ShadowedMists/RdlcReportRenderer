@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -154,7 +155,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Borders3D
 			rectangleF2 = rectangleF;
 			rectangleF2.Width -= val * 0.3f;
 			rectangleF2.Height -= val * 0.3f;
-			GraphicsPath graphicsPath = graph.CreateRoundedRectPath(rectangleF2, cornerRadius);
+			IGraphicsPath graphicsPath = graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius);
 			graph.DrawPathAbs(graphicsPath, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, PenAlignment.Inset);
 			graphicsPath?.Dispose();
 			if (drawScrews)

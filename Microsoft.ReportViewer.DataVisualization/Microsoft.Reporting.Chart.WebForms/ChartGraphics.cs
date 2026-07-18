@@ -138,6 +138,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="GetHatchBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		internal IHatchBrush GetHatchBrushResource(ChartHatchStyle hatchStyle, Color backColor, Color foreColor)
+		{
+			return resourceFactory.CreateHatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
+		}
+
 		internal Brush GetTextureBrush(string name, Color backImageTranspColor, ChartImageWrapMode mode, Color backColor)
 		{
 			Image image = common.ImageLoader.LoadImage(name);
@@ -163,6 +169,36 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			// Fixed 96 DPI baseline assumed (chart-gdi-type-abstraction.md Milestone B2) — no DPI-mismatch rescale.
 			return new TextureBrush(image, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="GetTextureBrush(string, Color, ChartImageWrapMode, Color)"/>
+		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). <c>ImageLoader</c>
+		/// itself remains GDI+-only/concrete (documented, deliberate) — its loaded <see cref="Image"/> is bridged
+		/// into <see cref="IChartImage"/> via <see cref="IDrawingResourceFactory.WrapImage"/>.
+		/// </summary>
+		internal ITextureBrush GetTextureBrushResource(string name, Color backImageTranspColor, ChartImageWrapMode mode, Color backColor)
+		{
+			Image image = common.ImageLoader.LoadImage(name);
+			IImageDrawOptions imageAttributes = resourceFactory.CreateImageDrawOptions();
+			imageAttributes.SetWrapMode((WrapMode)((mode == ChartImageWrapMode.Unscaled) ? ChartImageWrapMode.Scaled : mode));
+			if (backImageTranspColor != Color.Empty)
+			{
+				imageAttributes.SetTransparentColor(backImageTranspColor);
+			}
+			if (backImageTranspColor == Color.Empty && image is Metafile && backColor != Color.Transparent)
+			{
+				Bitmap compositedImage = new Bitmap(image.Width, image.Height);
+				using (Graphics graphics = Graphics.FromImage(compositedImage))
+				using (SolidBrush solidFill = new SolidBrush(backColor))
+				{
+					graphics.FillRectangle(solidFill, 0, 0, image.Width, image.Height);
+					graphics.DrawImageUnscaled(image, 0, 0);
+				}
+				return resourceFactory.CreateTextureBrush(resourceFactory.WrapImage(compositedImage), new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
+			}
+			// Fixed 96 DPI baseline assumed (chart-gdi-type-abstraction.md Milestone B2) — no DPI-mismatch rescale.
+			return resourceFactory.CreateTextureBrush(resourceFactory.WrapImage(image), new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
 		}
 
 		public Brush GetGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)
@@ -226,6 +262,64 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return brush;
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="GetGradientBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		internal IBrush GetGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)
+		{
+			SetGradient(firstColor, secondColor, type);
+			rectangle.Inflate(1f, 1f);
+			float angle = 0f;
+			if (rectangle.Height == 0f || rectangle.Width == 0f)
+			{
+				return resourceFactory.CreateSolidBrush(Color.Black);
+			}
+			switch (type)
+			{
+			case GradientType.LeftRight:
+			case GradientType.VerticalCenter:
+				angle = 0f;
+				break;
+			case GradientType.TopBottom:
+			case GradientType.HorizontalCenter:
+				angle = 90f;
+				break;
+			case GradientType.DiagonalLeft:
+				angle = (float)(Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
+				break;
+			case GradientType.DiagonalRight:
+				angle = (float)(180.0 - Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
+				break;
+			}
+			if (type == GradientType.TopBottom || type == GradientType.LeftRight || type == GradientType.DiagonalLeft || type == GradientType.DiagonalRight || type == GradientType.HorizontalCenter || type == GradientType.VerticalCenter)
+			{
+				RectangleF rect = new RectangleF(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+				ILinearGradientBrush linearBrush;
+				switch (type)
+				{
+				case GradientType.HorizontalCenter:
+					rect.Height /= 2f;
+					linearBrush = resourceFactory.CreateLinearGradientBrush(rect, firstColor, secondColor, angle);
+					linearBrush.WrapMode = WrapMode.TileFlipX;
+					break;
+				case GradientType.VerticalCenter:
+					rect.Width /= 2f;
+					linearBrush = resourceFactory.CreateLinearGradientBrush(rect, firstColor, secondColor, angle);
+					linearBrush.WrapMode = WrapMode.TileFlipX;
+					break;
+				default:
+					linearBrush = resourceFactory.CreateLinearGradientBrush(rectangle, firstColor, secondColor, angle);
+					break;
+				}
+				return linearBrush;
+			}
+			IGraphicsPath gradientPath = resourceFactory.CreatePath();
+			gradientPath.AddRectangle(rectangle);
+			IPathGradientBrush pathBrush = resourceFactory.CreatePathGradientBrush(gradientPath);
+			pathBrush.CenterColor = firstColor;
+			pathBrush.SurroundColors = new Color[1] { secondColor };
+			gradientPath.Dispose();
+			return pathBrush;
+		}
+
 		internal Brush GetPieGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor)
 		{
 			GraphicsPath graphicsPath = new GraphicsPath();
@@ -237,6 +331,18 @@ namespace Microsoft.Reporting.Chart.WebForms
 				secondColor
 			};
 			graphicsPath?.Dispose();
+			return pathGradientBrush;
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="GetPieGradientBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		internal IPathGradientBrush GetPieGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor)
+		{
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
+			graphicsPath.AddEllipse(rectangle);
+			IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath);
+			pathGradientBrush.CenterColor = firstColor;
+			pathGradientBrush.SurroundColors = new Color[1] { secondColor };
+			graphicsPath.Dispose();
 			return pathGradientBrush;
 		}
 
@@ -1973,6 +2079,84 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="DrawCircleAbs(Pen, Brush, RectangleF, int, bool)"/>
+		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Its
+		/// <c>graphicsPath</c> local is fully self-contained (built and consumed only within this method,
+		/// never handed to an outside caller), so it converts to <see cref="IGraphicsPath"/> without
+		/// rippling into any other method's signature — unlike <c>DrawPathAbs</c>'s public path parameter.
+		/// </summary>
+		internal void DrawCircleAbs(IPen pen, IBrush brush, RectangleF position, int polygonSectorsNumber, bool circle3D)
+		{
+			bool flag = circle3D && brush != null;
+			if (polygonSectorsNumber <= 2 && !flag)
+			{
+				if (brush != null)
+				{
+					FillEllipse(brush, position);
+				}
+				if (pen != null)
+				{
+					DrawEllipse(pen, position);
+				}
+				return;
+			}
+			PointF pointF = new PointF(position.X + position.Width / 2f, position.Y);
+			PointF pointF2 = new PointF(position.X + position.Width / 2f, position.Y + position.Height / 2f);
+			float num = 0f;
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
+			PointF pointF3 = PointF.Empty;
+			float num2 = 0f;
+			SmoothingMode smoothingMode = base.SmoothingMode;
+			if (flag)
+			{
+				base.SmoothingMode = SmoothingMode.None;
+			}
+			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
+			for (num2 = 0f; num2 < 360f; num2 += num)
+			{
+				PointF[] array = new PointF[1]
+				{
+					pointF
+				};
+				Matrix3x2.Identity.RotateAt(num2, pointF2).TransformPoints(array);
+				if (!pointF3.IsEmpty)
+				{
+					graphicsPath.AddLine(pointF3, array[0]);
+					if (flag)
+					{
+						graphicsPath.AddLine(array[0], pointF2);
+						graphicsPath.AddLine(pointF2, pointF3);
+						FillPath(GetSector3DBrush(brush, num2, num), graphicsPath);
+						graphicsPath.Reset();
+					}
+				}
+				pointF3 = array[0];
+			}
+			graphicsPath.CloseAllFigures();
+			if (!pointF3.IsEmpty && flag)
+			{
+				graphicsPath.AddLine(pointF3, pointF);
+				graphicsPath.AddLine(pointF, pointF2);
+				graphicsPath.AddLine(pointF2, pointF3);
+				FillPath(GetSector3DBrush(brush, num2, num), graphicsPath);
+				graphicsPath.Reset();
+			}
+			if (flag)
+			{
+				base.SmoothingMode = smoothingMode;
+			}
+			if (brush != null && !circle3D)
+			{
+				FillPath(brush, graphicsPath);
+			}
+			if (pen != null)
+			{
+				DrawPath(pen, graphicsPath);
+			}
+			graphicsPath.Dispose();
+		}
+
 		internal Brush GetSector3DBrush(Brush brush, float curentSector, float sectorSize)
 		{
 			Color beginColor = Color.Gray;
@@ -2004,6 +2188,40 @@ namespace Microsoft.Reporting.Chart.WebForms
 			curentSector /= 180f;
 			beginColor = GetBrightGradientColor(beginColor, curentSector);
 			return new SolidBrush(beginColor);
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="GetSector3DBrush(Brush, float, float)"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		internal IBrush GetSector3DBrush(IBrush brush, float curentSector, float sectorSize)
+		{
+			Color beginColor = Color.Gray;
+			if (brush is IHatchBrush hatchBrush)
+			{
+				beginColor = hatchBrush.BackgroundColor;
+			}
+			else if (brush is ILinearGradientBrush linearBrush)
+			{
+				beginColor = linearBrush.LinearColors[0];
+			}
+			else if (brush is IPathGradientBrush pathBrush)
+			{
+				beginColor = pathBrush.CenterColor;
+			}
+			else if (brush is ISolidBrush solid)
+			{
+				beginColor = solid.Color;
+			}
+			curentSector -= sectorSize / 2f;
+			if (sectorSize == 72f && curentSector == 180f)
+			{
+				curentSector *= 0.8f;
+			}
+			if (curentSector > 180f)
+			{
+				curentSector = 360f - curentSector;
+			}
+			curentSector /= 180f;
+			beginColor = GetBrightGradientColor(beginColor, curentSector);
+			return resourceFactory.CreateSolidBrush(beginColor);
 		}
 
 		internal Color GetBrightGradientColor(Color beginColor, double position)
@@ -2286,6 +2504,153 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="DrawPathAbs(GraphicsPath, Color, ChartHatchStyle, string, ChartImageWrapMode, Color, ChartImageAlign, GradientType, Color, Color, int, ChartDashStyle, PenAlignment, int, Color)"/>
+		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Unlike the
+		/// concrete overload, this one does not touch the shared <c>pen</c>/<c>solidBrush</c> fields — it
+		/// constructs its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c>,
+		/// which is what avoids the ripple that would otherwise force every caller of the concrete overload
+		/// (6 files: <c>PolylineAnnotation.cs</c>, <c>CalloutAnnotation.cs</c>, <c>ArrowAnnotation.cs</c>,
+		/// <c>FunnelChart.cs</c>, <c>Borders3D/SunkenBorder.cs</c>, <c>Borders3D/EmbossBorder.cs</c>) to
+		/// convert their own path-building code at the same time.
+		/// </summary>
+		internal void DrawPathAbs(IGraphicsPath path, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, int shadowOffset, Color shadowColor)
+		{
+			if (shadowOffset != 0 && shadowColor != Color.Transparent)
+			{
+				GraphicsState gstate = Save();
+				TranslateTransform(shadowOffset, shadowOffset);
+				if (backColor == Color.Transparent && backGradientEndColor.IsEmpty)
+				{
+					DrawPathAbs(path, Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, shadowColor, borderWidth, borderStyle, PenAlignment.Center);
+				}
+				else
+				{
+					DrawPathAbs(path, shadowColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Transparent, 0, ChartDashStyle.NotSet, PenAlignment.Center);
+				}
+				Restore(gstate);
+			}
+			DrawPathAbs(path, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment);
+		}
+
+		/// <summary>Interface-typed counterpart of the 13-arg <see cref="DrawPathAbs(GraphicsPath, Color, ChartHatchStyle, string, ChartImageWrapMode, Color, ChartImageAlign, GradientType, Color, Color, int, ChartDashStyle, PenAlignment)"/> (Milestone B2 — see remarks on the shadow-aware overload above).</summary>
+		internal void DrawPathAbs(IGraphicsPath path, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment)
+		{
+			IBrush brush = null;
+			IBrush brush2 = null;
+			if (backColor.IsEmpty)
+			{
+				backColor = Color.White;
+			}
+			if (backGradientEndColor.IsEmpty)
+			{
+				backGradientEndColor = Color.White;
+			}
+			if (borderColor.IsEmpty)
+			{
+				borderColor = Color.White;
+				borderWidth = 0;
+			}
+			IPen pathPen = resourceFactory.CreatePen(borderColor, borderWidth);
+			pathPen.Alignment = penAlignment;
+			pathPen.DashStyle = GetPenStyle(borderStyle);
+			if (backGradientType == GradientType.None)
+			{
+				brush = resourceFactory.CreateSolidBrush(backColor);
+			}
+			else
+			{
+				RectangleF bounds = path.GetBounds();
+				bounds.Inflate(new SizeF(2f, 2f));
+				brush = GetGradientBrushResource(bounds, backColor, backGradientEndColor, backGradientType);
+			}
+			if (backHatchStyle != 0)
+			{
+				brush = GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
+			{
+				brush2 = brush;
+				brush = GetTextureBrushResource(backImage, backImageTranspColor, backImageMode, backColor);
+			}
+			RectangleF bounds2 = path.GetBounds();
+			if (backImage.Length > 0 && (backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled))
+			{
+				Image image = common.ImageLoader.LoadImage(backImage);
+				IImageDrawOptions imageAttributes = resourceFactory.CreateImageDrawOptions();
+				if (backImageTranspColor != Color.Empty)
+				{
+					imageAttributes.SetTransparentColor(backImageTranspColor);
+				}
+				RectangleF rectangleF = default(RectangleF);
+				rectangleF.X = bounds2.X;
+				rectangleF.Y = bounds2.Y;
+				rectangleF.Width = bounds2.Width;
+				rectangleF.Height = bounds2.Height;
+				if (backImageMode == ChartImageWrapMode.Unscaled)
+				{
+					SizeF size = default(SizeF);
+					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					rectangleF.Width = size.Width;
+					rectangleF.Height = size.Height;
+					if (rectangleF.Width < bounds2.Width)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.TopRight:
+						case ChartImageAlign.Right:
+						case ChartImageAlign.BottomRight:
+							rectangleF.X = bounds2.Right - rectangleF.Width;
+							break;
+						case ChartImageAlign.Top:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.Center:
+							rectangleF.X = bounds2.X + (bounds2.Width - rectangleF.Width) / 2f;
+							break;
+						}
+					}
+					if (rectangleF.Height < bounds2.Height)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.BottomRight:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.BottomLeft:
+							rectangleF.Y = bounds2.Bottom - rectangleF.Height;
+							break;
+						case ChartImageAlign.Right:
+						case ChartImageAlign.Left:
+						case ChartImageAlign.Center:
+							rectangleF.Y = bounds2.Y + (bounds2.Height - rectangleF.Height) / 2f;
+							break;
+						}
+					}
+				}
+				FillPath(brush, path);
+				IClipRegion originalClip = base.GetClipRegion();
+				IClipRegion pathClip = resourceFactory.CreateRegion(path);
+				base.SetClipRegion(pathClip);
+				DrawImage(resourceFactory.WrapImage(image), new Rectangle((int)Math.Round(rectangleF.X), (int)Math.Round(rectangleF.Y), (int)Math.Round(rectangleF.Width), (int)Math.Round(rectangleF.Height)), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				base.SetClipRegion(originalClip);
+				pathClip.Dispose();
+			}
+			else
+			{
+				if (brush2 != null && backImageTranspColor != Color.Empty)
+				{
+					FillPath(brush2, path);
+				}
+				FillPath(brush, path);
+			}
+			if (borderColor != Color.Empty && borderWidth > 0 && borderStyle != 0)
+			{
+				DrawPath(pathPen, path);
+			}
+			brush?.Dispose();
+			brush2?.Dispose();
+			pathPen.Dispose();
+		}
+
 		internal Brush CreateBrush(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor)
 		{
 			Brush result = new SolidBrush(backColor);
@@ -2359,6 +2724,28 @@ namespace Microsoft.Reporting.Chart.WebForms
 		internal GraphicsPath CreateRoundedRectPath(RectangleF rect, float[] cornerRadius)
 		{
 			GraphicsPath graphicsPath = new GraphicsPath();
+			graphicsPath.AddLine(rect.X + cornerRadius[0], rect.Y, rect.Right - cornerRadius[1], rect.Y);
+			graphicsPath.AddArc(rect.Right - 2f * cornerRadius[1], rect.Y, 2f * cornerRadius[1], 2f * cornerRadius[2], 270f, 90f);
+			graphicsPath.AddLine(rect.Right, rect.Y + cornerRadius[2], rect.Right, rect.Bottom - cornerRadius[3]);
+			graphicsPath.AddArc(rect.Right - 2f * cornerRadius[4], rect.Bottom - 2f * cornerRadius[3], 2f * cornerRadius[4], 2f * cornerRadius[3], 0f, 90f);
+			graphicsPath.AddLine(rect.Right - cornerRadius[4], rect.Bottom, rect.X + cornerRadius[5], rect.Bottom);
+			graphicsPath.AddArc(rect.X, rect.Bottom - 2f * cornerRadius[6], 2f * cornerRadius[5], 2f * cornerRadius[6], 90f, 90f);
+			graphicsPath.AddLine(rect.X, rect.Bottom - cornerRadius[6], rect.X, rect.Y + cornerRadius[7]);
+			graphicsPath.AddArc(rect.X, rect.Y, 2f * cornerRadius[0], 2f * cornerRadius[7], 180f, 90f);
+			return graphicsPath;
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="CreateRoundedRectPath"/> (Milestone B2 — coexists
+		/// until callers migrate; see chart-gdi-type-abstraction.md). Named distinctly rather than
+		/// overloaded, since both versions take the same <c>(RectangleF, float[])</c> parameters and only
+		/// differ by return type. Feeds the interface-typed <c>DrawPathAbs(IGraphicsPath, ...)</c> overload
+		/// from callers (e.g. <c>Borders3D/SunkenBorder.cs</c>) that don't also need the result as a
+		/// concrete <see cref="GraphicsPath"/> for <see cref="System.Drawing.Region"/> clip composition.
+		/// </summary>
+		internal IGraphicsPath CreateRoundedRectPathResource(RectangleF rect, float[] cornerRadius)
+		{
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			graphicsPath.AddLine(rect.X + cornerRadius[0], rect.Y, rect.Right - cornerRadius[1], rect.Y);
 			graphicsPath.AddArc(rect.Right - 2f * cornerRadius[1], rect.Y, 2f * cornerRadius[1], 2f * cornerRadius[2], 270f, 90f);
 			graphicsPath.AddLine(rect.Right, rect.Y + cornerRadius[2], rect.Right, rect.Bottom - cornerRadius[3]);

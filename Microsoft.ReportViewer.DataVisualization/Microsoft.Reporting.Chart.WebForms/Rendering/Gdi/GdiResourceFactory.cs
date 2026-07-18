@@ -22,12 +22,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode) =>
 			new GdiTextureBrush(((GdiChartImage)image).NativeImage, wrapMode);
 
+		public ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options) =>
+			new GdiTextureBrush(((GdiChartImage)image).NativeImage, rect, ((GdiImageDrawOptions)options)?.NativeAttributes);
+
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			new GdiHatchBrush(style, foreColor, backColor);
 
 		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new GdiPathGradientBrush(path);
 
 		public IChartImage LoadImage(Stream stream) => new GdiChartImage(Image.FromStream(stream));
+
+		public IChartImage WrapImage(Image image) => new GdiChartImage(image);
 
 		public IChartFont CreateFont(string familyName, float sizeInPoints) =>
 			new GdiChartFont(new Font(familyName, sizeInPoints));

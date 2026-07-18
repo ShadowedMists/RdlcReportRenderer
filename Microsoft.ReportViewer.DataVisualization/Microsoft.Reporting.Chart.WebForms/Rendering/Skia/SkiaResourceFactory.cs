@@ -27,6 +27,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options) =>
+			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
@@ -34,6 +37,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public IChartImage LoadImage(Stream stream) => new SkiaChartImage(SKBitmap.Decode(stream));
+
+		public IChartImage WrapImage(Image image) =>
+			throw new NotSupportedException("ImageLoader's chart.Images/ResourceManager/WebRequest/File pipeline is GDI+-only; not available on the Skia backend yet.");
 
 		public IChartFont CreateFont(string familyName, float sizeInPoints) => new SkiaChartFont(familyName, sizeInPoints);
 
