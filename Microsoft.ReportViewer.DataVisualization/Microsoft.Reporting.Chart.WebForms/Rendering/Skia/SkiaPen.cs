@@ -48,6 +48,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public LineJoin LineJoin { get; set; }
 
+		public PenAlignment Alignment { get; set; }
+
 		public void Dispose() => NativePaint.Dispose();
 	}
 }

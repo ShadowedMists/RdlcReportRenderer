@@ -28,6 +28,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) =>
+			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public IChartFont CreateFont(string familyName, float sizeInPoints) => new SkiaChartFont(familyName, sizeInPoints);
 
 		public IChartFont CreateFont(string familyName, float size, FontStyle style) => new SkiaChartFont(familyName, size, style);

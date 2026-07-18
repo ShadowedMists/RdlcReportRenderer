@@ -29,9 +29,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 		// Milestone B1: injectable port for creating rendering resources. Not yet
 		// consumed by the `pen`/`solidBrush` fields above or by this
 		// class's many local Pen/Brush/GraphicsPath allocations — those still
-		// depend on the per-type migrations (C3-C8, esp. GraphicsPath/C7 and the
+		// depend on the per-type migrations (C4-C8, esp. GraphicsPath/C7 and the
 		// Brush family/C4) landing first. See tasks/chart-gdi-type-abstraction.md.
 		private readonly IDrawingResourceFactory resourceFactory;
+
+		// C3: exposed so the ~70 painter classes outside ChartGraphics (Axis, Title,
+		// annotations, ...) can construct IPen-typed resources too, not just ChartGraphics
+		// itself. Read-only — callers never get to swap the factory out from under this instance.
+		internal IDrawingResourceFactory ResourceFactory => resourceFactory;
 
 		private int width;
 
@@ -697,7 +702,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					try
 					{
 						AntiAliasing = AntiAliasingTypes.None;
-						using (Pen pen = new Pen(borderColor, borderWidth))
+						using (Rendering.IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
 						{
 							pen.DashStyle = GetPenStyle(borderStyle);
 							DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
@@ -1184,7 +1189,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Rectangle rectangle = Rectangle.Round(absPosition);
 			rectangle.Width = (int)Math.Round(absPosition.Right) - rectangle.X;
 			rectangle.Height = (int)Math.Round(absPosition.Bottom) - rectangle.Y;
-			Pen pen = new Pen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
+			Rendering.IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
 			pen.DashStyle = GetPenStyle(axis.MajorTickMark.LineStyle);
 			if (axis.AxisPosition == AxisPosition.Left || axis.AxisPosition == AxisPosition.Right)
 			{
@@ -1275,7 +1280,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					array2[0] = array2[1];
 				}
-				Pen pen = new Pen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
+				Rendering.IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
 				pen.DashStyle = GetPenStyle(axis.MajorTickMark.LineStyle);
 				DrawLines(pen, array);
 				DrawLines(pen, array2);
@@ -3024,7 +3029,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					try
 					{
 						AntiAliasing = AntiAliasingTypes.None;
-						using (Pen pen = new Pen(borderColor, borderWidth))
+						using (Rendering.IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
 						{
 							pen.DashStyle = GetPenStyle(borderStyle);
 							DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);

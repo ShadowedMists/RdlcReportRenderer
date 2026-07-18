@@ -49,6 +49,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativePen.LineJoin = value;
 		}
 
+		public PenAlignment Alignment
+		{
+			get => NativePen.Alignment;
+			set => NativePen.Alignment = value;
+		}
+
 		public void Dispose() => NativePen.Dispose();
 	}
 }

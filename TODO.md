@@ -70,13 +70,15 @@
 
 **Spike result:** Built a spike-scoped `Rendering/Skia/` adapter set (`SkiaResourceFactory`, `SkiaPen`/`SkiaSolidBrush`/`SkiaChartFont`/`SkiaTextFormat`/`SkiaGraphicsPath`) + `SkiaChartGraphics : IChartRenderingEngine`, and a hand-built bar-chart scene written only against the backend-agnostic `Rendering/` port — it renders correctly on **both Windows and WSL Linux**, unmodified. This confirms the port design (already drafted in `chart-gdi-type-abstraction.md` Milestone A) is the right direction. **But** the spike also found GDI+ itself can't construct on Linux at all today (not just at the rendering seam) — so completing the per-type migration (Milestones B1b/B2/C1-C8) is now a **hard prerequisite** for any Linux chart rendering, GDI+ or Skia, not optional/parallelizable polish. Effort-wise, the adapter-pair pattern (one Gdi/Skia pair per resource type) proved mechanical once built once — the XL sizing for C6/C7 still holds, but urgency changes.
 
+**Post-spike progress (2026-07-18, same-day follow-through):** Completed Milestones C1 (`Region`), C2 (`Matrix`→`Matrix3x2`, with verified GDI+ rotation-parity + a new visual-regression test), and C3 (`Pen`) for all independently-convertible call sites, each with build+test verification and zero baseline regressions. Confirmed C4-C8's ports/adapters (`IBrush`+`IPathGradientBrush` — a real gap found and fixed —, `ITextFormat`, `IChartFont`, `IGraphicsPath`, `IImageDrawOptions`) are all already complete from the earlier A1/A2 drafting. **Key strategic finding:** per-type migration (C1-C8) only cleanly works for `Region`/`Matrix`; real painter code bundles `Pen`+`GraphicsPath`, or `Font`+`Brush`+`StringFormat`, in the same calls — so the actual remaining bottleneck is **B1b/B2** (converting whole methods/files at once), not the remaining per-type checkboxes. **B2's blast radius is bigger than scoped:** `ChartGraphics`'s brush-helper methods are called from 20+ `ChartTypes/*.cs` painter files, and there are **three** parallel GDI+-coupled engines — chart, gauge (`GaugeGraphics`), **and map** (`MapGraphics`, not previously in scope) — see `chart-gdi-type-abstraction.md` B2 note.
+
 **Implementation Plan:**
 - [x] Phase 0: Time-boxed spike to measure real effort — **done**, see `tasks/chart-cross-platform-implementation.md` Spike Report
 - [ ] Phase 1: Platform selection + graceful degradation (no crash on Linux)
 - [ ] Phase 2: Abstract the pixel/output boundary (Bitmap/Graphics → SKSurface)
-- [ ] Phase 3: Finish Milestones B1b/B2/C1-C8 (`chart-gdi-type-abstraction.md`) — now understood as blocking, not just cleanup — then wire the spike's `SkiaChartGraphics`/`SkiaResourceFactory` into the real `Chart` render path (`RenderingType.Skia`)
+- [~] Phase 3: Finish Milestones B1b/B2/C1-C8 (`chart-gdi-type-abstraction.md`) — **C1-C8 substantially done** (see above); **B1b/B2 in progress**, scope re-measured larger than original L/XL sizing — then wire the spike's `SkiaChartGraphics`/`SkiaResourceFactory` into the real `Chart` render path (`RenderingType.Skia`)
 - [ ] Phase 4: Backend factory + integration
-- [ ] Phase 5: Apply same pattern to gauge engine
+- [ ] Phase 5: Apply same pattern to gauge engine — **and decide Map.WebForms's scope** (newly discovered third GDI+-coupled engine, not previously tracked)
 - [ ] Phase 6: Visual regression testing (extend the E0 harness — `tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/` — with a real Skia render path and a broader report corpus)
 
 **References:**

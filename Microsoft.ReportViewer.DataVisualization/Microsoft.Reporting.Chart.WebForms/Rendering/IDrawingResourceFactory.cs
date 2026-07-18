@@ -24,6 +24,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor);
 
+		IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path);
+
 		// --- Fonts (A.2) ---
 		IChartFont CreateFont(string familyName, float sizeInPoints);
 

@@ -42,4 +42,20 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		Color BackgroundColor { get; }
 	}
+
+	/// <summary>
+	/// Path-bounded gradient fill (soft shadows/glows). Abstracts <c>PathGradientBrush</c> —
+	/// missed by the original Appendix A.5 count (16 occ / 2 files, all in the shadow-rendering
+	/// code paths of ChartGraphics/ChartGraphics3D), discovered during C4.
+	/// </summary>
+	internal interface IPathGradientBrush : IBrush
+	{
+		Color CenterColor { get; set; }
+
+		Color[] SurroundColors { get; set; }
+
+		PointF CenterPoint { get; set; }
+
+		PointF FocusScales { get; set; }
+	}
 }

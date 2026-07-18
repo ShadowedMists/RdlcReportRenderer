@@ -22,5 +22,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		LineCap EndCap { get; set; }
 
 		LineJoin LineJoin { get; set; }
+
+		PenAlignment Alignment { get; set; }
 	}
 }
