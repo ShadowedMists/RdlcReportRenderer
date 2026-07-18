@@ -6,6 +6,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Numerics;
 using System.Threading;
 
 namespace Microsoft.Reporting.Chart.WebForms
@@ -18,12 +19,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private SolidBrush solidBrush;
 
-		private Matrix myMatrix;
+		// Migrated by C2: tracks the "current transform" via the interface-typed
+		// GetTransform()/SetTransform(Matrix3x2) pair rather than the still-concrete
+		// base.Transform property, using Matrix3x2Extensions for the RotateAt/Translate
+		// composition GDI+'s Matrix exposes natively (verified point-for-point parity
+		// with GDI+'s default MatrixOrder.Prepend before converting any call site).
+		private Matrix3x2 myMatrix;
 
 		// Milestone B1: injectable port for creating rendering resources. Not yet
-		// consumed by the `pen`/`solidBrush`/`myMatrix` fields above or by this
+		// consumed by the `pen`/`solidBrush` fields above or by this
 		// class's many local Pen/Brush/GraphicsPath allocations — those still
-		// depend on the per-type migrations (C1-C8, esp. GraphicsPath/C7 and the
+		// depend on the per-type migrations (C3-C8, esp. GraphicsPath/C7 and the
 		// Brush family/C4) landing first. See tasks/chart-gdi-type-abstraction.md.
 		private readonly IDrawingResourceFactory resourceFactory;
 
@@ -265,9 +271,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			for (int i = 0; i < num; i++)
 			{
 				array2[0] = new PointF(rect.X + rect.Width / 2f, flag ? rect.Y : (rect.Y + rect.Height / 4f));
-				Matrix matrix = new Matrix();
-				matrix.RotateAt((float)i * (360f / ((float)numberOfCorners * 2f)), new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
-				matrix.TransformPoints(array2);
+				Matrix3x2.Identity.RotateAt((float)i * (360f / ((float)numberOfCorners * 2f)), new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f)).TransformPoints(array2);
 				array[i] = array2[0];
 				flag = !flag;
 			}
@@ -362,14 +366,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 					PointF[] points = CreateStarPolygon(empty2, numberOfCorners);
 					if (shadowSize != 0 && shadowColor != Color.Empty)
 					{
-						Matrix matrix4 = base.Transform.Clone();
-						matrix4.Translate(shadowSize, shadowSize);
-						Matrix transform5 = base.Transform;
-						base.Transform = matrix4;
+						Matrix3x2 transform5 = base.GetTransform();
+						base.SetTransform(transform5.Translate(shadowSize, shadowSize));
 						shadowDrawingMode = true;
 						FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), points);
 						shadowDrawingMode = false;
-						base.Transform = transform5;
+						base.SetTransform(transform5);
 					}
 					FillPolygon(brush, points);
 					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), points);
@@ -454,16 +456,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 					array4[10].Y = point.Y + num2 / 2f;
 					array4[11].X = point.X - num / 2f;
 					array4[11].Y = point.Y + num / 2f;
-					Matrix matrix2 = new Matrix();
-					matrix2.RotateAt(45f, point);
-					matrix2.TransformPoints(array4);
+					Matrix3x2.Identity.RotateAt(45f, point).TransformPoints(array4);
 					if (shadowSize != 0 && shadowColor != Color.Empty)
 					{
 						shadowDrawingMode = true;
-						Matrix matrix3 = base.Transform.Clone();
-						matrix3.Translate(softShadows ? (shadowSize + 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize);
-						Matrix transform2 = base.Transform;
-						base.Transform = matrix3;
+						Matrix3x2 transform2 = base.GetTransform();
+						base.SetTransform(transform2.Translate(softShadows ? (shadowSize + 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize));
 						if (!softShadows)
 						{
 							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array4);
@@ -491,15 +489,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 							pathGradientBrush2.FocusScales = focusScales2;
 							FillPath(pathGradientBrush2, graphicsPath2);
 						}
-						base.Transform = transform2;
+						base.SetTransform(transform2);
 						shadowDrawingMode = false;
 					}
-					Matrix transform3 = base.Transform.Clone();
-					Matrix transform4 = base.Transform;
-					base.Transform = transform3;
+					Matrix3x2 transform4 = base.GetTransform();
+					base.SetTransform(transform4);
 					FillPolygon(brush, array4);
 					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), array4);
-					base.Transform = transform4;
+					base.SetTransform(transform4);
 					break;
 				}
 				case MarkerStyle.Diamond:
@@ -516,10 +513,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					if (shadowSize != 0 && shadowColor != Color.Empty)
 					{
 						shadowDrawingMode = true;
-						Matrix matrix5 = base.Transform.Clone();
-						matrix5.Translate((!softShadows) ? shadowSize : 0, (!softShadows) ? shadowSize : 0);
-						Matrix transform6 = base.Transform;
-						base.Transform = matrix5;
+						Matrix3x2 transform6 = base.GetTransform();
+						Matrix3x2 matrix5 = transform6.Translate((!softShadows) ? shadowSize : 0, (!softShadows) ? shadowSize : 0);
+						base.SetTransform(matrix5);
 						if (!softShadows)
 						{
 							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array9);
@@ -532,11 +528,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 							empty3.Y = point.Y - num3 / 2f - (float)shadowSize;
 							empty3.Width = num3;
 							empty3.Height = num3;
-							matrix5.RotateAt(45f, point);
-							base.Transform = matrix5;
+							matrix5 = matrix5.RotateAt(45f, point);
+							base.SetTransform(matrix5);
 							FillRectangleShadowAbs(empty3, shadowColor, shadowSize, shadowColor);
 						}
-						base.Transform = transform6;
+						base.SetTransform(transform6);
 						shadowDrawingMode = false;
 					}
 					FillPolygon(brush, array9);
@@ -555,10 +551,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					if (shadowSize != 0 && shadowColor != Color.Empty)
 					{
 						shadowDrawingMode = true;
-						Matrix matrix = base.Transform.Clone();
-						matrix.Translate(softShadows ? (shadowSize - 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize);
-						Matrix transform = base.Transform;
-						base.Transform = matrix;
+						Matrix3x2 transform = base.GetTransform();
+						base.SetTransform(transform.Translate(softShadows ? (shadowSize - 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize));
 						if (!softShadows)
 						{
 							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array);
@@ -586,7 +580,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							pathGradientBrush.FocusScales = focusScales;
 							FillPath(pathGradientBrush, graphicsPath);
 						}
-						base.Transform = transform;
+						base.SetTransform(transform);
 						shadowDrawingMode = false;
 					}
 					FillPolygon(brush, array);
@@ -688,10 +682,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
 			PointF empty = PointF.Empty;
 			empty = ((!textPosition.IsEmpty) ? GetAbsolutePoint(textPosition) : new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
-			myMatrix = base.Transform.Clone();
-			myMatrix.RotateAt(angle, empty);
+			myMatrix = base.GetTransform().RotateAt(angle, empty);
 			GraphicsState gstate = Save();
-			base.Transform = myMatrix;
+			base.SetTransform(myMatrix);
 			if (!backColor.IsEmpty || !borderColor.IsEmpty)
 			{
 				using (Brush brush = new SolidBrush(backColor))
@@ -743,7 +736,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					GraphicsPath graphicsPath = new GraphicsPath();
 					graphicsPath.AddRectangle(rect);
-					graphicsPath.Transform(myMatrix);
+					graphicsPath.Transform(myMatrix.ToGdiMatrix());
 					common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, this, point, series.Name, pointIndex);
 				}
 				point.ToolTip = toolTip;
@@ -764,10 +757,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void DrawStringAbs(string text, Font font, Brush brush, PointF absPosition, StringFormat format, int angle)
 		{
-			myMatrix = base.Transform.Clone();
-			myMatrix.RotateAt(angle, absPosition);
+			myMatrix = base.GetTransform().RotateAt(angle, absPosition);
 			GraphicsState gstate = Save();
-			base.Transform = myMatrix;
+			base.SetTransform(myMatrix);
 			DrawString(text, font, brush, absPosition, format);
 			Restore(gstate);
 		}
@@ -932,10 +924,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Matrix matrix = null;
 			if (angle != 0)
 			{
-				myMatrix = base.Transform.Clone();
-				myMatrix.RotateAt(angle, empty);
+				myMatrix = base.GetTransform().RotateAt(angle, empty);
 				matrix = base.Transform;
-				base.Transform = myMatrix;
+				base.SetTransform(myMatrix);
 			}
 			RectangleF rect = Rectangle.Empty;
 			float num = 0f;
@@ -973,23 +964,23 @@ namespace Microsoft.Reporting.Chart.WebForms
 				num2 = (float)Math.Sin((double)((float)Math.Abs(angle) / 180f) * Math.PI) * rect.Height / 2f;
 				if (axis.AxisPosition == AxisPosition.Left)
 				{
-					myMatrix.Translate(0f - num2, 0f);
+					myMatrix = myMatrix.Translate(0f - num2, 0f);
 				}
 				else if (axis.AxisPosition == AxisPosition.Right)
 				{
-					myMatrix.Translate(num2, 0f);
+					myMatrix = myMatrix.Translate(num2, 0f);
 				}
 				else if (axis.AxisPosition == AxisPosition.Top)
 				{
-					myMatrix.Translate(0f, 0f - num);
+					myMatrix = myMatrix.Translate(0f, 0f - num);
 				}
 				else if (axis.AxisPosition == AxisPosition.Bottom)
 				{
-					myMatrix.Translate(0f, num);
+					myMatrix = myMatrix.Translate(0f, num);
 				}
 				if (boundaryRect != RectangleF.Empty)
 				{
-					Region region = new Region(rect);
+					Rendering.IClipRegion region = resourceFactory.CreateRegion(rect);
 					region.Transform(myMatrix);
 					if (axis.AxisPosition == AxisPosition.Left)
 					{
@@ -1010,10 +1001,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 						boundaryRect.Height = (float)common.Height - boundaryRect.Y;
 					}
 					region.Exclude(GetAbsoluteRectangle(boundaryRect));
-					if (!region.IsEmpty(Graphics))
+					if (!region.IsEmpty(this))
 					{
 						base.Transform = matrix;
-						float num3 = region.GetBounds(Graphics).Width / (float)Math.Cos((double)((float)Math.Abs(angle) / 180f) * Math.PI);
+						float num3 = region.GetBounds(this).Width / (float)Math.Cos((double)((float)Math.Abs(angle) / 180f) * Math.PI);
 						if (axis.AxisPosition == AxisPosition.Left)
 						{
 							num3 -= rect.Height * (float)Math.Tan((double)((float)Math.Abs(angle) / 180f) * Math.PI);
@@ -1054,7 +1045,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						}
 					}
 				}
-				base.Transform = myMatrix;
+				base.SetTransform(myMatrix);
 			}
 			RectangleF rectangleF2 = new RectangleF(rectangleF.Location, rectangleF.Size);
 			Image image2 = null;
@@ -1349,12 +1340,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 					empty.X = (absoluteRectangle.Left + absoluteRectangle.Right) / 2f;
 					empty.Y = (absoluteRectangle.Bottom + absoluteRectangle.Top) / 2f;
 				}
-				myMatrix = base.Transform.Clone();
-				myMatrix.RotateAt(angle, empty);
-				Matrix transform = base.Transform;
-				base.Transform = myMatrix;
+				Matrix3x2 transform = base.GetTransform();
+				myMatrix = transform.RotateAt(angle, empty);
+				base.SetTransform(myMatrix);
 				DrawString(text, font, brush, absoluteRectangle, format);
-				base.Transform = transform;
+				base.SetTransform(transform);
 			}
 		}
 
@@ -1791,15 +1781,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				return;
 			}
 			bool flag = false;
-			Region clip = null;
+			Rendering.IClipRegion clip = null;
 			if (!circular && backColor == Color.Transparent)
 			{
 				flag = true;
-				clip = base.Clip;
-				Region region = new Region();
+				clip = base.GetClipRegion();
+				Rendering.IClipRegion region = resourceFactory.CreateRegion();
 				region.MakeInfinite();
 				region.Xor(rect);
-				base.Clip = region;
+				base.SetClipRegion(region);
 			}
 			if (!softShadows || circularSectorsCount > 2)
 			{
@@ -1886,8 +1876,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (flag)
 			{
-				Region clip2 = base.Clip;
-				base.Clip = clip;
+				Rendering.IClipRegion clip2 = base.GetClipRegion();
+				base.SetClipRegion(clip);
 				clip2.Dispose();
 			}
 		}
@@ -1903,13 +1893,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
 			for (num2 = 0f; num2 < 360f; num2 += num)
 			{
-				Matrix matrix = new Matrix();
-				matrix.RotateAt(num2, point);
 				PointF[] array = new PointF[1]
 				{
 					pointF
 				};
-				matrix.TransformPoints(array);
+				Matrix3x2.Identity.RotateAt(num2, point).TransformPoints(array);
 				if (!pt.IsEmpty)
 				{
 					graphicsPath.AddLine(pt, array[0]);
@@ -1949,13 +1937,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
 			for (num2 = 0f; num2 < 360f; num2 += num)
 			{
-				Matrix matrix = new Matrix();
-				matrix.RotateAt(num2, pointF2);
 				PointF[] array = new PointF[1]
 				{
 					pointF
 				};
-				matrix.TransformPoints(array);
+				Matrix3x2.Identity.RotateAt(num2, pointF2).TransformPoints(array);
 				if (!pointF3.IsEmpty)
 				{
 					graphicsPath.AddLine(pointF3, array[0]);
@@ -2999,11 +2985,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
 			PointF point = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
-			myMatrix = base.Transform.Clone();
-			myMatrix.RotateAt(rotationAngle, point);
+			myMatrix = base.GetTransform().RotateAt(rotationAngle, point);
 			GraphicsPath graphicsPath = new GraphicsPath();
 			graphicsPath.AddRectangle(rect);
-			graphicsPath.Transform(myMatrix);
+			graphicsPath.Transform(myMatrix.ToGdiMatrix());
 			return graphicsPath;
 		}
 
@@ -3024,10 +3009,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
 			PointF empty = PointF.Empty;
 			empty = ((!textPosition.IsEmpty) ? GetAbsolutePoint(textPosition) : new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
-			myMatrix = base.Transform.Clone();
-			myMatrix.RotateAt(angle, empty);
+			myMatrix = base.GetTransform().RotateAt(angle, empty);
 			GraphicsState gstate = Save();
-			base.Transform = myMatrix;
+			base.SetTransform(myMatrix);
 			if (!backColor.IsEmpty || !borderColor.IsEmpty)
 			{
 				using (Brush brush = new SolidBrush(backColor))
@@ -3069,7 +3053,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				GraphicsPath graphicsPath = new GraphicsPath();
 				RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
 				graphicsPath.AddRectangle(rect);
-				graphicsPath.Transform(myMatrix);
+				graphicsPath.Transform(myMatrix.ToGdiMatrix());
 				common.HotRegionsList.AddHotRegion(this, graphicsPath, relativePath: false, node.LabelToolTip, node.LabelHref, "", node, ChartElementType.Nothing);
 				if (common.HotRegionsList.List != null)
 				{

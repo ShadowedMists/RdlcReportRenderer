@@ -26,5 +26,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "SimpleLineChart.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void RotatedLabelsChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderRotatedLabelsChart();
+            var result = ImageComparer.CompareToBaseline(actual, "RotatedLabelsChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

@@ -1,9 +1,11 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
@@ -892,19 +894,19 @@ namespace Microsoft.Reporting.Chart.WebForms
 				num = ShadowOffset;
 			}
 			text = text.Replace("\\n", "\n");
-			Matrix matrix = null;
+			Matrix3x2? matrix = null;
 			if (IsTextVertical)
 			{
 				if (GetTextOrientation() == TextOrientation.Rotated270)
 				{
 					stringFormat.FormatFlags |= (StringFormatFlags.DirectionRightToLeft | StringFormatFlags.DirectionVertical);
-					matrix = chartGraph.Transform.Clone();
+					Matrix3x2 transform = chartGraph.GetTransform();
+					matrix = transform;
 					PointF empty = PointF.Empty;
 					empty.X = relative2.X + relative2.Width / 2f;
 					empty.Y = relative2.Y + relative2.Height / 2f;
-					Matrix matrix2 = chartGraph.Transform.Clone();
-					matrix2.RotateAt(180f, empty);
-					chartGraph.Transform = matrix2;
+					Matrix3x2 matrix2 = transform.RotateAt(180f, empty);
+					chartGraph.SetTransform(matrix2);
 				}
 				else if (GetTextOrientation() == TextOrientation.Rotated90)
 				{
@@ -977,9 +979,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				chartGraph.StopAnimation();
 			}
-			if (matrix != null)
+			if (matrix.HasValue)
 			{
-				chartGraph.Transform = matrix;
+				chartGraph.SetTransform(matrix.Value);
 			}
 			if (common.ProcessModeRegions)
 			{

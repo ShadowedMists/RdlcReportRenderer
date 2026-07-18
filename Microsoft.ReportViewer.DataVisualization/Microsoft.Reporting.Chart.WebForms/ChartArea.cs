@@ -1,11 +1,13 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
@@ -1704,9 +1706,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						new PointF(absolutePoint.X, plotAreaRectAbs.Y)
 					};
-					Matrix matrix = new Matrix();
-					matrix.RotateAt(num2, absolutePoint);
-					matrix.TransformPoints(array);
+					Matrix3x2.Identity.RotateAt(num2, absolutePoint).TransformPoints(array);
 					float width = sizeF2.Width;
 					width -= areaRectAbs.Right - array[0].X;
 					if (width < 0f)

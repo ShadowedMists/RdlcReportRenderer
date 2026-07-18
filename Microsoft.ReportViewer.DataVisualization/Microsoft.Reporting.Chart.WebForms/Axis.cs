@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -7,6 +8,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
@@ -876,15 +878,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 					ICircularChartType circularChartType = chartArea.GetCircularChartType();
 					if (circularChartType != null)
 					{
-						Matrix transform = graph.Transform;
+						Matrix3x2 transform = graph.GetTransform();
 						float[] yAxisLocations = circularChartType.GetYAxisLocations(chartArea);
 						bool flag = true;
 						float[] array = yAxisLocations;
 						foreach (float num in array)
 						{
-							Matrix matrix = transform.Clone();
-							matrix.RotateAt(num, graph.GetAbsolutePoint(chartArea.circularCenter));
-							graph.Transform = matrix;
+							Matrix3x2 matrix = transform.RotateAt(num, graph.GetAbsolutePoint(chartArea.circularCenter));
+							graph.SetTransform(matrix);
 							minorTickMark.Paint(graph, backElements: false);
 							majorTickMark.Paint(graph, backElements: false);
 							DrawAxisLine(graph, backElements: false);
@@ -908,7 +909,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							labelStyle.Paint(graph, backElements: false);
 							labelStyle.fontAngle = fontAngle;
 						}
-						graph.Transform = transform;
+						graph.SetTransform(transform);
 					}
 				}
 				if (axisType == AxisName.X && enabled)
@@ -959,7 +960,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				return;
 			}
-			Matrix matrix = null;
+			Matrix3x2? matrix = null;
 			if (chartArea.Area3DStyle.Enable3D && !chartArea.chartAreaIsCurcular)
 			{
 				DrawAxis3DTitle(graph);
@@ -1132,22 +1133,21 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				base.Common.HotRegionsList.AddHotRegion(absoluteRectangle, this, ChartElementType.AxisTitle, relativeCoordinates: false, insertAtBeginning: false);
 			}
-			if (matrix != null)
+			if (matrix.HasValue)
 			{
-				graph.Transform = matrix;
+				graph.SetTransform(matrix.Value);
 			}
 		}
 
-		private Matrix SetRotationTransformation(ChartGraphics graph, RectangleF titlePosition)
+		private Matrix3x2 SetRotationTransformation(ChartGraphics graph, RectangleF titlePosition)
 		{
-			Matrix result = graph.Transform.Clone();
+			Matrix3x2 result = graph.GetTransform();
 			PointF empty = PointF.Empty;
 			empty.X = titlePosition.X + titlePosition.Width / 2f;
 			empty.Y = titlePosition.Y + titlePosition.Height / 2f;
 			float angle = (GetTextOrientation() == TextOrientation.Rotated90) ? 90f : (-90f);
-			Matrix matrix = graph.Transform.Clone();
-			matrix.RotateAt(angle, graph.GetAbsolutePoint(empty));
-			graph.Transform = matrix;
+			Matrix3x2 matrix = result.RotateAt(angle, graph.GetAbsolutePoint(empty));
+			graph.SetTransform(matrix);
 			return result;
 		}
 
@@ -1176,17 +1176,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 				graph.Clip = new Region(graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber));
 			}
 			PointF absolutePoint = graph.GetAbsolutePoint(chartArea.circularCenter);
-			Matrix transform = graph.Transform;
-			Matrix matrix = transform.Clone();
-			matrix.RotateAt(angle, absolutePoint);
-			graph.Transform = matrix;
+			Matrix3x2 transform = graph.GetTransform();
+			Matrix3x2 matrix = transform.RotateAt(angle, absolutePoint);
+			graph.SetTransform(matrix);
 			PointF pointF = new PointF(relative.X + relative.Width / 2f, relative.Y);
 			graph.DrawLineAbs(color, width, style, absolutePoint, pointF);
 			if (base.Common.ProcessModeRegions)
 			{
 				GraphicsPath graphicsPath = new GraphicsPath();
 				graphicsPath.AddLine(absolutePoint, pointF);
-				graphicsPath.Transform(matrix);
+				graphicsPath.Transform(matrix.ToGdiMatrix());
 				try
 				{
 					using (Pen pen = new Pen(Color.Black, width + 2))
@@ -1199,8 +1198,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 				}
 			}
-			graph.Transform = transform;
-			matrix.Dispose();
+			graph.SetTransform(transform);
 			if (chartArea.CircularUsePolygons)
 			{
 				graph.Clip = clip;
@@ -2841,9 +2839,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						pointF
 					};
-					Matrix matrix2 = new Matrix();
-					matrix2.RotateAt(axis.AxisPosition, absolutePoint);
-					matrix2.TransformPoints(array2);
+					Matrix3x2.Identity.RotateAt(axis.AxisPosition, absolutePoint).TransformPoints(array2);
 					if (!areaRectAbs.Contains(array2[0]))
 					{
 						return false;
@@ -2863,9 +2859,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					};
 					array[0].Y += labelsSizeEstimate;
 					array[0].Y -= y;
-					Matrix matrix = new Matrix();
-					matrix.RotateAt(num2, absolutePoint);
-					matrix.TransformPoints(array);
+					Matrix3x2.Identity.RotateAt(num2, absolutePoint).TransformPoints(array);
 					RectangleF rectangleF = new RectangleF(array[0].X, array[0].Y - sizeF.Height / 2f, sizeF.Width, sizeF.Height);
 					if (num2 < 5f)
 					{
