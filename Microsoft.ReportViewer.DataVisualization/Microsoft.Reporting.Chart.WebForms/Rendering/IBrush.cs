@@ -25,6 +25,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		ColorBlend InterpolationColors { get; set; }
 
 		WrapMode WrapMode { get; set; }
+
+		/// <summary>The 2-element [start, end] colour pair (GDI+'s <c>LinearColors</c>) — read back by <c>GetSector3DBrush</c>.</summary>
+		Color[] LinearColors { get; }
 	}
 
 	/// <summary>Image-tiled fill. Abstracts <c>TextureBrush</c>.</summary>

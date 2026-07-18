@@ -1,6 +1,8 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
+using SkiaSharp;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {
@@ -30,6 +32,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public IChartImage LoadImage(Stream stream) => new SkiaChartImage(SKBitmap.Decode(stream));
 
 		public IChartFont CreateFont(string familyName, float sizeInPoints) => new SkiaChartFont(familyName, sizeInPoints);
 

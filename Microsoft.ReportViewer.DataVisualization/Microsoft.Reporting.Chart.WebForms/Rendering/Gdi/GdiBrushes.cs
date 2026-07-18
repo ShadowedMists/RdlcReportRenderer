@@ -50,6 +50,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativeBrush.WrapMode = value;
 		}
 
+		public Color[] LinearColors => NativeBrush.LinearColors;
+
 		public void Dispose() => NativeBrush.Dispose();
 	}
 
