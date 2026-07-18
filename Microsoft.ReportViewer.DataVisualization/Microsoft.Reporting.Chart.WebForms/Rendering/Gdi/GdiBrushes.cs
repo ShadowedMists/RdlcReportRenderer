@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 {
@@ -63,6 +64,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		internal GdiTextureBrush(Image image, WrapMode wrapMode)
 		{
 			NativeBrush = new TextureBrush(image, wrapMode);
+		}
+
+		internal GdiTextureBrush(Image image, RectangleF rect, ImageAttributes attributes)
+		{
+			NativeBrush = new TextureBrush(image, rect, attributes);
 		}
 
 		public WrapMode WrapMode

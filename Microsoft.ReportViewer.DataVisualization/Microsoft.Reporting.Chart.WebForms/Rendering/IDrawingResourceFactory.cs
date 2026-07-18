@@ -23,6 +23,13 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode);
 
+		/// <summary>
+		/// Construct a texture brush drawn into <paramref name="rect"/> with colour-key/wrap-mode
+		/// <paramref name="options"/> applied — GDI+'s <c>TextureBrush(Image, RectangleF, ImageAttributes)</c>
+		/// constructor, needed by <c>ChartGraphics.GetTextureBrush</c> (found during B2).
+		/// </summary>
+		ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options);
+
 		IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor);
 
 		IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path);
@@ -30,6 +37,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		// --- Images (image-loading prerequisite for C4's GetTextureBrush, found during B2) ---
 		/// <summary>Decode an image from an already-open stream (file/URL/embedded-resource bytes). Caller owns disposing the stream.</summary>
 		IChartImage LoadImage(Stream stream);
+
+		/// <summary>
+		/// Wrap an already-loaded native image as an <see cref="IChartImage"/> — a bridge for
+		/// <c>ImageLoader</c>'s legacy loading pipeline (<c>chart.Images</c>/<c>ResourceManager</c>/
+		/// <c>WebRequest</c>/<c>File</c>), which remains GDI+-only/concrete for now (found during B2;
+		/// see chart-gdi-type-abstraction.md). Not available on backends that can't construct
+		/// <see cref="Image"/> at all (e.g. Skia on Linux).
+		/// </summary>
+		IChartImage WrapImage(Image image);
 
 		// --- Fonts (A.2) ---
 		IChartFont CreateFont(string familyName, float sizeInPoints);

@@ -530,10 +530,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					if (ser.ShadowOffset != 0)
 					{
 						graph.shadowDrawingMode = true;
-						graph.DrawCircleAbs(new Pen(ser.ShadowColor, point.BorderWidth), null, position, 1, circle3D: false);
+						graph.DrawCircleAbs(graph.ResourceFactory.CreatePen(ser.ShadowColor, point.BorderWidth), null, position, 1, circle3D: false);
 						graph.shadowDrawingMode = false;
 					}
-					graph.DrawCircleAbs(new Pen(point.Color, point.BorderWidth), null, empty, 1, circle3D: false);
+					graph.DrawCircleAbs(graph.ResourceFactory.CreatePen(point.Color, point.BorderWidth), null, empty, 1, circle3D: false);
 				}
 			}
 		}

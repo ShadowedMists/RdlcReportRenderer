@@ -260,6 +260,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			GdiLinearGradientBrush b => b.NativeBrush,
 			GdiTextureBrush b => b.NativeBrush,
 			GdiHatchBrush b => b.NativeBrush,
+			GdiPathGradientBrush b => b.NativeBrush,
 			_ => throw new NotSupportedException($"Unrecognized IBrush implementation: {brush.GetType()}"),
 		};
 

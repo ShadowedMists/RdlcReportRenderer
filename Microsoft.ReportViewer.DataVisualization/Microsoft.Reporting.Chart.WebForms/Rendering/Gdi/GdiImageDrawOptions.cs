@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
@@ -12,6 +13,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		{
 			NativeAttributes.SetRemapTable(new[] { new ColorMap { OldColor = from, NewColor = to } });
 		}
+
+		public void SetTransparentColor(Color color) => NativeAttributes.SetColorKey(color, color, ColorAdjustType.Default);
+
+		public void SetWrapMode(WrapMode mode) => NativeAttributes.SetWrapMode(mode);
 
 		public void SetOpacity(float opacity)
 		{

@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {
@@ -11,6 +12,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 	internal sealed class SkiaImageDrawOptions : IImageDrawOptions
 	{
 		public void SetColorRemap(Color from, Color to) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public void SetTransparentColor(Color color) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public void SetWrapMode(WrapMode mode) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void SetOpacity(float opacity) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -106,7 +107,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Borders3D
 			rectangleF2.Y = rectangleF.Y + 3f * resolution / 96f;
 			rectangleF2.Width -= val * 0.75f;
 			rectangleF2.Height -= val * 0.75f;
-			GraphicsPath graphicsPath = graph.CreateRoundedRectPath(rectangleF2, cornerRadius);
+			IGraphicsPath graphicsPath = graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius);
 			graph.DrawPathAbs(graphicsPath, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, PenAlignment.Inset);
 			graphicsPath?.Dispose();
 			Region region = new Region(graph.CreateRoundedRectPath(new RectangleF(rectangleF2.X - val, rectangleF2.Y - val, rectangleF2.Width + val - val * 0.25f, rectangleF2.Height + val - val * 0.25f), cornerRadius));
