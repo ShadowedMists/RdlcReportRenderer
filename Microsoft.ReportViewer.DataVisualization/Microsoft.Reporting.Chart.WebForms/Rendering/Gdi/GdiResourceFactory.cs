@@ -24,6 +24,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			new GdiHatchBrush(style, foreColor, backColor);
 
+		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new GdiPathGradientBrush(path);
+
 		public IChartFont CreateFont(string familyName, float sizeInPoints) =>
 			new GdiChartFont(new Font(familyName, sizeInPoints));
 
