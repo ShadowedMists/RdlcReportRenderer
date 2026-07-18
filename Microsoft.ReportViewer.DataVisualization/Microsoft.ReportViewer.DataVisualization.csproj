@@ -20,5 +20,12 @@
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
     <PackageReference Include="System.Resources.Extensions" Version="10.0.0" />
+    <!-- Spike (tasks/chart-cross-platform-implementation.md Phase 0): SkiaSharp-backed
+         IChartRenderingEngine/IDrawingResourceFactory adapters, proving the Rendering/
+         port can be driven without System.Drawing at all. -->
+    <PackageReference Include="SkiaSharp" Version="3.119.1" />
+    <!-- SkiaSharp bundles Windows/macOS native assets in the main package but Linux
+         requires this separate package (SkiaSharp packaging convention). -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
   </ItemGroup>
 </Project>

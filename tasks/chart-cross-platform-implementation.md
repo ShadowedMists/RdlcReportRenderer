@@ -139,15 +139,42 @@ Detect platform; on Linux, skip chart/gauge rasterization and emit a placeholder
 
 Do **not** start coding a full backend or an OxyPlot adapter until Phase 0 answers the open questions.
 
-### Phase 0 — Spike (time-boxed, ~1 week) 🔬
+### Phase 0 — Spike (time-boxed, ~1 week) 🔬 ✅ Done — see Spike Report below
 
-**Goal:** replace the uncertainty in §3/§4 with measured facts before committing.
+- [x] Build the solution on Linux and confirm the **exact** exception + call site when a chart renders (validates the §3 boundary claims).
+- [x] Prototype a minimal `SkiaChartGraphics : IChartRenderingEngine` implementing the interface-typed subset (`DrawLine`, `FillRectangle`, `DrawString`, `MeasureString`, `FillPath`, plus most of the rest of the Milestone A3 surface).
+- [x] Render one simple bar chart through it on Linux; compare (qualitatively — see report) to the Windows GDI+ output.
+- [x] Decide the `Pen`/`Brush`/`Font`/`GraphicsPath` strategy: **Option (c) — neutral types, via the already-drafted `Rendering/` port** is now confirmed as the *only* viable strategy (not merely the recommended one). See report for why (b) is dead on arrival.
+- [x] **Output:** spike report below, with measured effort and a scope correction → Option A confirmed, but its cost model changes (C1-C8 become a hard prerequisite for Linux execution, not parallelizable polish).
 
-- [ ] Build the solution on Linux and confirm the **exact** exception + call site when a chart renders (validates the §3 boundary claims).
-- [ ] Prototype a minimal `SkiaChartGraphics : IChartRenderingEngine` that implements ~5 primitives (`DrawLine`, `FillRectangle`, `DrawString`, `MeasureString`, `FillPath`).
-- [ ] Render one simple bar chart through it on Linux; compare pixels to the Windows GDI+ output.
-- [ ] Decide the `Pen`/`Brush`/`Font`/`GraphicsPath` strategy: (a) keep GDI+ value construction where types are portable, (b) translate GDI+ objects to Skia inside the backend, or (c) introduce neutral paint/geometry types.
-- [ ] **Output:** a spike report with measured effort → pick Option A or B with evidence.
+#### Spike Report (2026-07-18)
+
+**1. Exact Linux failure (bullet 1).** Built/ran the existing visual-regression suite (`tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/`) under WSL Ubuntu (.NET 10.0.10). Both GDI+ chart tests fail identically, and the failure happens **inside the `Chart()` constructor itself** — before any `IChartRenderingEngine` call:
+  ```
+  System.DllNotFoundException: Unable to load shared library 'gdiplus.dll' or one of its dependencies
+    at Windows.Win32.PInvokeGdiPlus..cctor()
+    at System.Drawing.FontFamily..ctor(...)
+    at System.Drawing.Font..ctor(String familyName, Single emSize)
+    at Microsoft.Reporting.Chart.WebForms.Title..ctor(String text)   Title.cs:55
+    at Microsoft.Reporting.Chart.WebForms.Chart..ctor()              Chart.cs:28
+  ```
+  **This is a materially bigger finding than §3 assumed.** Installing `libgdiplus` via `apt` (the traditional Linux GDI+ fix) does **not** help — re-ran with it installed and got the identical exception. A follow-up scratch test confirmed **every** bare `System.Drawing` object construction fails the same way on this runtime — `new Pen(...)`, `new SolidBrush(...)`, `new GraphicsPath()`, `new Bitmap(...)` all throw the same `PInvokeGdiPlus` static-initializer `DllNotFoundException`, not just `Font`. `System.Drawing.Common` 10.0.x has been rearchitected around an internal `Windows.Win32.PInvokeGdiPlus` bootstrap that apparently no longer resolves via the classic `libgdiplus.so` shim at all on Linux, regardless of whether that native library is present.
+
+  **Consequence:** the failure isn't confined to the `IChartRenderingEngine` rendering seam — it's anywhere the object model (`Title`, and by the same pattern likely `Legend`, `Series`, `ChartArea`, etc.) constructs a GDI+ type directly, which today is throughout the ~73 files chart-gdi-type-abstraction.md already catalogued. **A chart object cannot be constructed at all on Linux today, independent of which rendering backend paints it.**
+
+**2/3. Skia prototype + render/compare (bullets 2-3) — approach changed mid-spike.** The originally-planned approach ("keep the real GDI+ `Pen`/`Font`/etc. as descriptors and translate them to Skia per draw call" — option (b)) is **not implementable**, because you can't even construct the GDI+ descriptor object to translate, per finding #1. So the spike pivoted to prove option (c) instead, using architecture **already drafted** in Milestone A (`Rendering/IDrawingResourceFactory` + friends):
+
+  - Added `Rendering/Skia/` — `SkiaResourceFactory : IDrawingResourceFactory` plus adapters (`SkiaPen`, `SkiaSolidBrush`, `SkiaChartFont`, `SkiaTextFormat`, `SkiaGraphicsPath`, stub `SkiaClipRegion`/`SkiaImageDrawOptions`/gradient-texture-hatch brushes) — each wraps a real SkiaSharp object (`SKPaint`, `SKFont`, `SKPath`), never `System.Drawing`. Mirrors the existing `Rendering/Gdi/` adapter shape exactly (`Native*` property, one adapter class per interface).
+  - Added `SkiaChartGraphics : IChartRenderingEngine` ([SkiaChartGraphics.cs](../Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Chart.WebForms/SkiaChartGraphics.cs)) — implements the Milestone A3 interface-typed overloads for real (`DrawLine(IPen,...)`, `FillRectangle(IBrush,...)`, `DrawString`/`MeasureString` against `IChartFont`, `FillPath`, etc.) against an `SKCanvas`. The **old GDI+-typed members are unreachable stubs** (`throw NotReachable()`) — they exist only because `IChartRenderingEngine` still requires them as interface members (see finding #4 below); a real backend can only drop them once B1b/B2/C1-C8 land, since `ChartGraphics` currently calls the GDI+-typed overloads exclusively.
+  - Added a **hand-built scene** ([SpikeScene.cs](../tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/SpikeScene.cs)) — a 4-bar chart with axis, title, and category labels, written *only* against `IPen`/`IBrush`/`IChartFont`/`ITextFormat`/`IChartRenderingEngine`/`IDrawingResourceFactory` — no `System.Drawing` reference anywhere in the scene code. The **same** scene method runs through `GdiGraphics`+`GdiResourceFactory` (Windows-only — GDI+ itself doesn't work on this Linux setup, per finding #1) and through `SkiaChartGraphics`+`SkiaResourceFactory` (Windows **and** Linux, since it's Skia all the way down).
+  - **Result:** both backends produce a visually correct, near-identical bar chart on Windows (same bar heights/positions/colors/labels; text rendering close enough — both use "Arial" via their respective font-fallback resolution). The **same Skia code, unmodified, also renders correctly on WSL Linux** (`SkiaBackend_RendersSpikeScene` passes; `GdiBackend_RendersSpikeScene` correctly reports `Inconclusive` there, confirming the platform gate). This is the concrete evidence that a Skia backend **is** viable cross-platform — the port design in `Rendering/` was the right call — but it can only be reached by types that never touch `System.Drawing`, not by "wrap-and-translate."
+  - Test artifacts (gitignored, under `bin/`): `Results/SpikeScene.Gdi.png`, `Results/SpikeScene.Skia.png`.
+
+**4. New finding: `IChartRenderingEngine` itself isn't fully backend-neutral yet.** The interface still declares `Matrix Transform`, `Region Clip`, and `Graphics Graphics` as required properties (no interface-typed equivalent exists for `Graphics`, unlike the Milestone A3 pattern used for methods) — so *any* implementer, Skia included, must reference these `System.Drawing` types in its signature. This doesn't block a spike stub (referencing a type doesn't construct it), but it means Milestone D3 ("remove the temporary GDI+-typed overloads") needs to also add an interface-typed replacement for the `Graphics` property itself (there's already `GetTransform`/`SetTransform` and `GetClipRegion`/`SetClipRegion` for the other two) before a Skia backend can implement the interface without any `System.Drawing` reference at all.
+
+**Decision (bullet 4):** **Option (c) — neutral port types — is confirmed, and is no longer merely the "cleaner" choice, it is the *only* choice** that produces a working Linux render given .NET 10's `System.Drawing.Common` behavior. Option (b) is ruled out entirely; Option (a) ("keep GDI+ value construction where types are portable") was already understood to only apply to the `Color`/`PointF`/`RectangleF`/`SizeF` value types, which is unaffected by this finding.
+
+**Effort re-estimate (bullet 5).** The `Rendering/Gdi/` ↔ `Rendering/Skia/` adapter-pair pattern proved mechanical and low-risk to extend once one full pair (pen/brush/font/text-format/path) existed — each new type took roughly the same shape and a similar amount of code. That part of the original XL estimate for C1-C8 holds up. **What changes is urgency, not size:** B1b/B2 (wiring `ChartGraphics`'s actual field allocations — `pen`/`solidBrush`/`myMatrix` and the many local `new Pen/SolidBrush/GraphicsPath` calls — through `resourceFactory` instead of `new`) and C1-C8 (the full per-type migration) are no longer "finish this whenever, for architectural purity" — they are the **hard, sequential prerequisite for any chart to render on Linux at all**, GDI+ or Skia, because the object model constructs GDI+ types directly outside the `IChartRenderingEngine` seam entirely (finding #1). There is no incremental/partial win available here — a chart can't be constructed on Linux until essentially all direct `System.Drawing` construction is gone from the model, not just from the painters.
 
 ### Phase 1 — Platform selection + graceful degradation (Option C safety net)
 

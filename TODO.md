@@ -10,7 +10,7 @@
 |----------|-------|--------|----------|------|
 | 🔴 **HIGH** | Excel Phase 4: ImageFormatType Enum | ✅ COMPLETE | — | LOW |
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | — | MEDIUM |
-| 🟡 **HIGH** | Chart & Gauge: re-target GDI+ engines to SkiaSharp | 🔬 SPIKE REQUIRED | TBD (spike first) | HIGH |
+| 🟡 **HIGH** | Chart & Gauge: re-target GDI+ engines to SkiaSharp | ✅ SPIKE COMPLETE — Option A confirmed, scope revised | Phases 1-6 (see below) | HIGH |
 | 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 PENDING | 2-3 weeks | VERY HIGH |
 
 > **Note:** The prior "Chart Library Migration (OxyPlot)" line was retracted — see `tasks/chart-library-decision.md`. Charts are rendered by a vendored GDI+ engine we own, not an external library; the corrected plan re-targets its existing rendering seam to SkiaSharp. A time-boxed spike must size the effort before scheduling.
@@ -61,23 +61,23 @@
 
 **Reference:** `tasks/chart-image-abstraction-analysis.md` (complete design patterns and roadmap provided)
 
-### Chart & Gauge Cross-Platform Rendering (🔬 SPIKE REQUIRED)
+### Chart & Gauge Cross-Platform Rendering (✅ Phase 0 spike complete)
 
-**Status:** Prior OxyPlot decision RETRACTED — corrected analysis complete, spike pending  
-**Blocker:** Two vendored GDI+ engines (Chart.WebForms + GaugeContainer) rasterize to PNG/EMF via `System.Drawing`, which throws on Linux
+**Status:** Prior OxyPlot decision RETRACTED. Phase 0 spike (2026-07-18) confirms Option A (re-target to SkiaSharp) — see spike report in `tasks/chart-cross-platform-implementation.md` for full detail.
+**Blocker:** Two vendored GDI+ engines (Chart.WebForms + GaugeContainer) rasterize to PNG/EMF via `System.Drawing`, which — per the spike — cannot even construct a `Pen`/`Font`/`Bitmap`/etc. on Linux with .NET 10, independent of `libgdiplus` presence.
 
-**Corrected finding:** Charts are NOT rendered by a missing library — they are rendered by a **vendored GDI+ chart engine we own**, which already has an `IChartRenderingEngine` seam. The fix is to re-target that seam to SkiaSharp (dual-backend: Windows keeps GDI+, Linux uses Skia), NOT to replace the engine with OxyPlot. See corrected doc for why the OxyPlot decision (fabricated metrics, wrong framing) was retracted.
+**Corrected finding:** Charts are NOT rendered by a missing library — they are rendered by a **vendored GDI+ chart engine we own**, which already has an `IChartRenderingEngine` seam. The fix is to re-target that seam to SkiaSharp (dual-backend: Windows keeps GDI+, Linux uses Skia), NOT to replace the engine with OxyPlot.
 
-**Recommended approach:** Re-target existing engine to SkiaSharp behind `IChartRenderingEngine` — preserves chart model + visual fidelity.
+**Spike result:** Built a spike-scoped `Rendering/Skia/` adapter set (`SkiaResourceFactory`, `SkiaPen`/`SkiaSolidBrush`/`SkiaChartFont`/`SkiaTextFormat`/`SkiaGraphicsPath`) + `SkiaChartGraphics : IChartRenderingEngine`, and a hand-built bar-chart scene written only against the backend-agnostic `Rendering/` port — it renders correctly on **both Windows and WSL Linux**, unmodified. This confirms the port design (already drafted in `chart-gdi-type-abstraction.md` Milestone A) is the right direction. **But** the spike also found GDI+ itself can't construct on Linux at all today (not just at the rendering seam) — so completing the per-type migration (Milestones B1b/B2/C1-C8) is now a **hard prerequisite** for any Linux chart rendering, GDI+ or Skia, not optional/parallelizable polish. Effort-wise, the adapter-pair pattern (one Gdi/Skia pair per resource type) proved mechanical once built once — the XL sizing for C6/C7 still holds, but urgency changes.
 
 **Implementation Plan:**
-- [ ] Phase 0: Time-boxed spike to measure real effort (~1 week) — REQUIRED FIRST
+- [x] Phase 0: Time-boxed spike to measure real effort — **done**, see `tasks/chart-cross-platform-implementation.md` Spike Report
 - [ ] Phase 1: Platform selection + graceful degradation (no crash on Linux)
 - [ ] Phase 2: Abstract the pixel/output boundary (Bitmap/Graphics → SKSurface)
-- [ ] Phase 3: Implement `SkiaChartGraphics : IChartRenderingEngine`
+- [ ] Phase 3: Finish Milestones B1b/B2/C1-C8 (`chart-gdi-type-abstraction.md`) — now understood as blocking, not just cleanup — then wire the spike's `SkiaChartGraphics`/`SkiaResourceFactory` into the real `Chart` render path (`RenderingType.Skia`)
 - [ ] Phase 4: Backend factory + integration
 - [ ] Phase 5: Apply same pattern to gauge engine
-- [ ] Phase 6: Visual regression testing (build report corpus — no coverage % until then)
+- [ ] Phase 6: Visual regression testing (extend the E0 harness — `tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/` — with a real Skia render path and a broader report corpus)
 
 **References:**
 - `tasks/chart-cross-platform-implementation.md` (corrected technical instructions with line refs)
