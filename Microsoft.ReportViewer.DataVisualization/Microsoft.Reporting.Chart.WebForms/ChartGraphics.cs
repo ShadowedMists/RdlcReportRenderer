@@ -161,18 +161,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 				}
 			}
-			TextureBrush result;
-			if (ImageLoader.DoDpisMatch(image, Graphics))
-			{
-				result = new TextureBrush(image, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
-			}
-			else
-			{
-				Image scaledImage = ImageLoader.GetScaledImage(image, Graphics);
-				result = new TextureBrush(scaledImage, new RectangleF(0f, 0f, scaledImage.Width, scaledImage.Height), imageAttributes);
-				scaledImage.Dispose();
-			}
-			return result;
+			// Fixed 96 DPI baseline assumed (chart-gdi-type-abstraction.md Milestone B2) — no DPI-mismatch rescale.
+			return new TextureBrush(image, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
 		}
 
 		public Brush GetGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)

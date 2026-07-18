@@ -157,32 +157,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 			return true;
 		}
 
+		/// <summary>
+		/// Assumes a fixed 96 DPI baseline (chart-gdi-type-abstraction.md Milestone B2, decision 2026-07-18):
+		/// GDI+'s original DPI-mismatch rescaling only mattered for print/high-DPI targets, and required
+		/// resolution metadata (Image.HorizontalResolution/VerticalResolution) that has no SkiaSharp equivalent.
+		/// </summary>
 		internal static void GetAdjustedImageSize(Image image, Graphics graphics, ref SizeF size)
 		{
-			if (graphics != null)
-			{
-				size.Width = (float)image.Width * graphics.DpiX / image.HorizontalResolution;
-				size.Height = (float)image.Height * graphics.DpiY / image.VerticalResolution;
-			}
-			else
-			{
-				size.Width = image.Width;
-				size.Height = image.Height;
-			}
-		}
-
-		internal static bool DoDpisMatch(Image image, Graphics graphics)
-		{
-			if (graphics.DpiX == image.HorizontalResolution)
-			{
-				return graphics.DpiY == image.VerticalResolution;
-			}
-			return false;
-		}
-
-		internal static Image GetScaledImage(Image image, Graphics graphics)
-		{
-			return new Bitmap(image, new Size((int)((float)image.Width * graphics.DpiX / image.HorizontalResolution), (int)((float)image.Height * graphics.DpiY / image.VerticalResolution)));
+			size.Width = image.Width;
+			size.Height = image.Height;
 		}
 	}
 }
