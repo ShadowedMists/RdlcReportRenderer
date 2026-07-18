@@ -39,6 +39,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public Blend Blend { get; set; }
 		public ColorBlend InterpolationColors { get; set; }
 		public WrapMode WrapMode { get; set; }
+		public Color[] LinearColors { get; set; } = Array.Empty<Color>();
 		public void Dispose() { }
 	}
 

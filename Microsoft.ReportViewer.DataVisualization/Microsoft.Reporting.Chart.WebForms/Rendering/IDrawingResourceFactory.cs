@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering
 {
@@ -25,6 +26,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor);
 
 		IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path);
+
+		// --- Images (image-loading prerequisite for C4's GetTextureBrush, found during B2) ---
+		/// <summary>Decode an image from an already-open stream (file/URL/embedded-resource bytes). Caller owns disposing the stream.</summary>
+		IChartImage LoadImage(Stream stream);
 
 		// --- Fonts (A.2) ---
 		IChartFont CreateFont(string familyName, float sizeInPoints);

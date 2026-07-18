@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 {
@@ -25,6 +26,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			new GdiHatchBrush(style, foreColor, backColor);
 
 		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new GdiPathGradientBrush(path);
+
+		public IChartImage LoadImage(Stream stream) => new GdiChartImage(Image.FromStream(stream));
 
 		public IChartFont CreateFont(string familyName, float sizeInPoints) =>
 			new GdiChartFont(new Font(familyName, sizeInPoints));
