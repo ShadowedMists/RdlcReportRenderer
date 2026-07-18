@@ -1,10 +1,12 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
@@ -356,9 +358,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						num2 = 360f + num2;
 					}
-					Matrix matrix = new Matrix();
-					matrix.RotateAt(num2, graph.GetAbsolutePoint(axis.chartArea.circularCenter));
-					matrix.TransformPoints(array);
+					Matrix3x2.Identity.RotateAt(num2, graph.GetAbsolutePoint(axis.chartArea.circularCenter)).TransformPoints(array);
 					stringFormat.LineAlignment = StringAlignment.Center;
 					stringFormat.Alignment = StringAlignment.Near;
 					if (circularAxisLabelsStyle != CircularAxisLabelsStyle.Radial)
@@ -393,12 +393,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 						stringFormat.LineAlignment = StringAlignment.Far;
 						break;
 					}
-					Matrix transform = graph.Transform;
+					Matrix3x2 transform = graph.GetTransform();
 					if (circularAxisLabelsStyle == CircularAxisLabelsStyle.Radial || circularAxisLabelsStyle == CircularAxisLabelsStyle.Circular)
 					{
-						Matrix matrix2 = transform.Clone();
-						matrix2.RotateAt(num3, array[0]);
-						graph.Transform = matrix2;
+						Matrix3x2 matrix2 = transform.RotateAt(num3, array[0]);
+						graph.SetTransform(matrix2);
 					}
 					InitAnimation(graph, circularAxisList.Count, num);
 					graph.StartAnimation();
@@ -434,7 +433,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					if (circularAxisLabelsStyle == CircularAxisLabelsStyle.Radial || circularAxisLabelsStyle == CircularAxisLabelsStyle.Circular)
 					{
-						graph.Transform = transform;
+						graph.SetTransform(transform);
 					}
 				}
 				num++;

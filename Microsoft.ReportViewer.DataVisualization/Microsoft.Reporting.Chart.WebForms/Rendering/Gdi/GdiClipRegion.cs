@@ -1,4 +1,6 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 {
@@ -36,13 +38,23 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void Exclude(RectangleF rect) => NativeRegion.Exclude(rect);
 
+		public void Xor(RectangleF rect) => NativeRegion.Xor(rect);
+
 		public void MakeEmpty() => NativeRegion.MakeEmpty();
 
 		public void MakeInfinite() => NativeRegion.MakeInfinite();
 
 		public bool IsVisible(PointF point) => NativeRegion.IsVisible(point);
 
-		public RectangleF GetBounds(IRenderSurface surface) => NativeRegion.GetBounds(((GdiRenderSurface)surface).NativeGraphics);
+		public void Transform(Matrix3x2 matrix)
+		{
+			using Matrix nativeMatrix = new Matrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.M31, matrix.M32);
+			NativeRegion.Transform(nativeMatrix);
+		}
+
+		public RectangleF GetBounds(IChartRenderingEngine engine) => NativeRegion.GetBounds(engine.Graphics);
+
+		public bool IsEmpty(IChartRenderingEngine engine) => NativeRegion.IsEmpty(engine.Graphics);
 
 		public void Dispose() => NativeRegion.Dispose();
 	}

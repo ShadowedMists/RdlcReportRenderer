@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {
@@ -19,6 +20,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Exclude(RectangleF rect) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void Xor(RectangleF rect) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void MakeEmpty() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void MakeInfinite()
@@ -29,7 +32,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public bool IsVisible(PointF point) => true;
 
-		public RectangleF GetBounds(IRenderSurface surface) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		public void Transform(Matrix3x2 matrix) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public RectangleF GetBounds(IChartRenderingEngine engine) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public bool IsEmpty(IChartRenderingEngine engine) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void Dispose()
 		{

@@ -50,5 +50,35 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises the Matrix/Matrix3x2 rotation call sites in ChartGraphics (C2,
+        /// tasks/chart-gdi-type-abstraction.md) — rotated axis labels and a rotated title both
+        /// go through ChartGraphics.DrawStringAbs/DrawLabelBackground's RotateAt path, which the
+        /// other two sample charts (angle == 0 everywhere) never reach.
+        /// </summary>
+        internal static byte[] RenderRotatedLabelsChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            var title = chart.Titles.Add("Rotated Title");
+            title.TextOrientation = TextOrientation.Rotated90;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].AxisX.LabelStyle.FontAngle = 45;
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("January", 12);
+            series.Points.AddXY("February", 18);
+            series.Points.AddXY("March", 9);
+            series.Points.AddXY("April", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }
