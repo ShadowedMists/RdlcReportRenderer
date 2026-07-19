@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -240,7 +241,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						if (common.ProcessModeRegions)
 						{
-							AddSelectionPath(area, graphicsPath2, pointsPosition, num, num3, graph.GetAbsolutePoint(area.circularCenter), 0);
+							AddSelectionPath(graph, area, graphicsPath2, pointsPosition, num, num3, graph.GetAbsolutePoint(area.circularCenter), 0);
 							int insertIndex = common.HotRegionsList.FindInsertIndex();
 							common.HotRegionsList.AddHotRegion(insertIndex, graphicsPath2, relativePath: false, graph, point2, item.Name, num);
 						}
@@ -263,7 +264,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						if (common.ProcessModeRegions)
 						{
-							AddSelectionPath(area, graphicsPath2, pointsPosition, num, num3, graph.GetAbsolutePoint(area.circularCenter), 0);
+							AddSelectionPath(graph, area, graphicsPath2, pointsPosition, num, num3, graph.GetAbsolutePoint(area.circularCenter), 0);
 						}
 					}
 					if (color2 != Color.Empty && num4 > 0 && chartDashStyle != 0 && num3 < item.Points.Count)
@@ -278,7 +279,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						if (common.ProcessModeRegions)
 						{
-							AddSelectionPath(area, graphicsPath2, pointsPosition, num, num3, PointF.Empty, num4);
+							AddSelectionPath(graph, area, graphicsPath2, pointsPosition, num, num3, PointF.Empty, num4);
 						}
 					}
 					if (common.ProcessModeRegions)
@@ -360,7 +361,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		internal void AddSelectionPath(ChartArea area, GraphicsPath selectionPath, PointF[] dataPointPos, int firstPointIndex, int secondPointIndex, PointF centerPoint, int borderWidth)
+		internal void AddSelectionPath(ChartGraphics graph, ChartArea area, GraphicsPath selectionPath, PointF[] dataPointPos, int firstPointIndex, int secondPointIndex, PointF centerPoint, int borderWidth)
 		{
 			PointF middlePoint = GetMiddlePoint(dataPointPos[firstPointIndex], dataPointPos[secondPointIndex]);
 			PointF pointF = PointF.Empty;
@@ -385,7 +386,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				selectionPath.AddLine(pointF, centerPoint);
 				return;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			if (!pointF.IsEmpty)
 			{
 				graphicsPath.AddLine(pointF, dataPointPos[firstPointIndex]);
@@ -393,13 +394,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			graphicsPath.AddLine(dataPointPos[firstPointIndex], middlePoint);
 			try
 			{
-				ChartGraphics.Widen(graphicsPath, new Pen(Color.Black, borderWidth + 2));
+				ChartGraphics.Widen(graphicsPath, graph.ResourceFactory.CreatePen(Color.Black, borderWidth + 2));
 				graphicsPath.Flatten();
 			}
 			catch
 			{
 			}
-			selectionPath.AddPath(graphicsPath, connect: false);
+			selectionPath.AddPath(new GraphicsPath(graphicsPath.PathPoints, graphicsPath.PathTypes), connect: false);
 		}
 
 		private PointF GetMiddlePoint(PointF p1, PointF p2)

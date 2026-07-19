@@ -1224,7 +1224,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			float num = graph.GetAbsolutePoint(new PointF(position, position)).Y - relative.Top;
 			relative.Inflate(0f - num, 0f - num);
-			Pen pen = new Pen(color, width);
+			IPen pen = graph.ResourceFactory.CreatePen(color, width);
 			pen.DashStyle = graph.GetPenStyle(style);
 			if (chartArea.CircularUsePolygons)
 			{
@@ -1236,10 +1236,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (base.Common.ProcessModeRegions && relative.Width >= 1f && relative.Height > 1f)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				if (chartArea.CircularUsePolygons)
 				{
-					graphicsPath = graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber);
+					GraphicsPath polygonCirclePath = graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber);
+					graphicsPath = graph.ResourceFactory.CreatePath(polygonCirclePath.PathPoints, polygonCirclePath.PathTypes);
 				}
 				else
 				{

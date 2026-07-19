@@ -3523,6 +3523,21 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="Widen(GraphicsPath, Pen)"/> (Milestone B2 — see chart-gdi-type-abstraction.md). Same swallow-known-failures semantics: GDI+'s <c>GraphicsPath.Widen</c> throws <see cref="ArgumentException"/> on degenerate/empty paths, which callers treat as "leave the path unwidened" rather than a hard failure.</summary>
+		internal static void Widen(IGraphicsPath path, IPen pen)
+		{
+			try
+			{
+				path.Widen(pen);
+			}
+			catch (OutOfMemoryException)
+			{
+			}
+			catch (ArgumentException)
+			{
+			}
+		}
+
 		internal static BarDrawingStyle GetBarDrawingStyle(DataPoint point)
 		{
 			BarDrawingStyle result = BarDrawingStyle.Default;

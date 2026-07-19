@@ -387,12 +387,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				else
 				{
-					GraphicsPath graphicsPath2 = new GraphicsPath();
-					graphicsPath2.AddPath(new GraphicsPath(graphicsPath.PathPoints, graphicsPath.PathTypes), connect: false);
-					using (Pen pen = (Pen)graphics.pen.Clone())
+					IGraphicsPath graphicsPath2 = graphics.ResourceFactory.CreatePath();
+					graphicsPath2.AddPath(graphicsPath, connect: false);
+					using (IPen pen = graphics.ResourceFactory.CreatePen(graphics.pen.Color, graphics.pen.Width + 2f))
 					{
 						pen.DashStyle = DashStyle.Solid;
-						pen.Width += 2f;
 						ChartGraphics.Widen(graphicsPath2, pen);
 					}
 					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath2, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);

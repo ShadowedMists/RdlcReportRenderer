@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -26,11 +27,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			graph.DrawLineRel(point.Color, point.BorderWidth, point.BorderStyle, graph.GetRelativePoint(pointF2), graph.GetRelativePoint(pointF3), series.ShadowColor, series.ShadowOffset);
 			if (common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddLine(pointF2, pointF3);
 				if (!pointF2.Equals(pointF3))
 				{
-					ChartGraphics.Widen(graphicsPath, new Pen(point.Color, point.BorderWidth + 2));
+					ChartGraphics.Widen(graphicsPath, graph.ResourceFactory.CreatePen(point.Color, point.BorderWidth + 2));
 				}
 				PointF empty = PointF.Empty;
 				float[] array = new float[graphicsPath.PointCount * 2];
@@ -42,11 +43,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					array[2 * i + 1] = empty.Y;
 				}
 				common.HotRegionsList.AddHotRegion(graph, graphicsPath, relativePath: false, array, point, series.Name, pointIndex);
-				graphicsPath = new GraphicsPath();
+				graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddLine(pointF, pointF2);
 				if (!pointF.Equals(pointF2))
 				{
-					ChartGraphics.Widen(graphicsPath, new Pen(point.Color, point.BorderWidth + 2));
+					ChartGraphics.Widen(graphicsPath, graph.ResourceFactory.CreatePen(point.Color, point.BorderWidth + 2));
 				}
 				array = new float[graphicsPath.PointCount * 2];
 				pathPoints = graphicsPath.PathPoints;

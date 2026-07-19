@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using SkiaSharp;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
@@ -18,5 +19,19 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		internal static SKPoint ToSKPoint(PointF point) => new SKPoint(point.X, point.Y);
 
 		internal static SKRect ToSKRect(RectangleF rect) => new SKRect(rect.Left, rect.Top, rect.Right, rect.Bottom);
+
+		internal static SKStrokeCap ToSKStrokeCap(LineCap cap) => cap switch
+		{
+			LineCap.Round or LineCap.RoundAnchor => SKStrokeCap.Round,
+			LineCap.Square or LineCap.SquareAnchor => SKStrokeCap.Square,
+			_ => SKStrokeCap.Butt,
+		};
+
+		internal static SKStrokeJoin ToSKStrokeJoin(LineJoin join) => join switch
+		{
+			LineJoin.Round => SKStrokeJoin.Round,
+			LineJoin.Bevel => SKStrokeJoin.Bevel,
+			_ => SKStrokeJoin.Miter,
+		};
 	}
 }
