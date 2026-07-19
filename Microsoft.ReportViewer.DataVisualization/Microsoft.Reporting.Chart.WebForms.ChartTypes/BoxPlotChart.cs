@@ -181,7 +181,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						empty.Width = num3;
 						empty.Y = (float)vAxis.GetPosition(point.YValues[3]);
 						empty.Height = (float)Math.Abs((double)empty.Y - vAxis.GetPosition(point.YValues[2]));
-						graph.FillRectangleRel(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item.ShadowColor, item.ShadowOffset, PenAlignment.Inset);
+						graph.FillRectangleRelResource(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item.ShadowColor, item.ShadowOffset, PenAlignment.Inset);
 						bool flag4 = true;
 						if (point.IsAttributeSet("BoxPlotShowAverage") || item.IsAttributeSet("BoxPlotShowAverage"))
 						{
@@ -582,7 +582,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						empty.Width = num3;
 						empty.Y = array[3].Y;
 						empty.Height = Math.Abs(empty.Y - array[2].Y);
-						graph.FillRectangleRel(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item.ShadowColor, item.ShadowOffset, PenAlignment.Inset);
+						graph.FillRectangleRelResource(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item.ShadowColor, item.ShadowOffset, PenAlignment.Inset);
 						bool flag4 = true;
 						if (point.IsAttributeSet("BoxPlotShowAverage") || item.IsAttributeSet("BoxPlotShowAverage"))
 						{

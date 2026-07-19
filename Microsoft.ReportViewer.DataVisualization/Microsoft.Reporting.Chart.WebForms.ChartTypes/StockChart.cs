@@ -375,7 +375,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				SizeF relative = new SizeF(empty.Height, empty.Height);
 				if (graph.GetAbsoluteSize(relative).Height > 1f)
 				{
-					graph.FillRectangleRel(empty, color3, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, color4, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset);
+					graph.FillRectangleRelResource(empty, color3, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, color4, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset);
 				}
 				else
 				{
@@ -834,7 +834,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				empty.Height = Math.Abs(array[1].Y - array[0].Y);
 				if (empty.Height > 1f)
 				{
-					graph.FillRectangleRel(empty, color3, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, color4, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset);
+					graph.FillRectangleRelResource(empty, color3, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, color4, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset);
 				}
 				else
 				{

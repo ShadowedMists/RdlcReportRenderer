@@ -133,7 +133,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		{
 			RectangleF relativeRect = GetRelativeRect(graph, dataPointTreeMapNode);
 			DataPoint dataPoint = dataPointTreeMapNode.DataPoint;
-			graph.FillRectangleRel(relativeRect, dataPoint.Color, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, dataPoint.series.ShadowColor, dataPoint.series.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(dataPoint), isVertical: true);
+			graph.FillRectangleRelResource(relativeRect, dataPoint.Color, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, dataPoint.series.ShadowColor, dataPoint.series.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(dataPoint), isVertical: true);
 			AddDataPointHotRegion(graph, common, index, dataPoint, relativeRect);
 		}
 

@@ -1870,6 +1870,194 @@ namespace Microsoft.Reporting.Chart.WebForms
 			base.SmoothingMode = smoothingMode;
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="FillRectangleRel(RectangleF, Color, ChartHatchStyle, string, ChartImageWrapMode, Color, ChartImageAlign, GradientType, Color, Color, int, ChartDashStyle, Color, int, PenAlignment, BarDrawingStyle, bool)"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Named distinctly since none of these overloads' parameters differ by type. Uses its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c> rather than the shared <c>pen</c>/<c>solidBrush</c> fields — same reasoning as the interface-typed <c>DrawPathAbs</c>/<c>DrawCircleAbs</c> overloads.</summary>
+		internal void FillRectangleRelResource(RectangleF rectF, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Color shadowColor, int shadowOffset, PenAlignment penAlignment, BarDrawingStyle barDrawingStyle, bool isVertical)
+		{
+			FillRectangleRelResource(rectF, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, shadowColor, shadowOffset, penAlignment, circular: false, 0, circle3D: false, barDrawingStyle, isVertical);
+		}
+
+		internal void FillRectangleRelResource(RectangleF rectF, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Color shadowColor, int shadowOffset, PenAlignment penAlignment)
+		{
+			FillRectangleRelResource(rectF, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, shadowColor, shadowOffset, penAlignment, circular: false, 0, circle3D: false, BarDrawingStyle.Default, isVertical: true);
+		}
+
+		internal void FillRectangleRelResource(RectangleF rectF, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Color shadowColor, int shadowOffset, PenAlignment penAlignment, bool circular, int circularSectorsCount, bool circle3D)
+		{
+			FillRectangleRelResource(rectF, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, shadowColor, shadowOffset, penAlignment, circular, circularSectorsCount, circle3D, BarDrawingStyle.Default, isVertical: true);
+		}
+
+		internal void FillRectangleRelResource(RectangleF rectF, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Color shadowColor, int shadowOffset, PenAlignment penAlignment, bool circular, int circularSectorsCount, bool circle3D, BarDrawingStyle barDrawingStyle, bool isVertical)
+		{
+			IBrush brush = null;
+			IBrush brush2 = null;
+			SmoothingMode smoothingMode = base.SmoothingMode;
+			if (!circular)
+			{
+				base.SmoothingMode = SmoothingMode.Default;
+			}
+			if (backColor.IsEmpty)
+			{
+				backColor = Color.White;
+			}
+			if (backGradientEndColor.IsEmpty)
+			{
+				backGradientEndColor = Color.White;
+			}
+			if (borderColor.IsEmpty || borderStyle == ChartDashStyle.NotSet)
+			{
+				borderWidth = 0;
+			}
+			RectangleF absoluteRectangle = GetAbsoluteRectangle(rectF);
+			if (absoluteRectangle.Width < 1f && absoluteRectangle.Width > 0f)
+			{
+				absoluteRectangle.Width = 1f;
+			}
+			if (absoluteRectangle.Height < 1f && absoluteRectangle.Height > 0f)
+			{
+				absoluteRectangle.Height = 1f;
+			}
+			absoluteRectangle = Round(absoluteRectangle);
+			RectangleF rectangleF = (penAlignment != PenAlignment.Inset || borderWidth <= 0) ? absoluteRectangle : ((base.ActiveRenderingType != RenderingType.Svg && !IsMetafile) ? ((Graphics.Transform.Elements[0] == 1f && Graphics.Transform.Elements[3] == 1f) ? new RectangleF(absoluteRectangle.X + (float)borderWidth, absoluteRectangle.Y + (float)borderWidth, absoluteRectangle.Width - (float)borderWidth * 2f + 1f, absoluteRectangle.Height - (float)borderWidth * 2f + 1f) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height)) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height));
+			if (rectangleF.Width > 2f * (float)width)
+			{
+				rectangleF.Width = 2f * (float)width;
+			}
+			if (rectangleF.Height > 2f * (float)height)
+			{
+				rectangleF.Height = 2f * (float)height;
+			}
+			if (backImage.Length <= 0 || backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled)
+			{
+				brush = ((backHatchStyle != 0) ? GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor) : ((backGradientType != 0) ? GetGradientBrushResource(absoluteRectangle, backColor, backGradientEndColor, backGradientType) : ((!(backColor == Color.Empty) && !(backColor == Color.Transparent)) ? resourceFactory.CreateSolidBrush(backColor) : null)));
+			}
+			else
+			{
+				if (backColor != Color.Empty && backColor != Color.Transparent)
+				{
+					brush2 = resourceFactory.CreateSolidBrush(backColor);
+				}
+				brush = GetTextureBrushResource(backImage, backImageTranspColor, backImageMode, backColor);
+			}
+			FillRectangleShadowAbs(absoluteRectangle, shadowColor, shadowOffset, backColor, circular, circularSectorsCount);
+			if (backImage.Length > 0 && (backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled))
+			{
+				Image image = common.ImageLoader.LoadImage(backImage);
+				IImageDrawOptions imageAttributes = resourceFactory.CreateImageDrawOptions();
+				if (backImageTranspColor != Color.Empty)
+				{
+					imageAttributes.SetTransparentColor(backImageTranspColor);
+				}
+				RectangleF rectangleF2 = default(RectangleF);
+				rectangleF2.X = rectangleF.X;
+				rectangleF2.Y = rectangleF.Y;
+				rectangleF2.Width = rectangleF.Width;
+				rectangleF2.Height = rectangleF.Height;
+				if (backImageMode == ChartImageWrapMode.Unscaled)
+				{
+					SizeF size = default(SizeF);
+					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					rectangleF2.Width = Math.Min(rectangleF.Width, size.Width);
+					rectangleF2.Height = Math.Min(rectangleF.Height, size.Height);
+					if (rectangleF2.Width < rectangleF.Width)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.TopRight:
+						case ChartImageAlign.Right:
+						case ChartImageAlign.BottomRight:
+							rectangleF2.X = rectangleF.Right - rectangleF2.Width;
+							break;
+						case ChartImageAlign.Top:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.Center:
+							rectangleF2.X = rectangleF.X + (rectangleF.Width - rectangleF2.Width) / 2f;
+							break;
+						}
+					}
+					if (rectangleF2.Height < rectangleF.Height)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.BottomRight:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.BottomLeft:
+							rectangleF2.Y = rectangleF.Bottom - rectangleF2.Height;
+							break;
+						case ChartImageAlign.Right:
+						case ChartImageAlign.Left:
+						case ChartImageAlign.Center:
+							rectangleF2.Y = rectangleF.Y + (rectangleF.Height - rectangleF2.Height) / 2f;
+							break;
+						}
+					}
+				}
+				if (brush != null)
+				{
+					if (circular)
+					{
+						DrawCircleAbs(null, brush, rectangleF, circularSectorsCount, circle3D);
+					}
+					else
+					{
+						FillRectangle(brush, rectangleF);
+					}
+				}
+				// Minor fidelity note: the interface-typed DrawImage overload takes int src dimensions
+				// (GDI+'s int-based DrawImage overload) vs. the original's float-based one — negligible
+				// since these values are already near-integral pixel dimensions in practice.
+				DrawImage(resourceFactory.WrapImage(image), new Rectangle((int)Math.Round(rectangleF2.X), (int)Math.Round(rectangleF2.Y), (int)Math.Round(rectangleF2.Width), (int)Math.Round(rectangleF2.Height)), 0, 0, (backImageMode == ChartImageWrapMode.Unscaled) ? (int)rectangleF2.Width : image.Width, (backImageMode == ChartImageWrapMode.Unscaled) ? (int)rectangleF2.Height : image.Height, GraphicsUnit.Pixel, imageAttributes);
+			}
+			else
+			{
+				if (brush2 != null && backImageTranspColor != Color.Empty)
+				{
+					if (circular)
+					{
+						DrawCircleAbs(null, brush2, rectangleF, circularSectorsCount, circle3D);
+					}
+					else
+					{
+						FillRectangle(brush2, rectangleF);
+					}
+				}
+				if (brush != null)
+				{
+					if (circular)
+					{
+						DrawCircleAbs(null, brush, rectangleF, circularSectorsCount, circle3D);
+					}
+					else
+					{
+						FillRectangle(brush, rectangleF);
+					}
+				}
+			}
+			DrawRectangleBarStyle(barDrawingStyle, isVertical, rectangleF, (borderStyle != 0) ? borderWidth : 0);
+			if (borderWidth > 0 && borderStyle != 0)
+			{
+				IPen borderPen = resourceFactory.CreatePen(borderColor, borderWidth);
+				borderPen.Alignment = penAlignment;
+				borderPen.DashStyle = GetPenStyle(borderStyle);
+				if (circular)
+				{
+					DrawCircleAbs(borderPen, null, absoluteRectangle, circularSectorsCount, circle3D: false);
+				}
+				else
+				{
+					if (borderPen.Alignment == PenAlignment.Inset && borderPen.Width > 1f)
+					{
+						absoluteRectangle.Width += 1f;
+						absoluteRectangle.Height += 1f;
+					}
+					DrawRectangle(borderPen, absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height);
+				}
+				borderPen.Dispose();
+			}
+			brush?.Dispose();
+			brush2?.Dispose();
+			base.SmoothingMode = smoothingMode;
+		}
+
 		public void FillRectangleShadowAbs(RectangleF rect, Color shadowColor, float shadowOffset, Color backColor)
 		{
 			FillRectangleShadowAbs(rect, shadowColor, shadowOffset, backColor, circular: false, 0);
@@ -2368,6 +2556,129 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				brush.Dispose();
 			}
+			base.SmoothingMode = smoothingMode;
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="FillRectangleAbs"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Uses its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c> rather than the shared <c>pen</c>/<c>solidBrush</c> fields, so — unlike the original, which conditionally skips disposing the shared <c>solidBrush</c> field — every resource created here is disposed unconditionally at the end.</summary>
+		internal void FillRectangleAbsResource(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment)
+		{
+			IBrush brush = null;
+			IBrush brush2 = null;
+			SmoothingMode smoothingMode = base.SmoothingMode;
+			base.SmoothingMode = SmoothingMode.None;
+			if (backColor.IsEmpty)
+			{
+				backColor = Color.White;
+			}
+			if (backGradientEndColor.IsEmpty)
+			{
+				backGradientEndColor = Color.White;
+			}
+			if (borderColor.IsEmpty)
+			{
+				borderColor = Color.White;
+				borderWidth = 0;
+			}
+			IPen pen = resourceFactory.CreatePen(borderColor, borderWidth);
+			pen.Alignment = penAlignment;
+			pen.DashStyle = GetPenStyle(borderStyle);
+			if (backGradientType == GradientType.None)
+			{
+				brush = resourceFactory.CreateSolidBrush(backColor);
+			}
+			else
+			{
+				brush = GetGradientBrushResource(rect, backColor, backGradientEndColor, backGradientType);
+			}
+			if (backHatchStyle != 0)
+			{
+				brush = GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
+			{
+				brush2 = brush;
+				brush = GetTextureBrushResource(backImage, backImageTranspColor, backImageMode, backColor);
+			}
+			RectangleF rectangleF = new RectangleF(rect.X + (float)borderWidth, rect.Y + (float)borderWidth, rect.Width - (float)(borderWidth * 2), rect.Height - (float)(borderWidth * 2));
+			rectangleF.Width += 1f;
+			rectangleF.Height += 1f;
+			if (backImage.Length > 0 && (backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled))
+			{
+				Image image = common.ImageLoader.LoadImage(backImage);
+				IImageDrawOptions imageAttributes = resourceFactory.CreateImageDrawOptions();
+				if (backImageTranspColor != Color.Empty)
+				{
+					imageAttributes.SetTransparentColor(backImageTranspColor);
+				}
+				RectangleF rectangleF2 = default(RectangleF);
+				rectangleF2.X = rectangleF.X;
+				rectangleF2.Y = rectangleF.Y;
+				rectangleF2.Width = rectangleF.Width;
+				rectangleF2.Height = rectangleF.Height;
+				if (backImageMode == ChartImageWrapMode.Unscaled)
+				{
+					SizeF size = default(SizeF);
+					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					rectangleF2.Width = size.Width;
+					rectangleF2.Height = size.Height;
+					if (rectangleF2.Width < rectangleF.Width)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.TopRight:
+						case ChartImageAlign.Right:
+						case ChartImageAlign.BottomRight:
+							rectangleF2.X = rectangleF.Right - rectangleF2.Width;
+							break;
+						case ChartImageAlign.Top:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.Center:
+							rectangleF2.X = rectangleF.X + (rectangleF.Width - rectangleF2.Width) / 2f;
+							break;
+						}
+					}
+					if (rectangleF2.Height < rectangleF.Height)
+					{
+						switch (backImageAlign)
+						{
+						case ChartImageAlign.BottomRight:
+						case ChartImageAlign.Bottom:
+						case ChartImageAlign.BottomLeft:
+							rectangleF2.Y = rectangleF.Bottom - rectangleF2.Height;
+							break;
+						case ChartImageAlign.Right:
+						case ChartImageAlign.Left:
+						case ChartImageAlign.Center:
+							rectangleF2.Y = rectangleF.Y + (rectangleF.Height - rectangleF2.Height) / 2f;
+							break;
+						}
+					}
+				}
+				FillRectangle(brush, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
+				DrawImage(resourceFactory.WrapImage(image), new Rectangle((int)Math.Round(rectangleF2.X), (int)Math.Round(rectangleF2.Y), (int)Math.Round(rectangleF2.Width), (int)Math.Round(rectangleF2.Height)), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+			}
+			else
+			{
+				if (brush2 != null && backImageTranspColor != Color.Empty)
+				{
+					FillRectangle(brush2, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
+				}
+				FillRectangle(brush, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
+			}
+			if (borderStyle != 0)
+			{
+				if (borderWidth > 1)
+				{
+					DrawRectangle(pen, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
+				}
+				else if (borderWidth == 1)
+				{
+					DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
+				}
+			}
+			brush?.Dispose();
+			brush2?.Dispose();
+			pen.Dispose();
 			base.SmoothingMode = smoothingMode;
 		}
 

@@ -845,7 +845,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					if (borderSkin.SkinStyle != 0 && Width > 20 && Height > 20)
 					{
-						chartGraph.FillRectangleAbs(new RectangleF(0f, 0f, Width - 1, Height - 1), borderSkin.PageColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, borderSkin.PageColor, 1, ChartDashStyle.Solid, PenAlignment.Inset);
+						chartGraph.FillRectangleAbsResource(new RectangleF(0f, 0f, Width - 1, Height - 1), borderSkin.PageColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, borderSkin.PageColor, 1, ChartDashStyle.Solid, PenAlignment.Inset);
 						if (chartGraph.ActiveRenderingType == RenderingType.Svg)
 						{
 							Bitmap bitmap = new Bitmap(Width, Height);
@@ -866,7 +866,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					else
 					{
-						chartGraph.FillRectangleAbs(new RectangleF(0f, 0f, Width - 1, Height - 1), BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Inset);
+						chartGraph.FillRectangleAbsResource(new RectangleF(0f, 0f, Width - 1, Height - 1), BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Inset);
 					}
 					common.EventsManager.OnBackPaint(this, new ChartPaintEventArgs(chartGraph, common, new ElementPosition(0f, 0f, 100f, 100f)));
 					foreach (ChartArea chartArea9 in chartAreas)

@@ -1358,7 +1358,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (!base.Area3DStyle.Enable3D || !requireAxes || chartAreaIsCurcular)
 				{
-					graph.FillRectangleRel(position, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, requireAxes ? Color.Empty : BorderColor, (!requireAxes) ? BorderWidth : 0, BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Outset, chartAreaIsCurcular, (chartAreaIsCurcular && CircularUsePolygons) ? CircularSectorsNumber : 0, base.Area3DStyle.Enable3D);
+					graph.FillRectangleRelResource(position, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, requireAxes ? Color.Empty : BorderColor, (!requireAxes) ? BorderWidth : 0, BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Outset, chartAreaIsCurcular, (chartAreaIsCurcular && CircularUsePolygons) ? CircularSectorsNumber : 0, base.Area3DStyle.Enable3D);
 				}
 				else
 				{
@@ -1367,7 +1367,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else if ((!base.Area3DStyle.Enable3D || !requireAxes || chartAreaIsCurcular) && BorderColor != Color.Empty && BorderWidth > 0)
 			{
-				graph.FillRectangleRel(position, Color.Transparent, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, BorderWidth, BorderStyle, Color.Empty, 0, PenAlignment.Outset, chartAreaIsCurcular, (chartAreaIsCurcular && CircularUsePolygons) ? CircularSectorsNumber : 0, base.Area3DStyle.Enable3D);
+				graph.FillRectangleRelResource(position, Color.Transparent, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, BorderWidth, BorderStyle, Color.Empty, 0, PenAlignment.Outset, chartAreaIsCurcular, (chartAreaIsCurcular && CircularUsePolygons) ? CircularSectorsNumber : 0, base.Area3DStyle.Enable3D);
 			}
 		}
 

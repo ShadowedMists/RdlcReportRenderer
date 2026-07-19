@@ -292,7 +292,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (imageName.Length == 0 && Chart.IsDesignMode())
 				{
-					graphics.FillRectangleRel(rectangleF, BackColor, BackHatchStyle, imageName, imageMode, imageTransparentColor, GetImageAlignment(Alignment), BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
+					graphics.FillRectangleRelResource(rectangleF, BackColor, BackHatchStyle, imageName, imageMode, imageTransparentColor, GetImageAlignment(Alignment), BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
 					using (Brush brush = new SolidBrush(TextColor))
 					{
 						StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic);
@@ -305,7 +305,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				else
 				{
-					graphics.FillRectangleRel(rectangleF, Color.Transparent, BackHatchStyle, imageName, imageMode, imageTransparentColor, GetImageAlignment(Alignment), BackGradientType, Color.Transparent, Color.Transparent, 0, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
+					graphics.FillRectangleRelResource(rectangleF, Color.Transparent, BackHatchStyle, imageName, imageMode, imageTransparentColor, GetImageAlignment(Alignment), BackGradientType, Color.Transparent, Color.Transparent, 0, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
 				}
 			}
 			if (Chart.chartPicture.common.ProcessModeRegions)

@@ -289,7 +289,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		protected virtual void DrawColumn2D(ChartGraphics graph, Axis vAxis, RectangleF rectSize, DataPoint point, Series ser)
 		{
-			graph.FillRectangleRel(rectSize, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(point), isVertical: true);
+			graph.FillRectangleRelResource(rectSize, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, ser.ShadowColor, ser.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(point), isVertical: true);
 		}
 
 		protected override LabelAlignmentTypes GetAutoLabelPosition(Series series, int pointIndex)

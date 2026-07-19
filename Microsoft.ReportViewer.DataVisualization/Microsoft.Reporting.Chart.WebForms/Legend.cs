@@ -2231,7 +2231,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (base.Common.ProcessModePaint)
 			{
 				chartGraph.StartAnimation();
-				chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, GetBorderSize(), BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Inset);
+				chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, GetBorderSize(), BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Inset);
 				chartGraph.StopAnimation();
 				base.Common.EventsManager.OnBackPaint(this, new ChartPaintEventArgs(chartGraph, base.Common, Position));
 			}
@@ -2468,7 +2468,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							r.Width -= rect.X - r.X;
 						}
 						r.Intersect(rect);
-						chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(r), legendCellColumn.HeaderBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
+						chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), legendCellColumn.HeaderBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
 						chartGraph.StopAnimation();
 					}
 					using (SolidBrush brush = new SolidBrush(legendCellColumn.HeaderColor))
@@ -2497,7 +2497,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (flag)
 			{
 				chartGraph.StartAnimation();
-				chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, GetBorderSize(), BorderStyle, Color.Empty, 0, PenAlignment.Inset);
+				chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, GetBorderSize(), BorderStyle, Color.Empty, 0, PenAlignment.Inset);
 				chartGraph.StopAnimation();
 			}
 			if (base.Common.ProcessModeRegions && !headerPosition.IsEmpty)
@@ -2525,7 +2525,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					chartGraph.StartAnimation();
 					Rectangle r = titlePosition;
 					r.Intersect(rect);
-					chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(r), TitleBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
+					chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), TitleBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
 					chartGraph.StopAnimation();
 				}
 				using (SolidBrush brush = new SolidBrush(TitleColor))
@@ -2552,7 +2552,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (!TitleBackColor.IsEmpty || TitleSeparator != 0)
 				{
 					chartGraph.StartAnimation();
-					chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, GetBorderSize(), BorderStyle, Color.Empty, 0, PenAlignment.Inset);
+					chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(Rectangle.Round(chartGraph.GetAbsoluteRectangle(Position.ToRectangleF()))), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, BorderColor, GetBorderSize(), BorderStyle, Color.Empty, 0, PenAlignment.Inset);
 					chartGraph.StopAnimation();
 				}
 			}
@@ -2662,21 +2662,21 @@ namespace Microsoft.Reporting.Chart.WebForms
 			case LegendSeparatorType.GradientLine:
 				if (horizontal)
 				{
-					chartGraph.FillRectangleAbs(new RectangleF(rectangleF.Left, rectangleF.Bottom - 1f, rectangleF.Width, 0f), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.VerticalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
+					chartGraph.FillRectangleAbsResource(new RectangleF(rectangleF.Left, rectangleF.Bottom - 1f, rectangleF.Width, 0f), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.VerticalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
 				}
 				else
 				{
-					chartGraph.FillRectangleAbs(new RectangleF(rectangleF.Right - 1f, rectangleF.Top, 0f, rectangleF.Height), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.HorizontalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
+					chartGraph.FillRectangleAbsResource(new RectangleF(rectangleF.Right - 1f, rectangleF.Top, 0f, rectangleF.Height), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.HorizontalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
 				}
 				break;
 			case LegendSeparatorType.ThickGradientLine:
 				if (horizontal)
 				{
-					chartGraph.FillRectangleAbs(new RectangleF(rectangleF.Left, rectangleF.Bottom - 2f, rectangleF.Width, 1f), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.VerticalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
+					chartGraph.FillRectangleAbsResource(new RectangleF(rectangleF.Left, rectangleF.Bottom - 2f, rectangleF.Width, 1f), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.VerticalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
 				}
 				else
 				{
-					chartGraph.FillRectangleAbs(new RectangleF(rectangleF.Right - 2f, rectangleF.Top, 1f, rectangleF.Height), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.HorizontalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
+					chartGraph.FillRectangleAbsResource(new RectangleF(rectangleF.Right - 2f, rectangleF.Top, 1f, rectangleF.Height), Color.Transparent, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.HorizontalCenter, color, Color.Empty, 0, ChartDashStyle.NotSet, PenAlignment.Inset);
 				}
 				break;
 			}
