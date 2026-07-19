@@ -33,6 +33,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		void AddCurve(PointF[] points, float tension);
 
+		void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension);
+
 		void AddClosedCurve(PointF[] points);
 
 		void AddClosedCurve(PointF[] points, float tension);

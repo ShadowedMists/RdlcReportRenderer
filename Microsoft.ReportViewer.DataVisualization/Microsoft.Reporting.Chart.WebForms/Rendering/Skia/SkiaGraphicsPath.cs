@@ -77,6 +77,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void AddCurve(PointF[] points, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void AddClosedCurve(PointF[] points) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void AddClosedCurve(PointF[] points, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");

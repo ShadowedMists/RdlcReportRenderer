@@ -44,6 +44,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void AddCurve(PointF[] points, float tension) => NativePath.AddCurve(points, tension);
 
+		public void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension) => NativePath.AddCurve(points, offset, numberOfSegments, tension);
+
 		public void AddClosedCurve(PointF[] points) => NativePath.AddClosedCurve(points);
 
 		public void AddClosedCurve(PointF[] points, float tension) => NativePath.AddClosedCurve(points, tension);
