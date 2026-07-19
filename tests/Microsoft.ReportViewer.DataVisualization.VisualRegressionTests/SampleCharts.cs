@@ -323,5 +323,187 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises PointChart.DrawLabels (PointChart.cs), which now bridges the concrete
+        /// point.Font/StringFormat into IChartFont/ITextFormat right at the
+        /// DrawPointLabelStringRel call site (C5/C6 real-caller migration) — not reached by any
+        /// other sample chart, none of which enable point labels.
+        /// </summary>
+        internal static byte[] RenderPointChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Readings");
+            series.ChartType = SeriesChartType.Point;
+            series.ShowLabelAsValue = true;
+            series.MarkerStyle = MarkerStyle.Circle;
+            series.MarkerSize = 8;
+            series.Points.AddXY(1, 10);
+            series.Points.AddXY(2, 14);
+            series.Points.AddXY(3, 11);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises BarChart.DrawLabelsAndMarkers (BarChart.cs) with the same
+        /// Font/StringFormat -> IChartFont/ITextFormat bridge at its DrawPointLabelStringRel call.
+        /// </summary>
+        internal static byte[] RenderBarChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.ShowLabelAsValue = true;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises BarChart.DrawLabels3D (BarChart.cs), the 3D counterpart of the label call
+        /// converted above, using a PointF (not RectangleF) DrawPointLabelStringRel overload.
+        /// </summary>
+        internal static byte[] RenderBarChart3DWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].Area3DStyle.Enable3D = true;
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.ShowLabelAsValue = true;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises ErrorBarChart.DrawLabel (ErrorBarChart.cs) with the same bridge pattern.
+        /// </summary>
+        internal static byte[] RenderErrorBarChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Measurements");
+            series.ChartType = SeriesChartType.ErrorBar;
+            series.ShowLabelAsValue = true;
+            series.Points.AddXY(1, 10, 8, 12);
+            series.Points.AddXY(2, 14, 11, 17);
+            series.Points.AddXY(3, 11, 9, 13);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises BoxPlotChart.DrawLabel (BoxPlotChart.cs) with the same bridge pattern.
+        /// </summary>
+        internal static byte[] RenderBoxPlotChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Distribution");
+            series.ChartType = SeriesChartType.BoxPlot;
+            series.ShowLabelAsValue = true;
+            series["BoxPlotSeries"] = "Values";
+            var valuesSeries = chart.Series.Add("Values");
+            valuesSeries.ChartType = SeriesChartType.Point;
+            valuesSeries.ShowInLegend = false;
+            valuesSeries.Points.AddY(5);
+            valuesSeries.Points.AddY(6);
+            valuesSeries.Points.AddY(7);
+            valuesSeries.Points.AddY(8);
+            valuesSeries.Points.AddY(9);
+            valuesSeries.Points.AddY(10);
+            series.Points.AddY(0, 0, 0, 0, 0, 0);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises StockChart.DrawLabel (StockChart.cs) with the same bridge pattern — the
+        /// existing StockChartWithTriangleMarks baseline never enables ShowLabelAsValue, so its
+        /// DrawPointLabelStringRel call site was never actually exercised before now.
+        /// </summary>
+        internal static byte[] RenderStockChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Prices");
+            series.ChartType = SeriesChartType.Stock;
+            series.ShowLabelAsValue = true;
+            series.Points.AddY(12, 8, 9, 11);
+            series.Points.AddY(15, 10, 11, 13);
+            series.Points.AddY(14, 9, 13, 10);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises TreeMapChart's RenderSeriesLabel/RenderDataPointLabel (TreeMapChart.cs),
+        /// which use DrawStringRel/DrawPointLabelStringRel with the same bridge pattern.
+        /// </summary>
+        internal static byte[] RenderTreeMapChartWithLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sizes");
+            series.ChartType = SeriesChartType.TreeMap;
+            series.Points.AddY(10);
+            series.Points.AddY(20);
+            series.Points.AddY(30);
+            series.Points[0].Label = "A";
+            series.Points[1].Label = "B";
+            series.Points[2].Label = "C";
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }

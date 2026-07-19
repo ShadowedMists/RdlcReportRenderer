@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -452,7 +453,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Height += labelSize.Height / 8f;
 				size.Width += size.Width / (float)text.Length;
 				empty = PointChart.GetLabelPosition(graph, position, size, format, adjustForDrawing: true);
-				graph.DrawPointLabelStringRel(common, text, point.Font, new SolidBrush(point.FontColor), position, format, angle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex - 1);
+				IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedFormat.Alignment = format.Alignment;
+				bridgedFormat.LineAlignment = format.LineAlignment;
+				bridgedFormat.FormatFlags = format.FormatFlags;
+				bridgedFormat.Trimming = format.Trimming;
+				graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, bridgedFormat, angle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex - 1);
 			}
 		}
 
