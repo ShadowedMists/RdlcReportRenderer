@@ -670,7 +670,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							if (!axis.chartArea.Area3DStyle.Enable3D)
 							{
 								graph.StartAnimation();
-								graph.FillRectangleRel(empty, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, Color.Empty, 0, PenAlignment.Inset);
+								graph.FillRectangleRelResource(empty, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, Color.Empty, 0, PenAlignment.Inset);
 								graph.StopAnimation();
 							}
 							else

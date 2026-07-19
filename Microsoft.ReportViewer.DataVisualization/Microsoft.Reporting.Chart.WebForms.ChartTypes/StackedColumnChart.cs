@@ -269,7 +269,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 									graph.StartAnimation();
 									if (!shadow || num9 != 0)
 									{
-										graph.FillRectangleRel(empty, (!shadow) ? dataPoint.Color : Color.Transparent, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, (!shadow) ? dataPoint.BackGradientEndColor : Color.Transparent, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, item2.ShadowColor, num9, PenAlignment.Inset, (!shadow) ? ChartGraphics.GetBarDrawingStyle(dataPoint) : BarDrawingStyle.Default, isVertical: true);
+										graph.FillRectangleRelResource(empty, (!shadow) ? dataPoint.Color : Color.Transparent, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, (!shadow) ? dataPoint.BackGradientEndColor : Color.Transparent, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, item2.ShadowColor, num9, PenAlignment.Inset, (!shadow) ? ChartGraphics.GetBarDrawingStyle(dataPoint) : BarDrawingStyle.Default, isVertical: true);
 									}
 									graph.StopAnimation();
 									graph.EndHotRegion();

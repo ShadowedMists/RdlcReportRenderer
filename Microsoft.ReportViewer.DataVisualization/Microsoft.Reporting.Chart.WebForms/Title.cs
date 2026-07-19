@@ -825,7 +825,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				chartGraph.StartHotRegion(href, toolTip);
 				chartGraph.StartAnimation();
-				chartGraph.FillRectangleRel(rectangleF, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Inset);
+				chartGraph.FillRectangleRelResource(rectangleF, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, ShadowColor, ShadowOffset, PenAlignment.Inset);
 				chartGraph.StopAnimation();
 				chartGraph.EndHotRegion();
 			}
@@ -854,7 +854,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				if (true)
 				{
-					chartGraph.FillRectangleRel(rectF, Color.FromArgb(0, Color.White), ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, BackImageTransparentColor, BackImageAlign, GradientType.None, BackGradientEndColor, Color.Transparent, 0, BorderStyle, Color.Transparent, 0, PenAlignment.Inset);
+					chartGraph.FillRectangleRelResource(rectF, Color.FromArgb(0, Color.White), ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, BackImageTransparentColor, BackImageAlign, GradientType.None, BackGradientEndColor, Color.Transparent, 0, BorderStyle, Color.Transparent, 0, PenAlignment.Inset);
 				}
 				chartGraph.EndHotRegion();
 			}

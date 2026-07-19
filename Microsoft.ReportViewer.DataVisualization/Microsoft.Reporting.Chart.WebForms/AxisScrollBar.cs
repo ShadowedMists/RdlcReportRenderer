@@ -262,7 +262,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 			}
 			RectangleF scrollBarRect = GetScrollBarRect();
-			graph.FillRectangleRel(scrollBarRect, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, num, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
+			graph.FillRectangleRelResource(scrollBarRect, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, num, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
 			PaintScrollBarConnectionRect(graph, scrollBarRect, num);
 			SizeF size = new SizeF(num, num);
 			size = graph.GetRelativeSize(size);
@@ -303,13 +303,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				rectF.X = scrollBarRect.X - num;
 				rectF.Width = num;
-				graph.FillRectangleRel(rectF, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, borderWidth, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
+				graph.FillRectangleRelResource(rectF, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, borderWidth, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
 			}
 			if (num2 > 0f)
 			{
 				rectF.X = scrollBarRect.Right;
 				rectF.Width = num2;
-				graph.FillRectangleRel(rectF, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, borderWidth, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
+				graph.FillRectangleRelResource(rectF, backCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, lineCurrentColor, borderWidth, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
 			}
 		}
 
@@ -322,7 +322,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Color gradientColor = ChartGraphics.GetGradientColor(buttonCurrentColor, Color.Black, 0.5);
 			Color gradientColor2 = ChartGraphics.GetGradientColor(buttonCurrentColor, Color.Black, 0.8);
 			Color gradientColor3 = ChartGraphics.GetGradientColor(buttonCurrentColor, Color.White, 0.5);
-			graph.FillRectangleRel(buttonRect, buttonCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, gradientColor, pressedState ? 1 : 0, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
+			graph.FillRectangleRelResource(buttonRect, buttonCurrentColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, gradientColor, pressedState ? 1 : 0, ChartDashStyle.Solid, Color.Empty, 0, PenAlignment.Outset);
 			bool flag = Size <= 12.0;
 			if (!pressedState)
 			{

@@ -490,7 +490,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (!flag)
 			{
-				graphics.FillRectangleRel(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
+				graphics.FillRectangleRelResource(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
 				graphicsPath = new GraphicsPath();
 				graphicsPath.AddRectangle(graphics.GetAbsoluteRectangle(rectanglePosition));
 			}
@@ -568,7 +568,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private GraphicsPath DrawPerspectiveCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
 		{
-			graphics.FillRectangleRel(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, 0, PenAlignment.Center);
+			graphics.FillRectangleRelResource(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, 0, PenAlignment.Center);
 			GraphicsPath graphicsPath = new GraphicsPath();
 			graphicsPath.AddRectangle(graphics.GetAbsoluteRectangle(rectanglePosition));
 			DrawText(graphics, rectanglePosition, noSpacingForCenteredText: false, getTextPosition: false);
@@ -689,7 +689,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			if (drawRectangle)
 			{
-				graphics.FillRectangleRel(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
+				graphics.FillRectangleRelResource(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
 				DrawText(graphics, rectanglePosition, noSpacingForCenteredText: false, getTextPosition: false);
 			}
 			else

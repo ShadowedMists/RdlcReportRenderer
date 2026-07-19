@@ -233,7 +233,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							}
 							graph.StartHotRegion(point);
 							graph.StartAnimation();
-							graph.FillRectangleRel(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item2.ShadowColor, item2.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(point), isVertical: false);
+							graph.FillRectangleRelResource(empty, point.Color, point.BackHatchStyle, point.BackImage, point.BackImageMode, point.BackImageTransparentColor, point.BackImageAlign, point.BackGradientType, point.BackGradientEndColor, point.BorderColor, point.BorderWidth, point.BorderStyle, item2.ShadowColor, item2.ShadowOffset, PenAlignment.Inset, ChartGraphics.GetBarDrawingStyle(point), isVertical: false);
 							graph.StopAnimation();
 							graph.EndHotRegion();
 							if (flag5)

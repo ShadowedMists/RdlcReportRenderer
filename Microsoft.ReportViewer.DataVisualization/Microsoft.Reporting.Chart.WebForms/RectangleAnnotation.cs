@@ -169,7 +169,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (isRectVisible && Chart.chartPicture.common.ProcessModePaint)
 				{
-					graphics.FillRectangleRel(rectF, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center, isEllipse, 1, circle3D: false);
+					graphics.FillRectangleRelResource(rectF, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center, isEllipse, 1, circle3D: false);
 				}
 				base.Paint(chart, graphics);
 			}

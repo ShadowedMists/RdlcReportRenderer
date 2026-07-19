@@ -710,7 +710,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				RectangleF relativeRectangle = chartGraph.GetRelativeRectangle(cellPositionWithMargins);
 				if (!cellBackColor.IsEmpty)
 				{
-					chartGraph.FillRectangleRel(relativeRectangle, cellBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
+					chartGraph.FillRectangleRelResource(relativeRectangle, cellBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
 				}
 				GetLegend().Common.EventsManager.OnBackPaint(this, new ChartPaintEventArgs(chartGraph, GetLegend().Common, new ElementPosition(relativeRectangle.X, relativeRectangle.Y, relativeRectangle.Width, relativeRectangle.Height)));
 				switch (CellType)
@@ -949,7 +949,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (legendItem.Style == LegendImageStyle.Rectangle)
 				{
 					int num6 = (int)Math.Round(2f * chartGraph.Graphics.DpiX / 96f);
-					chartGraph.FillRectangleRel(chartGraph.GetRelativeRectangle(r), legendItem.Color, legendItem.BackHatchStyle, legendItem.Image, legendItem.backImageMode, legendItem.BackImageTransparentColor, legendItem.backImageAlign, legendItem.backGradientType, legendItem.backGradientEndColor, legendItem.borderColor, (legendItem.BorderWidth > num6) ? num6 : legendItem.BorderWidth, legendItem.BorderStyle, legendItem.ShadowColor, (legendItem.ShadowOffset > num4) ? num4 : legendItem.ShadowOffset, PenAlignment.Inset);
+					chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), legendItem.Color, legendItem.BackHatchStyle, legendItem.Image, legendItem.backImageMode, legendItem.BackImageTransparentColor, legendItem.backImageAlign, legendItem.backGradientType, legendItem.backGradientEndColor, legendItem.borderColor, (legendItem.BorderWidth > num6) ? num6 : legendItem.BorderWidth, legendItem.BorderStyle, legendItem.ShadowColor, (legendItem.ShadowOffset > num4) ? num4 : legendItem.ShadowOffset, PenAlignment.Inset);
 				}
 				if (legendItem.Style == LegendImageStyle.Line)
 				{
