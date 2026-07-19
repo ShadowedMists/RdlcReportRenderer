@@ -203,5 +203,31 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises StockChart's Triangle open/close mark style (StockChart.cs), which builds a
+        /// GraphicsPath + SolidBrush that no other sample chart reaches (the default Candlestick
+        /// style takes a different, already-interface-typed FillRectangleRel path).
+        /// </summary>
+        internal static byte[] RenderStockChartWithTriangleMarks()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Prices");
+            series.ChartType = SeriesChartType.Stock;
+            series["OpenCloseStyle"] = "Triangle";
+            series.Points.AddY(12, 8, 9, 11);
+            series.Points.AddY(15, 10, 11, 13);
+            series.Points.AddY(14, 9, 13, 10);
+            series.Points.AddY(18, 12, 10, 16);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }
