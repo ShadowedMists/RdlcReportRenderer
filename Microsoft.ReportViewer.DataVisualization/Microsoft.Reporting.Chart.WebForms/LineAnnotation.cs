@@ -372,7 +372,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				graphics.pen.StartCap = lineCap;
 				graphics.pen.EndCap = lineCap2;
 			}
-			PaintSelectionHandles(graphics, selectionRect, null);
+			PaintSelectionHandles(graphics, selectionRect, (GraphicsPath)null);
 		}
 	}
 }

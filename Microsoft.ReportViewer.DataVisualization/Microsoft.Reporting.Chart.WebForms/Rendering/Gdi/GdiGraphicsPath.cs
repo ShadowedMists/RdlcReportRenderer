@@ -46,6 +46,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void AddClosedCurve(PointF[] points) => NativePath.AddClosedCurve(points);
 
+		public void AddClosedCurve(PointF[] points, float tension) => NativePath.AddClosedCurve(points, tension);
+
 		public void AddEllipse(float x, float y, float width, float height) => NativePath.AddEllipse(x, y, width, height);
 
 		public void AddEllipse(RectangleF rect) => NativePath.AddEllipse(rect);

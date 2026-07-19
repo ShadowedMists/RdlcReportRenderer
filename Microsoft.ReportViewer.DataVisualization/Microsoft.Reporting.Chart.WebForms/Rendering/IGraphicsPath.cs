@@ -35,6 +35,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		void AddClosedCurve(PointF[] points);
 
+		void AddClosedCurve(PointF[] points, float tension);
+
 		void AddEllipse(float x, float y, float width, float height);
 
 		void AddEllipse(RectangleF rect);

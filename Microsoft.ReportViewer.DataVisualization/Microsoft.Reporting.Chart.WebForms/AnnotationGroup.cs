@@ -403,7 +403,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, rectangleF, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation, string.Empty);
 				}
-				PaintSelectionHandles(graphics, rectangleF, null);
+				PaintSelectionHandles(graphics, rectangleF, (System.Drawing.Drawing2D.GraphicsPath)null);
 			}
 		}
 	}

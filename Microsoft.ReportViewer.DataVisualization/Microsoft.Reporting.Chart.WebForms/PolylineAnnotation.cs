@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System.ComponentModel;
 using System.Drawing;
@@ -306,7 +307,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				array[i].X = absoluteRectangle.X + array[i].X * num;
 				array[i].Y = absoluteRectangle.Y + array[i].Y * num2;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath(array, pathTypes);
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath(array, pathTypes);
 			bool flag = false;
 			LineCap lineCap = LineCap.Flat;
 			LineCap lineCap2 = LineCap.Flat;
@@ -380,23 +381,22 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (Chart.chartPicture.common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath2 = null;
 				if (isPolygon)
 				{
-					graphicsPath2 = graphicsPath;
+					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
 				}
 				else
 				{
-					graphicsPath2 = new GraphicsPath();
-					graphicsPath2.AddPath(graphicsPath, connect: false);
+					GraphicsPath graphicsPath2 = new GraphicsPath();
+					graphicsPath2.AddPath(new GraphicsPath(graphicsPath.PathPoints, graphicsPath.PathTypes), connect: false);
 					using (Pen pen = (Pen)graphics.pen.Clone())
 					{
 						pen.DashStyle = DashStyle.Solid;
 						pen.Width += 2f;
 						ChartGraphics.Widen(graphicsPath2, pen);
 					}
+					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath2, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
 				}
-				Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath2, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
 			}
 			if (flag)
 			{

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -227,7 +228,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			float num3 = absoluteRectangle.X + absoluteRectangle.Width / 2f;
 			graph.StartHotRegion(point);
 			graph.StartAnimation();
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			if (startWidth > 0f)
 			{
 				graphicsPath.AddLine(num3 - startWidth / 2f, location, num3, location + num);
@@ -250,7 +251,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				graphicsPath.Dispose();
 			}
-			graphicsPath = new GraphicsPath();
+			graphicsPath = graph.ResourceFactory.CreatePath();
 			if (startWidth > 0f)
 			{
 				graphicsPath.AddLine(num3 + startWidth / 2f, location, num3, location + num);
@@ -282,7 +283,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					new PointF(num3 - startWidth / 2f, location),
 					new PointF(num3, location - num)
 				};
-				GraphicsPath graphicsPath2 = new GraphicsPath();
+				IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 				graphicsPath2.AddLines(points);
 				graphicsPath2.CloseAllFigures();
 				if (common.ProcessModePaint)
@@ -307,7 +308,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					new PointF(num3 - endWidth / 2f, location + height),
 					new PointF(num3, location + height - num2)
 				};
-				GraphicsPath graphicsPath3 = new GraphicsPath();
+				IGraphicsPath graphicsPath3 = graph.ResourceFactory.CreatePath();
 				graphicsPath3.AddLines(points2);
 				graphicsPath3.CloseAllFigures();
 				if (common.ProcessModePaint)
@@ -499,7 +500,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					new PointF(num5 - startWidth / 2f, location),
 					new PointF(num5, location - num3)
 				};
-				GraphicsPath graphicsPath5 = new GraphicsPath();
+				IGraphicsPath graphicsPath5 = graph.ResourceFactory.CreatePath();
 				graphicsPath5.AddClosedCurve(points3, tension);
 				if (common.ProcessModePaint)
 				{
@@ -523,7 +524,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					new PointF(num5 - endWidth / 2f, location + height),
 					new PointF(num5, location + height - num4)
 				};
-				GraphicsPath graphicsPath6 = new GraphicsPath();
+				IGraphicsPath graphicsPath6 = graph.ResourceFactory.CreatePath();
 				graphicsPath6.AddClosedCurve(points4, tension);
 				if (common.ProcessModePaint)
 				{

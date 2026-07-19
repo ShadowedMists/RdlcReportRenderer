@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -1108,6 +1109,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		internal abstract void Paint(Chart chart, ChartGraphics graphics);
+
+		/// <summary>Interface-typed counterpart of <see cref="PaintSelectionHandles(ChartGraphics, RectangleF, GraphicsPath)"/> (Milestone B2 — see chart-gdi-type-abstraction.md). This method only reads <c>PathPoints</c>/<c>PathTypes</c>, both already exposed on <see cref="IGraphicsPath"/>, so it rebuilds a concrete path from those rather than needing its own implementation.</summary>
+		internal void PaintSelectionHandles(ChartGraphics chartGraphics, RectangleF rect, IGraphicsPath path)
+		{
+			PaintSelectionHandles(chartGraphics, rect, (path == null) ? null : new GraphicsPath(path.PathPoints, path.PathTypes));
+		}
 
 		internal virtual void PaintSelectionHandles(ChartGraphics chartGraphics, RectangleF rect, GraphicsPath path)
 		{

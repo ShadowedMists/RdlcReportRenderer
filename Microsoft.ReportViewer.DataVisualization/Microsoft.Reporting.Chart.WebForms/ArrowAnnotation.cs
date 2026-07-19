@@ -1,8 +1,10 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
@@ -109,7 +111,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			RectangleF rectangleF = new RectangleF(location, new SizeF(pointF.X - location.X, pointF.Y - location.Y));
 			if (!float.IsNaN(location.X) && !float.IsNaN(location.Y) && !float.IsNaN(pointF.X) && !float.IsNaN(pointF.Y))
 			{
-				GraphicsPath arrowPath = GetArrowPath(graphics, rectangleF);
+				IGraphicsPath arrowPath = GetArrowPath(graphics, rectangleF);
 				if (Chart.chartPicture.common.ProcessModePaint)
 				{
 					graphics.DrawPathAbs(arrowPath, BackColor.IsEmpty ? Color.White : BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, PenAlignment.Center, ShadowOffset, ShadowColor);
@@ -118,11 +120,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, arrowPath, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
 				}
-				PaintSelectionHandles(graphics, rectangleF, null);
+				PaintSelectionHandles(graphics, rectangleF, (GraphicsPath)null);
 			}
 		}
 
-		private GraphicsPath GetArrowPath(ChartGraphics graphics, RectangleF position)
+		private IGraphicsPath GetArrowPath(ChartGraphics graphics, RectangleF position)
 		{
 			RectangleF absoluteRectangle = graphics.GetAbsoluteRectangle(position);
 			PointF location = absoluteRectangle.Location;
@@ -130,7 +132,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			float num = pointF.X - location.X;
 			float num2 = pointF.Y - location.Y;
 			float num3 = (float)Math.Sqrt(num * num + num2 * num2);
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 			PointF[] array = null;
 			float num4 = 2.1f;
 			if (ArrowStyle == ArrowStyle.Simple)
@@ -188,12 +190,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				num6 += 180f;
 			}
-			using (Matrix matrix = new Matrix())
-			{
-				matrix.RotateAt(num6, location);
-				graphicsPath.Transform(matrix);
-				return graphicsPath;
-			}
+			graphicsPath.Transform(Matrix3x2.Identity.RotateAt(num6, location));
+			return graphicsPath;
 		}
 	}
 }

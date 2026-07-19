@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -300,6 +301,19 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>
+		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Rebuilds a concrete <see cref="GraphicsPath"/>
+		/// from <paramref name="path"/>'s already-interface-exposed <c>PathPoints</c>/<c>PathTypes</c> rather
+		/// than casting to a backend-specific adapter type — <see cref="HotRegion"/>'s storage and
+		/// <see cref="CheckHotRegions"/>'s hit-testing (which uses <see cref="GraphicsPathIterator"/>, itself
+		/// GDI+-only with no interface equivalent) are unchanged and stay concrete.
+		/// </summary>
+		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
+		{
+			AddHotRegion(new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
+		}
+
 		internal void AddHotRegion(int insertIndex, GraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
@@ -443,6 +457,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 				hotRegion.RelativeCoordinates = relativePath;
 				regionList.Add(hotRegion);
 			}
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, string, string, string, object, ChartElementType)"/> (Milestone B2 — see remarks on the other interface-typed overload above).</summary>
+		internal void AddHotRegion(ChartGraphics graph, IGraphicsPath path, bool relativePath, string toolTip, string hRef, string mapAreaAttributes, object selectedObject, ChartElementType type)
+		{
+			AddHotRegion(graph, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, toolTip, hRef, mapAreaAttributes, selectedObject, type);
 		}
 
 		internal void AddHotRegion(RectangleF rectArea, object selectedObject, ChartElementType type, bool relativeCoordinates)
