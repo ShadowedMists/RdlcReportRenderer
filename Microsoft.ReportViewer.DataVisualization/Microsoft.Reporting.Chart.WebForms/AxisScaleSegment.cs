@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -233,18 +234,18 @@ namespace Microsoft.Reporting.Chart.WebForms
 		internal void PaintBreakLine(ChartGraphics graph, AxisScaleSegment nextSegment)
 		{
 			RectangleF breakLinePosition = GetBreakLinePosition(graph, nextSegment);
-			GraphicsPath breakLinePath = GetBreakLinePath(breakLinePosition, top: true);
-			GraphicsPath graphicsPath = null;
+			IGraphicsPath breakLinePath = GetBreakLinePath(graph, breakLinePosition, top: true);
+			IGraphicsPath graphicsPath = null;
 			if (breakLinePosition.Width > 0f && breakLinePosition.Height > 0f)
 			{
-				graphicsPath = GetBreakLinePath(breakLinePosition, top: false);
-				using (GraphicsPath graphicsPath2 = new GraphicsPath())
+				graphicsPath = GetBreakLinePath(graph, breakLinePosition, top: false);
+				using (IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath())
 				{
 					graphicsPath2.AddPath(breakLinePath, connect: true);
 					graphicsPath2.Reverse();
 					graphicsPath2.AddPath(graphicsPath, connect: true);
 					graphicsPath2.CloseAllFigures();
-					using (Brush brush = GetChartFillBrush(graph))
+					using (IBrush brush = GetChartFillBrush(graph))
 					{
 						graph.FillPath(brush, graphicsPath2);
 						if (axis.chartArea.ShadowOffset != 0 && !axis.chartArea.ShadowColor.IsEmpty)
@@ -267,7 +268,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							graph.FillRectangle(brush, rect);
 							using (GraphicsPath graphicsPath3 = new GraphicsPath())
 							{
-								graphicsPath3.AddPath(breakLinePath, connect: false);
+								graphicsPath3.AddPath(new GraphicsPath(breakLinePath.PathPoints, breakLinePath.PathTypes), connect: false);
 								float val = axis.chartArea.ShadowOffset;
 								val = ((axis.AxisPosition != AxisPosition.Right && axis.AxisPosition != 0) ? Math.Min(val, breakLinePosition.Width) : Math.Min(val, breakLinePosition.Height));
 								int num = (int)((float)(int)axis.chartArea.ShadowColor.A / val);
@@ -310,7 +311,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (axis.ScaleBreakStyle.BreakLineType != 0)
 			{
-				using (Pen pen2 = new Pen(axis.ScaleBreakStyle.LineColor, axis.ScaleBreakStyle.LineWidth))
+				using (IPen pen2 = graph.ResourceFactory.CreatePen(axis.ScaleBreakStyle.LineColor, axis.ScaleBreakStyle.LineWidth))
 				{
 					pen2.DashStyle = graph.GetPenStyle(axis.ScaleBreakStyle.LineStyle);
 					graph.DrawPath(pen2, breakLinePath);
@@ -329,25 +330,27 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		private Brush GetChartFillBrush(ChartGraphics graph)
+		/// <summary>Interface-typed counterpart of the original <c>GetChartFillBrush</c> (Milestone B2 — see chart-gdi-type-abstraction.md). Uses the <c>*Resource</c> brush-getter siblings and <c>resourceFactory.CreateSolidBrush</c> instead of concrete GDI+ brushes.</summary>
+		private IBrush GetChartFillBrush(ChartGraphics graph)
 		{
 			Chart chart = axis.chartArea.Common.Chart;
-			Brush brush = null;
-			brush = ((chart.BackGradientType != 0) ? graph.GetGradientBrush(new RectangleF(0f, 0f, chart.chartPicture.Width - 1, chart.chartPicture.Height - 1), chart.BackColor, chart.BackGradientEndColor, chart.BackGradientType) : new SolidBrush(chart.BackColor));
+			IBrush brush = null;
+			brush = ((chart.BackGradientType != 0) ? graph.GetGradientBrushResource(new RectangleF(0f, 0f, chart.chartPicture.Width - 1, chart.chartPicture.Height - 1), chart.BackColor, chart.BackGradientEndColor, chart.BackGradientType) : graph.ResourceFactory.CreateSolidBrush(chart.BackColor));
 			if (chart.BackHatchStyle != 0)
 			{
-				brush = graph.GetHatchBrush(chart.BackHatchStyle, chart.BackColor, chart.BackGradientEndColor);
+				brush = graph.GetHatchBrushResource(chart.BackHatchStyle, chart.BackColor, chart.BackGradientEndColor);
 			}
 			if (chart.BackImage.Length > 0 && chart.BackImageMode != ChartImageWrapMode.Unscaled && chart.BackImageMode != ChartImageWrapMode.Scaled)
 			{
-				brush = graph.GetTextureBrush(chart.BackImage, chart.BackImageTransparentColor, chart.BackImageMode, chart.BackColor);
+				brush = graph.GetTextureBrushResource(chart.BackImage, chart.BackImageTransparentColor, chart.BackImageMode, chart.BackColor);
 			}
 			return brush;
 		}
 
-		private GraphicsPath GetBreakLinePath(RectangleF breakLinePosition, bool top)
+		/// <summary>Interface-typed counterpart of the original <c>GetBreakLinePath</c> (Milestone B2). Needed <see cref="IGraphicsPath.AddCurve(PointF[], int, int, float)"/> — a real, previously-missing overload (GDI+'s offset/count/tension variant), added to the interface alongside this conversion.</summary>
+		private IGraphicsPath GetBreakLinePath(ChartGraphics graph, RectangleF breakLinePosition, bool top)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			if (axis.ScaleBreakStyle.BreakLineType == BreakLineType.Wave)
 			{
 				PointF[] array = null;

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -243,6 +244,64 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="FillPieCurve(ChartArea, DataPoint, Brush, Pen, PointF, PointF, PointF, PointF, PointF, PointF, PointF, PointF, float, float, int)"/> (Milestone B2 — see chart-gdi-type-abstraction.md; coexists until <c>PieChart.cs</c>'s callers migrate). Its local <c>graphicsPath</c> only ever uses <c>AddLine</c>/<c>AddArc</c>, both on <see cref="IGraphicsPath"/>, and both consuming <c>HotRegionsList.AddHotRegion</c> overloads already have interface-typed siblings.</summary>
+		internal void FillPieCurve(ChartArea area, DataPoint point, IBrush brush, IPen pen, PointF topFirstRectPoint, PointF topSecondRectPoint, PointF bottomFirstRectPoint, PointF bottomSecondRectPoint, PointF topFirstPoint, PointF topSecondPoint, PointF bottomFirstPoint, PointF bottomSecondPoint, float startAngle, float sweepAngle, int pointIndex)
+		{
+			CommonElements common = area.Common;
+			IGraphicsPath graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+			RectangleF rectangleF = default(RectangleF);
+			rectangleF.X = topFirstRectPoint.X;
+			rectangleF.Y = topFirstRectPoint.Y;
+			rectangleF.Height = topSecondRectPoint.Y - topFirstRectPoint.Y;
+			rectangleF.Width = topSecondRectPoint.X - topFirstRectPoint.X;
+			RectangleF rectangleF2 = default(RectangleF);
+			rectangleF2.X = bottomFirstRectPoint.X;
+			rectangleF2.Y = bottomFirstRectPoint.Y;
+			rectangleF2.Height = bottomSecondRectPoint.Y - bottomFirstRectPoint.Y;
+			rectangleF2.Width = bottomSecondRectPoint.X - bottomFirstRectPoint.X;
+			double correction = rectangleF.Height / rectangleF.Width;
+			float num = AngleCorrection(startAngle + sweepAngle, correction, area.Area3DStyle.XAngle);
+			startAngle = AngleCorrection(startAngle, correction, area.Area3DStyle.XAngle);
+			sweepAngle = num - startAngle;
+			graphicsPath.AddLine(topFirstPoint, bottomFirstPoint);
+			if (rectangleF2.Height <= 0f)
+			{
+				graphicsPath.AddLine(bottomFirstPoint.X, bottomFirstPoint.Y, bottomSecondPoint.X, bottomSecondPoint.Y);
+			}
+			else
+			{
+				graphicsPath.AddArc(rectangleF2.X, rectangleF2.Y, rectangleF2.Width, rectangleF2.Height, startAngle, sweepAngle);
+			}
+			graphicsPath.AddLine(bottomSecondPoint, topSecondPoint);
+			if (rectangleF.Height <= 0f)
+			{
+				graphicsPath.AddLine(topFirstPoint.X, topFirstPoint.Y, topSecondPoint.X, topSecondPoint.Y);
+			}
+			else
+			{
+				graphicsPath.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle + sweepAngle, 0f - sweepAngle);
+			}
+			if (common.ProcessModePaint)
+			{
+				((ChartGraphics)this).FillPath(brush, graphicsPath);
+				if (point.BorderColor != Color.Empty && point.BorderWidth > 0 && point.BorderStyle != 0)
+				{
+					DrawGraphicsPath(pen, graphicsPath);
+				}
+			}
+			if (common.ProcessModeRegions)
+			{
+				if (point.IsAttributeSet("_COLLECTED_DATA_POINT"))
+				{
+					common.HotRegionsList.AddHotRegion((ChartGraphics)this, graphicsPath, relativePath: false, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), point, ChartElementType.DataPoint);
+				}
+				else
+				{
+					common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, (ChartGraphics)this, point, point.series.Name, pointIndex);
+				}
+			}
+		}
+
 		internal void FillPieSlice(ChartArea area, DataPoint point, SolidBrush brush, Pen pen, PointF firstRectPoint, PointF firstPoint, PointF secondRectPoint, PointF secondPoint, PointF center, float startAngle, float sweepAngle, bool fill, int pointIndex)
 		{
 			CommonElements common = area.Common;
@@ -370,6 +429,24 @@ namespace Microsoft.Reporting.Chart.WebForms
 					pathPoints[i + 1]
 				};
 				((ChartGraphics)this).DrawLine(pen, array[0], array[1]);
+			}
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="DrawGraphicsPath(Pen, GraphicsPath)"/> (Milestone B2 — see chart-gdi-type-abstraction.md). Used by the interface-typed <see cref="FillPieCurve"/> overload.</summary>
+		private void DrawGraphicsPath(IPen pen, IGraphicsPath path)
+		{
+			if (pen.Width < 2f)
+			{
+				((ChartGraphics)this).DrawPath(pen, path);
+				return;
+			}
+			path.Flatten();
+			pen.EndCap = LineCap.Round;
+			pen.StartCap = LineCap.Round;
+			PointF[] pathPoints = path.PathPoints;
+			for (int i = 0; i < pathPoints.Length - 1; i++)
+			{
+				((ChartGraphics)this).DrawLine(pen, pathPoints[i], pathPoints[i + 1]);
 			}
 		}
 
