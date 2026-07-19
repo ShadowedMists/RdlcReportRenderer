@@ -88,6 +88,10 @@
 
 **`FastLineChart.cs` converted too (2026-07-19):** `DrawLine`'s `Pen` parameter (plus caller's `pen`/`pen2` locals and its own hit-region `GraphicsPath`) converted in place — same "confirmed zero subclasses" pattern, and a matching `IGraphicsPath` `AddHotRegion` overload already existed. Added a new sample chart + regression test (`SeriesChartType.FastLine` was previously unexercised), verified byte-for-byte. Build 0 errors, all 13 tests pass.
 
+**`LineChart.cs`'s shadow-line block converted too (2026-07-19):** its local shadow `Pen` (independent of the shared `linePen` field, left concrete) converted to `IPen`, adding a private dual-overload of `DrawTruncatedLine` since both the new local pen and the shared `linePen` field call it. `graph.Transform`/`Save()`/`Restore(GraphicsState)` stay concrete — `GraphicsState` has no interface equivalent anywhere in the port, a separate gap. New sample chart + baseline added, verified byte-for-byte. Build 0 errors, all 14 tests pass.
+
+**Survey of remaining `ChartTypes/*.cs` files complete:** `TreeMapChart.cs`, `SunburstChart.cs`, `BarChart.cs`, `PointChart.cs`, `ErrorBarChart.cs`, `BoxPlotChart.cs` all reduce to the same `DrawPointLabelStringRel(..., new SolidBrush(...), ...)` pattern — blocked on the same C5/C6 (`IChartFont`/`ITextFormat`) real-caller migration already flagged as XL-sized in the tracking doc, not a per-file gap. The self-contained-block conversion vein (`StockChart`/`FastPointChart`/`FastLineChart`/`LineChart`) is now exhausted.
+
 **Implementation Plan:**
 - [x] Phase 0: Time-boxed spike to measure real effort — **done**, see `tasks/chart-cross-platform-implementation.md` Spike Report
 - [ ] Phase 1: Platform selection + graceful degradation (no crash on Linux)

@@ -295,5 +295,33 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises LineChart.DrawLine's shadow-line block (LineChart.cs), which builds its own
+        /// local Pen (independent of the shared linePen field) only when ShadowOffset is set —
+        /// not reached by RenderSimpleLineChart, which has no shadow.
+        /// </summary>
+        internal static byte[] RenderLineChartWithShadow()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Temperature");
+            series.ChartType = SeriesChartType.Line;
+            series.ShadowOffset = 3;
+            series.BorderWidth = 2;
+            series.Points.AddXY(1, 10);
+            series.Points.AddXY(2, 14);
+            series.Points.AddXY(3, 11);
+            series.Points.AddXY(4, 19);
+            series.Points.AddXY(5, 15);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }

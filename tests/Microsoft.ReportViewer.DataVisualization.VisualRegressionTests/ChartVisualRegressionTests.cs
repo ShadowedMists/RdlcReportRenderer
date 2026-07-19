@@ -98,5 +98,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "FastLineChart.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void LineChartWithShadow_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderLineChartWithShadow();
+            var result = ImageComparer.CompareToBaseline(actual, "LineChartWithShadow.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

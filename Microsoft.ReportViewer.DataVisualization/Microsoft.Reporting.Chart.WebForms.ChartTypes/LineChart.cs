@@ -298,7 +298,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graph.shadowDrawingMode = true;
 					if (color != Color.Empty && color != Color.Transparent && borderWidth > 0 && borderStyle != 0)
 					{
-						Pen pen = new Pen((series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb(useBorderColor ? ((int)point.BorderColor.A / 2) : ((int)point.Color.A / 2), series.ShadowColor), borderWidth);
+						IPen pen = graph.ResourceFactory.CreatePen((series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb(useBorderColor ? ((int)point.BorderColor.A / 2) : ((int)point.Color.A / 2), series.ShadowColor), borderWidth);
 						pen.DashStyle = graph.GetPenStyle(point.BorderStyle);
 						pen.StartCap = LineCap.Round;
 						pen.EndCap = LineCap.Round;
@@ -447,6 +447,23 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		}
 
 		private void DrawTruncatedLine(ChartGraphics graph, Pen pen, PointF pt1, PointF pt2)
+		{
+			PointF empty = PointF.Empty;
+			PointF empty2 = PointF.Empty;
+			if (Math.Abs(pt2.Y - pt1.Y) > Math.Abs(pt2.X - pt1.X))
+			{
+				empty = GetIntersectionY(pt1, pt2, 0f);
+				empty2 = GetIntersectionY(pt1, pt2, graph.common.ChartPicture.Height);
+			}
+			else
+			{
+				empty = GetIntersectionX(pt1, pt2, 0f);
+				empty2 = GetIntersectionX(pt1, pt2, graph.common.ChartPicture.Width);
+			}
+			graph.DrawLine(pen, empty, empty2);
+		}
+
+		private void DrawTruncatedLine(ChartGraphics graph, IPen pen, PointF pt1, PointF pt2)
 		{
 			PointF empty = PointF.Empty;
 			PointF empty2 = PointF.Empty;
