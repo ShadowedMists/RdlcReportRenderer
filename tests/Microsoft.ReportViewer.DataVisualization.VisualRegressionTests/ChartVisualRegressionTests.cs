@@ -163,12 +163,15 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             Assert.IsTrue(result.Matches, result.Message);
         }
 
-        // SunburstChart has no automated regression test: SeriesChartType.Sunburst throws
-        // InvalidOperationException("TreeMap chart cannot be combined...") for any chart built
-        // with it today — SunburstChart.Name incorrectly returns "TreeMap" instead of "Sunburst"
-        // (SunburstChart.cs:15), a pre-existing bug unrelated to this migration. The C5/C6
-        // conversion of SunburstChart.cs's DrawStringRel/DrawPointLabelStringRel calls still
-        // builds clean and follows the same proven bridge pattern, but is unverified by a render
-        // until that bug is fixed separately.
+        // SunburstChart.Name has been fixed (was hardcoded "TreeMap", now correctly "Sunburst" -
+        // see SunburstChart.cs:16), so the combine-check InvalidOperationException no longer
+        // fires. However, no automated regression test exists yet: SunburstChart reads its
+        // hierarchy from ChartArea.CategoryNodes, which nothing in the engine ever populates
+        // automatically (unlike TreeMapChart, which builds its own tree from Series/DataPoints
+        // directly), and CategoryNode/CategoryNodeCollection are internal sealed classes with no
+        // public constructor - so there is currently no way for any external consumer to
+        // populate CategoryNodes at all. This is a separate, pre-existing design gap, flagged
+        // for a future decision (auto-build from flat Series/Points like TreeMapChart, or expose
+        // a public hierarchy-building API).
     }
 }

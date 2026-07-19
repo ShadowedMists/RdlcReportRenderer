@@ -13,7 +13,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 	{
 		private static StringFormat format;
 
-		public string Name => "TreeMap";
+		public string Name => "Sunburst";
 
 		public bool Stacked => false;
 
