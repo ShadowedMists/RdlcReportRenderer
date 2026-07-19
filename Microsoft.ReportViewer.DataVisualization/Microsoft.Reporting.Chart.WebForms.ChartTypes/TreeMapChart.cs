@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -180,7 +181,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					StringFormat stringFormat = new StringFormat();
 					stringFormat.Alignment = StringAlignment.Near;
 					stringFormat.LineAlignment = StringAlignment.Near;
-					graph.DrawStringRel(series.legendText, font, new SolidBrush(dataPoint.FontColor), labelRelativeRect.Location, stringFormat, 0);
+					IChartFont bridgedFont = graph.ResourceFactory.CreateFont(font.FontFamily.Name, font.Size, font.Style, font.Unit);
+					ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+					bridgedFormat.Alignment = stringFormat.Alignment;
+					bridgedFormat.LineAlignment = stringFormat.LineAlignment;
+					bridgedFormat.FormatFlags = stringFormat.FormatFlags;
+					bridgedFormat.Trimming = stringFormat.Trimming;
+					graph.DrawStringRel(series.legendText, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, bridgedFormat, 0);
 				}
 			}
 		}
@@ -200,7 +207,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				stringFormat.Alignment = StringAlignment.Near;
 				stringFormat.LineAlignment = StringAlignment.Near;
 				DataPoint dataPoint = dataPointTreeMapNode.DataPoint;
-				graph.DrawPointLabelStringRel(area.Common, text, dataPoint.Font, new SolidBrush(dataPoint.FontColor), labelRelativeRect.Location, stringFormat, dataPoint.FontAngle, labelRelativeRect, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, index);
+				IChartFont bridgedFont = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
+				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedFormat.Alignment = stringFormat.Alignment;
+				bridgedFormat.LineAlignment = stringFormat.LineAlignment;
+				bridgedFormat.FormatFlags = stringFormat.FormatFlags;
+				bridgedFormat.Trimming = stringFormat.Trimming;
+				graph.DrawPointLabelStringRel(area.Common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, bridgedFormat, dataPoint.FontAngle, labelRelativeRect, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, index);
 			}
 		}
 

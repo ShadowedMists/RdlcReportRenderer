@@ -512,7 +512,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size2.Width += size2.Width / (float)text.Length;
 				backPosition = PointChart.GetLabelPosition(graph, position, size2, format, adjustForDrawing: true);
 			}
-			graph.DrawPointLabelStringRel(common, text, point.Font, new SolidBrush(point.FontColor), position, format, angle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex - 1);
+			IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+			ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+			bridgedFormat.Alignment = format.Alignment;
+			bridgedFormat.LineAlignment = format.LineAlignment;
+			bridgedFormat.FormatFlags = format.FormatFlags;
+			bridgedFormat.Trimming = format.Trimming;
+			graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, bridgedFormat, angle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex - 1);
 		}
 
 		protected virtual void ProcessChartType3D(bool selection, ChartGraphics graph, CommonElements common, ChartArea area, Series seriesToDraw)

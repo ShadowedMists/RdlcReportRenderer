@@ -766,7 +766,23 @@ namespace Microsoft.Reporting.Chart.WebForms
 			DrawStringRel(text, font, brush, position, format, angle);
 		}
 
+		internal void DrawPointLabelStringRel(CommonElements common, string text, IChartFont font, IBrush brush, RectangleF position, ITextFormat format, int angle, RectangleF backPosition, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Series series, DataPoint point, int pointIndex)
+		{
+			StartHotRegion(point, labelRegion: true);
+			DrawPointLabelBackground(common, angle, PointF.Empty, backPosition, backColor, borderColor, borderWidth, borderStyle, series, point, pointIndex);
+			EndHotRegion();
+			DrawStringRel(text, font, brush, position, format, angle);
+		}
+
 		internal void DrawPointLabelStringRel(CommonElements common, string text, Font font, Brush brush, PointF position, StringFormat format, int angle, RectangleF backPosition, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Series series, DataPoint point, int pointIndex)
+		{
+			StartHotRegion(point, labelRegion: true);
+			DrawPointLabelBackground(common, angle, position, backPosition, backColor, borderColor, borderWidth, borderStyle, series, point, pointIndex);
+			EndHotRegion();
+			DrawStringRel(text, font, brush, position, format, angle);
+		}
+
+		internal void DrawPointLabelStringRel(CommonElements common, string text, IChartFont font, IBrush brush, PointF position, ITextFormat format, int angle, RectangleF backPosition, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, Series series, DataPoint point, int pointIndex)
 		{
 			StartHotRegion(point, labelRegion: true);
 			DrawPointLabelBackground(common, angle, position, backPosition, backColor, borderColor, borderWidth, borderStyle, series, point, pointIndex);
@@ -856,7 +872,21 @@ namespace Microsoft.Reporting.Chart.WebForms
 			DrawStringAbs(text, font, brush, GetAbsolutePoint(position), format, angle);
 		}
 
+		internal void DrawStringRel(string text, IChartFont font, IBrush brush, PointF position, ITextFormat format, int angle)
+		{
+			DrawStringAbs(text, font, brush, GetAbsolutePoint(position), format, angle);
+		}
+
 		internal void DrawStringAbs(string text, Font font, Brush brush, PointF absPosition, StringFormat format, int angle)
+		{
+			myMatrix = base.GetTransform().RotateAt(angle, absPosition);
+			GraphicsState gstate = Save();
+			base.SetTransform(myMatrix);
+			DrawString(text, font, brush, absPosition, format);
+			Restore(gstate);
+		}
+
+		internal void DrawStringAbs(string text, IChartFont font, IBrush brush, PointF absPosition, ITextFormat format, int angle)
 		{
 			myMatrix = base.GetTransform().RotateAt(angle, absPosition);
 			GraphicsState gstate = Save();
@@ -1391,7 +1421,20 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return GetRelativeSize(size);
 		}
 
+		internal SizeF MeasureStringRel(string text, IChartFont font)
+		{
+			SizeF size = MeasureString(text, font);
+			return GetRelativeSize(size);
+		}
+
 		internal SizeF MeasureStringRel(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
+		{
+			SizeF absoluteSize = GetAbsoluteSize(layoutArea);
+			SizeF size = MeasureString(text, font, absoluteSize, stringFormat);
+			return GetRelativeSize(size);
+		}
+
+		internal SizeF MeasureStringRel(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat)
 		{
 			SizeF absoluteSize = GetAbsoluteSize(layoutArea);
 			SizeF size = MeasureString(text, font, absoluteSize, stringFormat);
@@ -1419,7 +1462,46 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		internal void DrawStringRel(string text, IChartFont font, IBrush brush, RectangleF layoutRectangle, ITextFormat format)
+		{
+			if (layoutRectangle.Width != 0f && layoutRectangle.Height != 0f)
+			{
+				RectangleF absoluteRectangle = GetAbsoluteRectangle(layoutRectangle);
+				DrawString(text, font, brush, absoluteRectangle, format);
+			}
+		}
+
 		internal void DrawStringRel(string text, Font font, Brush brush, RectangleF layoutRectangle, StringFormat format, int angle)
+		{
+			PointF empty = PointF.Empty;
+			if (layoutRectangle.Width != 0f && layoutRectangle.Height != 0f)
+			{
+				RectangleF absoluteRectangle = GetAbsoluteRectangle(layoutRectangle);
+				SizeF sizeF = MeasureString(text, font, absoluteRectangle.Size, format);
+				if (format.Alignment == StringAlignment.Near)
+				{
+					empty.X = absoluteRectangle.X + sizeF.Width / 2f;
+					empty.Y = (absoluteRectangle.Bottom + absoluteRectangle.Top) / 2f;
+				}
+				else if (format.Alignment == StringAlignment.Far)
+				{
+					empty.X = absoluteRectangle.Right - sizeF.Width / 2f;
+					empty.Y = (absoluteRectangle.Bottom + absoluteRectangle.Top) / 2f;
+				}
+				else
+				{
+					empty.X = (absoluteRectangle.Left + absoluteRectangle.Right) / 2f;
+					empty.Y = (absoluteRectangle.Bottom + absoluteRectangle.Top) / 2f;
+				}
+				Matrix3x2 transform = base.GetTransform();
+				myMatrix = transform.RotateAt(angle, empty);
+				base.SetTransform(myMatrix);
+				DrawString(text, font, brush, absoluteRectangle, format);
+				base.SetTransform(transform);
+			}
+		}
+
+		internal void DrawStringRel(string text, IChartFont font, IBrush brush, RectangleF layoutRectangle, ITextFormat format, int angle)
 		{
 			PointF empty = PointF.Empty;
 			if (layoutRectangle.Width != 0f && layoutRectangle.Height != 0f)
