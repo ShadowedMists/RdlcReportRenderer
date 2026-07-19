@@ -82,5 +82,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "StockChartWithTriangleMarks.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void FastPointChartWithMarkers_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderFastPointChartWithMarkers();
+            var result = ImageComparer.CompareToBaseline(actual, "FastPointChartWithMarkers.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void FastLineChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderFastLineChart();
+            var result = ImageComparer.CompareToBaseline(actual, "FastLineChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

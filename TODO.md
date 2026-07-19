@@ -84,6 +84,10 @@
 
 **`StockChart.cs` converted (2026-07-19):** its Triangle open/close mark drawing (2D + 3D) built a fully self-contained `GraphicsPath`+`SolidBrush` with no `Region`/`Widen` entanglement, so it converted cleanly onto `resourceFactory.CreatePath()`/`CreateSolidBrush()`. No existing baseline exercised `SeriesChartType.Stock`, so added a new sample chart + regression test, generated its pre-conversion baseline via the same `git stash` technique — byte-for-byte match confirmed. Build 0 errors, all 11 tests pass.
 
+**`FastPointChart.cs` converted too (2026-07-19):** `DrawMarker`'s `Brush`/`Pen` parameters (plus its caller's `SolidBrush`/`Pen` locals) converted in place — confirmed zero subclasses exist, so no dual-overload needed; the marker-drawing calls (`FillPolygon`/`DrawPolygon`/`FillEllipse`/etc.) already had matching interface overloads from Milestone A3. Added a new sample chart + regression test (`SeriesChartType.FastPoint` was previously unexercised), verified byte-for-byte against a pre-conversion baseline. Build 0 errors, all 12 tests pass.
+
+**`FastLineChart.cs` converted too (2026-07-19):** `DrawLine`'s `Pen` parameter (plus caller's `pen`/`pen2` locals and its own hit-region `GraphicsPath`) converted in place — same "confirmed zero subclasses" pattern, and a matching `IGraphicsPath` `AddHotRegion` overload already existed. Added a new sample chart + regression test (`SeriesChartType.FastLine` was previously unexercised), verified byte-for-byte. Build 0 errors, all 13 tests pass.
+
 **Implementation Plan:**
 - [x] Phase 0: Time-boxed spike to measure real effort — **done**, see `tasks/chart-cross-platform-implementation.md` Spike Report
 - [ ] Phase 1: Platform selection + graceful degradation (no crash on Linux)
