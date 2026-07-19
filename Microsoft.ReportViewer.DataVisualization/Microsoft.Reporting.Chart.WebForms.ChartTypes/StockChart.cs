@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -384,7 +385,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			else if (stockOpenCloseMarkStyle == StockOpenCloseMarkStyle.Triangle)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				PointF absolutePoint = graph.GetAbsolutePoint(new PointF(xPosition, num));
 				PointF absolutePoint2 = graph.GetAbsolutePoint(new PointF(xPosition - width / 2f, num + height / 2f));
 				PointF absolutePoint3 = graph.GetAbsolutePoint(new PointF(xPosition - width / 2f, num - height / 2f));
@@ -393,7 +394,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graphicsPath.AddLine(absolutePoint2, absolutePoint);
 					graphicsPath.AddLine(absolutePoint, absolutePoint3);
 					graphicsPath.AddLine(absolutePoint3, absolutePoint3);
-					graph.FillPath(new SolidBrush(point.Color), graphicsPath);
+					graph.FillPath(graph.ResourceFactory.CreateSolidBrush(point.Color), graphicsPath);
 				}
 				if (flag2 && logValue2 <= vAxis.GetViewMaximum() && logValue2 >= vAxis.GetViewMinimum())
 				{
@@ -404,7 +405,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graphicsPath.AddLine(absolutePoint2, absolutePoint);
 					graphicsPath.AddLine(absolutePoint, absolutePoint3);
 					graphicsPath.AddLine(absolutePoint3, absolutePoint3);
-					graph.FillPath(new SolidBrush(point.Color), graphicsPath);
+					graph.FillPath(graph.ResourceFactory.CreateSolidBrush(point.Color), graphicsPath);
 				}
 				graphicsPath?.Dispose();
 			}
@@ -843,7 +844,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			else if (stockOpenCloseMarkStyle == StockOpenCloseMarkStyle.Triangle)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				Point3D[] array2 = new Point3D[3]
 				{
 					new Point3D(xPosition, num, zPosition + depth / 2f),
@@ -859,7 +860,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graphicsPath.AddLine(array2[1].PointF, array2[0].PointF);
 					graphicsPath.AddLine(array2[0].PointF, array2[2].PointF);
 					graphicsPath.AddLine(array2[2].PointF, array2[2].PointF);
-					graph.FillPath(new SolidBrush(point.Color), graphicsPath);
+					graph.FillPath(graph.ResourceFactory.CreateSolidBrush(point.Color), graphicsPath);
 				}
 				if (flag2 && logValue2 <= vAxis.GetViewMaximum() && logValue2 >= vAxis.GetViewMinimum())
 				{
@@ -874,7 +875,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graphicsPath.AddLine(array2[1].PointF, array2[0].PointF);
 					graphicsPath.AddLine(array2[0].PointF, array2[2].PointF);
 					graphicsPath.AddLine(array2[2].PointF, array2[2].PointF);
-					graph.FillPath(new SolidBrush(point.Color), graphicsPath);
+					graph.FillPath(graph.ResourceFactory.CreateSolidBrush(point.Color), graphicsPath);
 				}
 				graphicsPath?.Dispose();
 			}

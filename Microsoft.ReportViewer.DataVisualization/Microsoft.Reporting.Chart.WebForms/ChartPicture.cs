@@ -1,4 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.Borders3D;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Svg;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
@@ -19,6 +21,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private bool suppressExceptions;
 
 		internal ChartGraphics chartGraph;
+
+		internal IRenderSurfaceFactory renderSurfaceFactory = new GdiRenderSurfaceFactory();
 
 		internal bool backgroundRestored;
 
@@ -730,11 +734,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				common.HotRegionsList.List = new ArrayList();
 			}
-			Bitmap bitmap = new Bitmap(Width, Height);
-			Graphics graphics = Graphics.FromImage(bitmap);
-			chartGraph.Graphics = graphics;
-			Paint(chartGraph.Graphics, paintTopLevelElementOnly: false);
-			bitmap.Dispose();
+			using (IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(Width, Height, 96f))
+			{
+				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
+				chartGraph.Graphics = gdiRenderSurface.NativeGraphics;
+				Paint(chartGraph.Graphics, paintTopLevelElementOnly: false);
+			}
 			isSelectionMode = false;
 			common.HotRegionsList.ProcessChartMode |= ProcessMode.HotRegions;
 			if (common.HotRegionsList.List != null)
@@ -848,16 +853,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 						chartGraph.FillRectangleAbsResource(new RectangleF(0f, 0f, Width - 1, Height - 1), borderSkin.PageColor, ChartHatchStyle.None, "", ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, borderSkin.PageColor, 1, ChartDashStyle.Solid, PenAlignment.Inset);
 						if (chartGraph.ActiveRenderingType == RenderingType.Svg)
 						{
-							Bitmap bitmap = new Bitmap(Width, Height);
-							Graphics graphics = Graphics.FromImage(bitmap);
-							graphics.SmoothingMode = chartGraph.Graphics.SmoothingMode;
+							using IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(Width, Height, 96f);
+							GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
+							gdiRenderSurface.NativeGraphics.SmoothingMode = chartGraph.Graphics.SmoothingMode;
 							ChartGraphics chartGraphics = new ChartGraphics(common);
-							chartGraphics.Graphics = graphics;
+							chartGraphics.Graphics = gdiRenderSurface.NativeGraphics;
 							chartGraphics.Draw3DBorderAbs(borderSkin, chartBorderPosition, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle);
-							chartGraph.DrawImage(bitmap, new RectangleF(0f, 0f, Width - 1, Height - 1));
+							chartGraph.DrawImage(gdiRenderSurface.NativeBitmap, new RectangleF(0f, 0f, Width - 1, Height - 1));
 							chartGraphics.Dispose();
-							graphics.Dispose();
-							bitmap.Dispose();
 						}
 						else
 						{

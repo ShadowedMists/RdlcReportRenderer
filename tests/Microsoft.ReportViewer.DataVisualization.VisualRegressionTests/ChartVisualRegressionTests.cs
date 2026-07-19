@@ -74,5 +74,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "AreaChartWithShadow.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void StockChartWithTriangleMarks_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderStockChartWithTriangleMarks();
+            var result = ImageComparer.CompareToBaseline(actual, "StockChartWithTriangleMarks.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

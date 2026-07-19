@@ -1,3 +1,5 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using Microsoft.Win32;
 using System;
@@ -128,24 +130,22 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		public Bitmap GetImage(float resolution)
 		{
-			Bitmap bitmap = null;
+			IRenderSurface renderSurface = null;
 			if (base.Width == 0 || base.Height == 0)
 			{
-				bitmap = new Bitmap(Math.Max(1, base.Width), Math.Max(1, base.Height));
-				bitmap.SetResolution(resolution, resolution);
+				renderSurface = renderSurfaceFactory.CreateRasterSurface(Math.Max(1, base.Width), Math.Max(1, base.Height), resolution);
 			}
 			else
 			{
-				while (bitmap == null)
+				while (renderSurface == null)
 				{
 					try
 					{
-						bitmap = new Bitmap(base.Width, base.Height);
-						bitmap.SetResolution(resolution, resolution);
+						renderSurface = renderSurfaceFactory.CreateRasterSurface(base.Width, base.Height, resolution);
 					}
 					catch
 					{
-						bitmap = null;
+						renderSurface = null;
 						float num = Math.Max(resolution / 2f, 96f);
 						base.Width = (int)Math.Ceiling((float)base.Width * num / resolution);
 						base.Height = (int)Math.Ceiling((float)base.Height * num / resolution);
@@ -153,7 +153,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 				}
 			}
-			Graphics graphics = Graphics.FromImage(bitmap);
+			GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
+			Bitmap bitmap = gdiRenderSurface.NativeBitmap;
+			Graphics graphics = gdiRenderSurface.NativeGraphics;
 			Color color = (!(base.BackColor != Color.Empty)) ? Color.White : base.BackColor;
 			Pen pen = new Pen(color);
 			graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
@@ -167,12 +169,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			bool softShadows = base.SoftShadows;
 			base.SoftShadows = false;
-			using (Bitmap image = new Bitmap(base.Width, base.Height))
+			using (IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(base.Width, base.Height, 96f))
 			{
-				using (Graphics graph = Graphics.FromImage(image))
-				{
-					Paint(graph, paintTopLevelElementOnly: false, RenderingType.Svg, svgTextWriter, null, documentTitle, resizable, preserveAspectRatio);
-				}
+				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
+				Paint(gdiRenderSurface.NativeGraphics, paintTopLevelElementOnly: false, RenderingType.Svg, svgTextWriter, null, documentTitle, resizable, preserveAspectRatio);
 			}
 			base.SoftShadows = softShadows;
 		}
