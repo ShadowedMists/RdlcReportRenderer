@@ -24,5 +24,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		LineJoin LineJoin { get; set; }
 
 		PenAlignment Alignment { get; set; }
+
+		/// <summary>Abstracts <c>Pen.Clone()</c> — returns an independent copy with the same property values.</summary>
+		IPen Clone();
 	}
 }

@@ -55,6 +55,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativePen.Alignment = value;
 		}
 
+		public IPen Clone()
+		{
+			GdiPen gdiPen = new GdiPen(Color, Width);
+			gdiPen.DashStyle = DashStyle;
+			gdiPen.StartCap = StartCap;
+			gdiPen.EndCap = EndCap;
+			gdiPen.LineJoin = LineJoin;
+			gdiPen.Alignment = Alignment;
+			return gdiPen;
+		}
+
 		public void Dispose() => NativePen.Dispose();
 	}
 }

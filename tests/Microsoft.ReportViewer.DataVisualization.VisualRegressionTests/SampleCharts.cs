@@ -80,5 +80,54 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises PieChart's 3D rendering path (Draw3DPie/DrawPieCurves/DrawDoughnutCurves/
+        /// FillPieSlice/FillPieSides in ChartGraphics3D.cs) — the interface-typed conversion of
+        /// that cluster (tasks/chart-gdi-type-abstraction.md, Milestone B2) isn't reached by any
+        /// of the other sample charts, which are all 2D.
+        /// </summary>
+        internal static byte[] RenderPie3DChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].Area3DStyle.Enable3D = true;
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Pie;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>Same as <see cref="RenderPie3DChart"/> but doughnut-style, to exercise DrawDoughnutCurves/FillDoughnutSlice specifically.</summary>
+        internal static byte[] RenderDoughnut3DChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].Area3DStyle.Enable3D = true;
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Doughnut;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }

@@ -34,5 +34,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "RotatedLabelsChart.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void Pie3DChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderPie3DChart();
+            var result = ImageComparer.CompareToBaseline(actual, "Pie3DChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void Doughnut3DChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderDoughnut3DChart();
+            var result = ImageComparer.CompareToBaseline(actual, "Doughnut3DChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

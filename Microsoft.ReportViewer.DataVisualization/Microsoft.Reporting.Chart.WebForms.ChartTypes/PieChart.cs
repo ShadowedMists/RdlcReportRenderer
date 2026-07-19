@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -1734,7 +1735,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		private void Draw3DPie(int turn, ChartGraphics graph, DataPoint point, ChartArea area, RectangleF rectangle, float startAngle, float sweepAngle, float doughnutRadius, float pieWidth, bool selection, ref bool isSelected, bool sameBackFront, bool exploded, int pointIndex)
 		{
 			_ = area.Common;
-			SolidBrush solidBrush = new SolidBrush(point.Color);
+			ISolidBrush solidBrush = graph.ResourceFactory.CreateSolidBrush(point.Color);
 			Color empty = Color.Empty;
 			Color color = Color.Empty;
 			empty = ((point.BorderColor == Color.Empty && area.Area3DStyle.Light == LightStyle.None) ? ChartGraphics.GetGradientColor(point.Color, Color.Black, 0.5) : ((!(point.BorderColor == Color.Empty)) ? point.BorderColor : point.Color));
@@ -1742,10 +1743,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				color = empty;
 			}
-			Pen pen = new Pen(empty, point.BorderWidth);
+			IPen pen = graph.ResourceFactory.CreatePen(empty, point.BorderWidth);
 			pen.DashStyle = graph.GetPenStyle(point.BorderStyle);
-			Pen pen2 = (!(point.BorderColor == Color.Empty)) ? pen : new Pen(point.Color);
-			Pen pen3 = new Pen(color, point.BorderWidth);
+			IPen pen2 = (!(point.BorderColor == Color.Empty)) ? pen : graph.ResourceFactory.CreatePen(point.Color, 1f);
+			IPen pen3 = graph.ResourceFactory.CreatePen(color, point.BorderWidth);
 			pen3.DashStyle = graph.GetPenStyle(point.BorderStyle);
 			PointF[] piePoints = GetPiePoints(graph, area, pieWidth, rectangle, startAngle, sweepAngle, relativeCoordinates: true, doughnutRadius, exploded);
 			if (piePoints == null)
@@ -1874,7 +1875,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 								color2 = (Color)colorConverter.ConvertFromInvariantString(point.series["PieLineColor"]);
 							}
 						}
-						pen = new Pen(color2, pen.Width);
+						pen = graph.ResourceFactory.CreatePen(color2, pen.Width);
 					}
 					Draw3DOutsideLabels(graph, area, pen, piePoints, point, num, pointIndex);
 				}
@@ -1962,9 +1963,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return array2;
 		}
 
-		private void DrawPieCurves(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, SolidBrush brushWithoutLight, Pen pen, bool rightPosition, bool sameBackFront, int pointIndex)
+		private void DrawPieCurves(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, ISolidBrush brushWithoutLight, IPen pen, bool rightPosition, bool sameBackFront, int pointIndex)
 		{
-			Brush brush = (area.Area3DStyle.Light != 0) ? graph.GetGradientBrush(graph.GetAbsoluteRectangle(area.Position.ToRectangleF()), Color.FromArgb(brushWithoutLight.Color.A, 0, 0, 0), brushWithoutLight.Color, GradientType.VerticalCenter) : brushWithoutLight;
+			IBrush brush = (area.Area3DStyle.Light != 0) ? graph.GetGradientBrushResource(graph.GetAbsoluteRectangle(area.Position.ToRectangleF()), Color.FromArgb(brushWithoutLight.Color.A, 0, 0, 0), brushWithoutLight.Color, GradientType.VerticalCenter) : brushWithoutLight;
 			float num = startAngle + sweepAngle;
 			if (sweepAngle > 180f && DrawPieCurvesBigSlice(graph, area, dataPoint, startAngle, sweepAngle, points, brush, pen, rightPosition, sameBackFront, pointIndex))
 			{
@@ -2009,7 +2010,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		private bool DrawPieCurvesBigSlice(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, Brush brush, Pen pen, bool rightPosition, bool sameBackFront, int pointIndex)
+		private bool DrawPieCurvesBigSlice(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, IBrush brush, IPen pen, bool rightPosition, bool sameBackFront, int pointIndex)
 		{
 			float num = startAngle + sweepAngle;
 			if (area.Area3DStyle.XAngle > 0)
@@ -2072,9 +2073,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return true;
 		}
 
-		private void DrawDoughnutCurves(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, SolidBrush brushWithoutLight, Pen pen, bool rightPosition, bool sameBackFront, int pointIndex)
+		private void DrawDoughnutCurves(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, ISolidBrush brushWithoutLight, IPen pen, bool rightPosition, bool sameBackFront, int pointIndex)
 		{
-			Brush brush = (area.Area3DStyle.Light != 0) ? graph.GetGradientBrush(graph.GetAbsoluteRectangle(area.Position.ToRectangleF()), Color.FromArgb(brushWithoutLight.Color.A, 0, 0, 0), brushWithoutLight.Color, GradientType.VerticalCenter) : brushWithoutLight;
+			IBrush brush = (area.Area3DStyle.Light != 0) ? graph.GetGradientBrushResource(graph.GetAbsoluteRectangle(area.Position.ToRectangleF()), Color.FromArgb(brushWithoutLight.Color.A, 0, 0, 0), brushWithoutLight.Color, GradientType.VerticalCenter) : brushWithoutLight;
 			float num = startAngle + sweepAngle;
 			if (sweepAngle > 180f && DrawDoughnutCurvesBigSlice(graph, area, dataPoint, startAngle, sweepAngle, points, brush, pen, rightPosition, sameBackFront, pointIndex))
 			{
@@ -2119,7 +2120,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		private bool DrawDoughnutCurvesBigSlice(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, Brush brush, Pen pen, bool rightPosition, bool sameBackFront, int pointIndex)
+		private bool DrawDoughnutCurvesBigSlice(ChartGraphics graph, ChartArea area, DataPoint dataPoint, float startAngle, float sweepAngle, PointF[] points, IBrush brush, IPen pen, bool rightPosition, bool sameBackFront, int pointIndex)
 		{
 			float num = startAngle + sweepAngle;
 			if (area.Area3DStyle.XAngle < 0)
@@ -2593,7 +2594,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		private void Draw3DOutsideLabels(ChartGraphics graph, ChartArea area, Pen pen, PointF[] points, DataPoint point, float midAngle, int pointIndex)
+		private void Draw3DOutsideLabels(ChartGraphics graph, ChartArea area, IPen pen, PointF[] points, DataPoint point, float midAngle, int pointIndex)
 		{
 			string labelText = GetLabelText(point);
 			if (labelText.Length == 0)
