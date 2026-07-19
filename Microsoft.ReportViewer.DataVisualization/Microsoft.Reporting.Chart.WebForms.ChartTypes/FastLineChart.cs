@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -114,11 +115,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				SizeF relativeSize2 = graph.GetRelativeSize(new SizeF((float)viewMinimum, (float)viewMinimum2));
 				double num2 = Math.Abs(axis.PositionToValue(relativeSize2.Width + relativeSize.Width, validateInput: false) - axis.PositionToValue(relativeSize2.Width, validateInput: false));
 				Math.Abs(axis2.PositionToValue(relativeSize2.Height + relativeSize.Height, validateInput: false) - axis2.PositionToValue(relativeSize2.Height, validateInput: false));
-				Pen pen = new Pen(item.Color, item.BorderWidth);
+				IPen pen = graph.ResourceFactory.CreatePen(item.Color, item.BorderWidth);
 				pen.DashStyle = graph.GetPenStyle(item.BorderStyle);
 				pen.StartCap = LineCap.Round;
 				pen.EndCap = LineCap.Round;
-				Pen pen2 = new Pen(item.EmptyPointStyle.Color, item.EmptyPointStyle.BorderWidth);
+				IPen pen2 = graph.ResourceFactory.CreatePen(item.EmptyPointStyle.Color, item.EmptyPointStyle.BorderWidth);
 				pen2.DashStyle = graph.GetPenStyle(item.EmptyPointStyle.BorderStyle);
 				pen2.StartCap = LineCap.Round;
 				pen2.EndCap = LineCap.Round;
@@ -256,7 +257,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		public virtual void DrawLine(Series series, DataPoint point, DataPoint pointMin, DataPoint pointMax, int pointIndex, Pen pen, float firstPointX, float firstPointY, float secondPointX, float secondPointY)
+		public virtual void DrawLine(Series series, DataPoint point, DataPoint pointMin, DataPoint pointMax, int pointIndex, IPen pen, float firstPointX, float firstPointY, float secondPointX, float secondPointY)
 		{
 			if (chartArea3DEnabled)
 			{
@@ -276,7 +277,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			graph.DrawLine(pen, firstPointX, firstPointY, secondPointX, secondPointY);
 			if (common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				float num = pen.Width + 2f;
 				if (Math.Abs(firstPointX - secondPointX) > Math.Abs(firstPointY - secondPointY))
 				{

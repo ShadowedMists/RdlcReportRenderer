@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -113,17 +114,17 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				SizeF relativeSize2 = graph.GetRelativeSize(new SizeF((float)viewMinimum, (float)viewMinimum2));
 				double num2 = Math.Abs(axis.PositionToValue(relativeSize2.Width + relativeSize.Width, validateInput: false) - axis.PositionToValue(relativeSize2.Width, validateInput: false));
 				double num3 = Math.Abs(axis2.PositionToValue(relativeSize2.Height + relativeSize.Height, validateInput: false) - axis2.PositionToValue(relativeSize2.Height, validateInput: false));
-				SolidBrush solidBrush = new SolidBrush(item.MarkerColor.IsEmpty ? item.Color : item.MarkerColor);
-				SolidBrush solidBrush2 = new SolidBrush(item.EmptyPointStyle.MarkerColor.IsEmpty ? item.EmptyPointStyle.Color : item.EmptyPointStyle.MarkerColor);
-				Pen pen = null;
-				Pen pen2 = null;
+				ISolidBrush solidBrush = graph.ResourceFactory.CreateSolidBrush(item.MarkerColor.IsEmpty ? item.Color : item.MarkerColor);
+				ISolidBrush solidBrush2 = graph.ResourceFactory.CreateSolidBrush(item.EmptyPointStyle.MarkerColor.IsEmpty ? item.EmptyPointStyle.Color : item.EmptyPointStyle.MarkerColor);
+				IPen pen = null;
+				IPen pen2 = null;
 				if (!item.MarkerBorderColor.IsEmpty && item.MarkerBorderWidth > 0)
 				{
-					pen = new Pen(item.MarkerBorderColor, item.MarkerBorderWidth);
+					pen = graph.ResourceFactory.CreatePen(item.MarkerBorderColor, item.MarkerBorderWidth);
 				}
 				if (!item.EmptyPointStyle.MarkerBorderColor.IsEmpty && item.EmptyPointStyle.MarkerBorderWidth > 0)
 				{
-					pen2 = new Pen(item.EmptyPointStyle.MarkerBorderColor, item.EmptyPointStyle.MarkerBorderWidth);
+					pen2 = graph.ResourceFactory.CreatePen(item.EmptyPointStyle.MarkerBorderColor, item.EmptyPointStyle.MarkerBorderWidth);
 				}
 				bool flag = area.IndexedSeries(item.Name);
 				int num4 = 0;
@@ -170,7 +171,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		protected virtual void DrawMarker(ChartGraphics graph, DataPoint point, int pointIndex, PointF location, MarkerStyle markerStyle, int markerSize, Brush brush, Pen borderPen)
+		protected virtual void DrawMarker(ChartGraphics graph, DataPoint point, int pointIndex, PointF location, MarkerStyle markerStyle, int markerSize, IBrush brush, IPen borderPen)
 		{
 			if (chartArea3DEnabled)
 			{

@@ -229,5 +229,71 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises FastPointChart.DrawMarker (FastPointChart.cs), which builds its brush/pen
+        /// locally per marker (bordered Diamond/Cross styles) rather than through any of
+        /// ChartGraphics's shared brush-getter helpers.
+        /// </summary>
+        internal static byte[] RenderFastPointChartWithMarkers()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Points");
+            series.ChartType = SeriesChartType.FastPoint;
+            series.MarkerStyle = MarkerStyle.Diamond;
+            series.MarkerSize = 10;
+            series.MarkerBorderColor = System.Drawing.Color.Black;
+            series.MarkerBorderWidth = 2;
+            series.Points.AddXY(1, 10);
+            series.Points.AddXY(2, 14);
+            series.Points.AddXY(3, 11);
+
+            var series2 = chart.Series.Add("Points2");
+            series2.ChartType = SeriesChartType.FastPoint;
+            series2.MarkerStyle = MarkerStyle.Cross;
+            series2.MarkerSize = 10;
+            series2.MarkerColor = System.Drawing.Color.Red;
+            series2.MarkerBorderColor = System.Drawing.Color.DarkRed;
+            series2.MarkerBorderWidth = 1;
+            series2.Points.AddXY(1, 16);
+            series2.Points.AddXY(2, 18);
+            series2.Points.AddXY(3, 15);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises FastLineChart.DrawLine (FastLineChart.cs), which builds its own Pen locally
+        /// (not through any of ChartGraphics's shared brush/pen-getter helpers) and also builds a
+        /// hit-region GraphicsPath in the same method.
+        /// </summary>
+        internal static byte[] RenderFastLineChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Trend");
+            series.ChartType = SeriesChartType.FastLine;
+            series.BorderWidth = 3;
+            series.Points.AddXY(1, 10);
+            series.Points.AddXY(2, 14);
+            series.Points.AddXY(3, 11);
+            series.Points.AddXY(4, 19);
+            series.Points.AddXY(5, 15);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }
