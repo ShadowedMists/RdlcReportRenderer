@@ -18,6 +18,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		void Exclude(RectangleF rect);
 
+		/// <summary>Abstracts <c>Region.Complement(GraphicsPath)</c> — updates this region to the portion of <paramref name="path"/> that does not intersect it.</summary>
+		void Complement(IGraphicsPath path);
+
 		void Xor(RectangleF rect);
 
 		void MakeEmpty();
@@ -28,6 +31,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		void Transform(Matrix3x2 matrix);
 
+		void Translate(float dx, float dy);
+
+		/// <summary>Independent copy — abstracts <c>Region.Clone()</c>.</summary>
+		IClipRegion Clone();
+
 		/// <summary>
 		/// Bounds/emptiness queries need the live drawing context (GDI+'s <c>Region.GetBounds</c>/
 		/// <c>IsEmpty</c> require a <see cref="System.Drawing.Graphics"/>). <see cref="IRenderSurface"/>
@@ -37,5 +45,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		RectangleF GetBounds(IChartRenderingEngine engine);
 
 		bool IsEmpty(IChartRenderingEngine engine);
+
+		bool IsInfinite(IChartRenderingEngine engine);
 	}
 }

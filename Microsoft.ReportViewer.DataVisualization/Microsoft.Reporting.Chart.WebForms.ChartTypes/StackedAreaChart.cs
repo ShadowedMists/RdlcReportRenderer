@@ -432,8 +432,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 								text = item3.chart.LocalizeTextHandler(point3, text, point3.ElementId, ChartElementType.DataPoint);
 							}
 						}
-						Region clip = graph.Clip;
-						graph.Clip = new Region();
+						IClipRegion clip = graph.GetClipRegion();
+						graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 						graph.StartAnimation();
 						PointF empty2 = PointF.Empty;
 						empty2.X = pointF6.X;
@@ -446,7 +446,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						sizeF.Width += sizeF.Width / (float)text.Length;
 						graph.DrawPointLabelStringRel(backPosition: new RectangleF(empty2.X - sizeF.Width / 2f, empty2.Y - sizeF.Height / 2f - relativeSize.Height / 10f, sizeF.Width, sizeF.Height), common: common, text: text, font: point3.Font, brush: new SolidBrush(point3.FontColor), position: empty2, format: stringFormat, angle: point3.FontAngle, backColor: point3.LabelBackColor, borderColor: point3.LabelBorderColor, borderWidth: point3.LabelBorderWidth, borderStyle: point3.LabelBorderStyle, series: item3, point: point3, pointIndex: num11);
 						graph.StopAnimation();
-						graph.Clip = clip;
+						graph.SetClipRegion(clip);
 					}
 					pointF5 = pointF6;
 					num12 = num13;

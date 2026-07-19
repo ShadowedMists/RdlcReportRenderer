@@ -119,22 +119,24 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				graph.shadowDrawingMode = true;
 				if (color != Color.Empty && color != Color.Transparent)
 				{
-					Region region = new Region(graphicsPath);
-					Brush brush2 = new SolidBrush((series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb((int)color.A / 2, series.ShadowColor));
+					IGraphicsPath graphicsPathForRegion = graph.ResourceFactory.CreatePath(graphicsPath.PathPoints, graphicsPath.PathTypes);
+					IClipRegion region = graph.ResourceFactory.CreateRegion(graphicsPathForRegion);
+					Color shadowFillColor = (series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb((int)color.A / 2, series.ShadowColor);
+					IBrush brush2 = graph.ResourceFactory.CreateSolidBrush(shadowFillColor);
 					GraphicsState gstate = graph.Save();
-					Region region2 = null;
-					Region region3 = null;
-					if (!graph.IsClipEmpty && !graph.Clip.IsInfinite(graph.Graphics))
+					IClipRegion region2 = null;
+					IClipRegion region3 = null;
+					if (!graph.IsClipEmpty && !graph.GetClipRegion().IsInfinite(graph))
 					{
-						region3 = graph.Clip.Clone();
-						region2 = graph.Clip;
+						region3 = graph.GetClipRegion().Clone();
+						region2 = graph.GetClipRegion();
 						region2.Translate(series.ShadowOffset, series.ShadowOffset);
-						graph.Clip = region2;
+						graph.SetClipRegion(region2);
 					}
 					graph.TranslateTransform(series.ShadowOffset, series.ShadowOffset);
 					if (graph.SmoothingMode != SmoothingMode.None)
 					{
-						Pen pen = new Pen(brush2, 1f);
+						IPen pen = graph.ResourceFactory.CreatePen(shadowFillColor, 1f);
 						if (lineTension == 0f)
 						{
 							graph.DrawLine(pen, points[pointIndex - 1], points[pointIndex]);
@@ -148,7 +150,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graph.Restore(gstate);
 					if (region2 != null && region3 != null)
 					{
-						graph.Clip = region3;
+						graph.SetClipRegion(region3);
 					}
 				}
 				graph.shadowDrawingMode = false;

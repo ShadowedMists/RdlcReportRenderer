@@ -1169,11 +1169,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 			}
 			float angle = chartArea.CircularPositionToAngle(position);
-			Region clip = null;
+			IClipRegion clip = null;
 			if (chartArea.CircularUsePolygons)
 			{
-				clip = graph.Clip;
-				graph.Clip = new Region(graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber));
+				clip = graph.GetClipRegion();
+				GraphicsPath polygonCirclePath = graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber);
+				IGraphicsPath polygonCirclePathResource = graph.ResourceFactory.CreatePath(polygonCirclePath.PathPoints, polygonCirclePath.PathTypes);
+				graph.SetClipRegion(graph.ResourceFactory.CreateRegion(polygonCirclePathResource));
 			}
 			PointF absolutePoint = graph.GetAbsolutePoint(chartArea.circularCenter);
 			Matrix3x2 transform = graph.GetTransform();
@@ -1183,12 +1185,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			graph.DrawLineAbs(color, width, style, absolutePoint, pointF);
 			if (base.Common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddLine(absolutePoint, pointF);
-				graphicsPath.Transform(matrix.ToGdiMatrix());
+				graphicsPath.Transform(matrix);
 				try
 				{
-					using (Pen pen = new Pen(Color.Black, width + 2))
+					using (IPen pen = graph.ResourceFactory.CreatePen(Color.Black, width + 2))
 					{
 						ChartGraphics.Widen(graphicsPath, pen);
 						base.Common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, graph, ChartElementType.Gridlines, obj);
@@ -1201,7 +1203,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			graph.SetTransform(transform);
 			if (chartArea.CircularUsePolygons)
 			{
-				graph.Clip = clip;
+				graph.SetClipRegion(clip);
 			}
 		}
 

@@ -842,8 +842,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			bool flag = false;
 			float num = 1f;
 			float num2 = 1f;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			string labelText = GetLabelText(point);
 			if (labelText.Length == 0)
 			{
@@ -1045,7 +1045,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					flag = true;
 				}
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 			if (!flag)
 			{
 				InsertOverlapLabel(RectangleF.Empty);

@@ -20,6 +20,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Exclude(RectangleF rect) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void Complement(IGraphicsPath path) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void Xor(RectangleF rect) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void MakeEmpty() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
@@ -34,9 +36,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Transform(Matrix3x2 matrix) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void Translate(float dx, float dy) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public IClipRegion Clone() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public RectangleF GetBounds(IChartRenderingEngine engine) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public bool IsEmpty(IChartRenderingEngine engine) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
+		public bool IsInfinite(IChartRenderingEngine engine) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void Dispose()
 		{

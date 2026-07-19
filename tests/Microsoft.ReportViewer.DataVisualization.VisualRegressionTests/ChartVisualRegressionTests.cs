@@ -50,5 +50,29 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "Doughnut3DChart.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void EmbossBorderChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderEmbossBorderChart();
+            var result = ImageComparer.CompareToBaseline(actual, "EmbossBorderChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void SunkenBorderChart_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderSunkenBorderChart();
+            var result = ImageComparer.CompareToBaseline(actual, "SunkenBorderChart.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void AreaChartWithShadow_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderAreaChartWithShadow();
+            var result = ImageComparer.CompareToBaseline(actual, "AreaChartWithShadow.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

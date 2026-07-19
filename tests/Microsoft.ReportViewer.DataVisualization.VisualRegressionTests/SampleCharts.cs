@@ -129,5 +129,79 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises the Emboss border skin (Borders3D/EmbossBorder.cs) — its
+        /// Region.Complement-based clip-shadow trick (tasks/chart-gdi-type-abstraction.md,
+        /// Milestone B2's Clip/Region conversion) isn't reached by any other sample chart.
+        /// </summary>
+        internal static byte[] RenderEmbossBorderChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+            chart.BorderSkin.SkinStyle = BorderSkinStyle.Emboss;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>Same as <see cref="RenderEmbossBorderChart"/> but for the Sunken border skin (Borders3D/SunkenBorder.cs), which has a more elaborate Complement/Intersect combination.</summary>
+        internal static byte[] RenderSunkenBorderChart()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+            chart.BorderSkin.SkinStyle = BorderSkinStyle.Sunken;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises AreaChart's shadow-drawing block (Clip save/Translate/restore around a
+        /// per-segment shadow fill) — tasks/chart-gdi-type-abstraction.md's Milestone B2 Clip/Region
+        /// conversion. No other sample chart uses an Area series with a shadow.
+        /// </summary>
+        internal static byte[] RenderAreaChartWithShadow()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Area;
+            series.ShadowOffset = 3;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }

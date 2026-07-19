@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -340,8 +341,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			StringFormat format = new StringFormat();
 			format.Alignment = StringAlignment.Center;
 			format.LineAlignment = StringAlignment.Center;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			if (point.ShowLabelAsValue || point.Label.Length > 0)
 			{
 				double value = GetYValue(common, area, series, point, pointIndex, 0);
@@ -436,7 +437,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 				}
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 		}
 
 		public virtual double GetYValue(CommonElements common, ChartArea area, Series series, DataPoint point, int pointIndex, int yValueIndex)
