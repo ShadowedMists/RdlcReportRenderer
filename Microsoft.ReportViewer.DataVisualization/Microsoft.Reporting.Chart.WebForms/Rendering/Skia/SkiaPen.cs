@@ -50,6 +50,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public PenAlignment Alignment { get; set; }
 
+		public IPen Clone()
+		{
+			SkiaPen skiaPen = new SkiaPen(Color, Width);
+			skiaPen.DashStyle = DashStyle;
+			skiaPen.StartCap = StartCap;
+			skiaPen.EndCap = EndCap;
+			skiaPen.LineJoin = LineJoin;
+			skiaPen.Alignment = Alignment;
+			return skiaPen;
+		}
+
 		public void Dispose() => NativePaint.Dispose();
 	}
 }

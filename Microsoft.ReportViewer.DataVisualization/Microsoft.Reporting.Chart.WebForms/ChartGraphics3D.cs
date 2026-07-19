@@ -187,6 +187,98 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="FillPieSides(ChartArea, float, float, float, PointF[], SolidBrush, Pen, bool)"/> (Milestone B2 — see chart-gdi-type-abstraction.md).</summary>
+		internal void FillPieSides(ChartArea area, float xAngle, float startAngle, float sweepAngle, PointF[] points, ISolidBrush brush, IPen pen, bool doughnut)
+		{
+			IGraphicsPath graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+			PointF pointF = points[8];
+			PointF pointF2 = points[9];
+			PointF pointF3 = points[4];
+			PointF pointF4 = points[6];
+			PointF pointF5 = points[5];
+			PointF pointF6 = points[7];
+			PointF pointF7 = PointF.Empty;
+			PointF pointF8 = PointF.Empty;
+			PointF pointF9 = PointF.Empty;
+			PointF pointF10 = PointF.Empty;
+			if (doughnut)
+			{
+				pointF7 = points[21];
+				pointF8 = points[23];
+				pointF9 = points[22];
+				pointF10 = points[24];
+			}
+			bool flag = false;
+			bool flag2 = false;
+			float num = startAngle + sweepAngle;
+			if (xAngle > 0f)
+			{
+				if ((startAngle > -90f && startAngle < 90f) || (startAngle > 270f && startAngle < 450f))
+				{
+					flag = true;
+				}
+				if ((num >= -180f && num < -90f) || (num > 90f && num < 270f) || (num > 450f && num <= 540f))
+				{
+					flag2 = true;
+				}
+			}
+			else
+			{
+				if ((startAngle >= -180f && startAngle < -90f) || (startAngle > 90f && startAngle < 270f) || (startAngle > 450f && startAngle <= 540f))
+				{
+					flag = true;
+				}
+				if ((num > -90f && num < 90f) || (num > 270f && num < 450f))
+				{
+					flag2 = true;
+				}
+			}
+			if (flag)
+			{
+				graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+				if (doughnut)
+				{
+					graphicsPath.AddLine(pointF7, pointF3);
+					graphicsPath.AddLine(pointF3, pointF4);
+					graphicsPath.AddLine(pointF4, pointF8);
+					graphicsPath.AddLine(pointF8, pointF7);
+				}
+				else
+				{
+					graphicsPath.AddLine(pointF, pointF3);
+					graphicsPath.AddLine(pointF3, pointF4);
+					graphicsPath.AddLine(pointF4, pointF2);
+					graphicsPath.AddLine(pointF2, pointF);
+				}
+				area.matrix3D.GetLight(brush.Color, out Color _, out Color _, out Color _, out Color _, out Color top, out Color bottom);
+				Color color = (area.Area3DStyle.XAngle >= 0) ? top : bottom;
+				((ChartGraphics)this).FillPath(((ChartGraphics)this).ResourceFactory.CreateSolidBrush(color), graphicsPath);
+				DrawGraphicsPath(pen, graphicsPath);
+			}
+			if (flag2)
+			{
+				graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+				if (doughnut)
+				{
+					graphicsPath.AddLine(pointF9, pointF5);
+					graphicsPath.AddLine(pointF5, pointF6);
+					graphicsPath.AddLine(pointF6, pointF10);
+					graphicsPath.AddLine(pointF10, pointF9);
+				}
+				else
+				{
+					graphicsPath.AddLine(pointF, pointF5);
+					graphicsPath.AddLine(pointF5, pointF6);
+					graphicsPath.AddLine(pointF6, pointF2);
+					graphicsPath.AddLine(pointF2, pointF);
+				}
+				area.matrix3D.GetLight(brush.Color, out Color _, out Color _, out Color _, out Color _, out Color top2, out Color bottom2);
+				Color color2 = (area.Area3DStyle.XAngle >= 0) ? top2 : bottom2;
+				((ChartGraphics)this).FillPath(((ChartGraphics)this).ResourceFactory.CreateSolidBrush(color2), graphicsPath);
+				DrawGraphicsPath(pen, graphicsPath);
+			}
+		}
+
 		internal void FillPieCurve(ChartArea area, DataPoint point, Brush brush, Pen pen, PointF topFirstRectPoint, PointF topSecondRectPoint, PointF bottomFirstRectPoint, PointF bottomSecondRectPoint, PointF topFirstPoint, PointF topSecondPoint, PointF bottomFirstPoint, PointF bottomSecondPoint, float startAngle, float sweepAngle, int pointIndex)
 		{
 			CommonElements common = area.Common;
@@ -391,6 +483,116 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (fill)
 				{
 					((ChartGraphics)this).FillPath(new SolidBrush(front), graphicsPath);
+				}
+				if (point.BorderColor != Color.Empty && point.BorderWidth > 0 && point.BorderStyle != 0)
+				{
+					DrawGraphicsPath(pen2, graphicsPath);
+				}
+			}
+			if (common.ProcessModeRegions && fill)
+			{
+				if (point.IsAttributeSet("_COLLECTED_DATA_POINT"))
+				{
+					common.HotRegionsList.AddHotRegion((ChartGraphics)this, graphicsPath, relativePath: false, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), point, ChartElementType.DataPoint);
+				}
+				else
+				{
+					common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, (ChartGraphics)this, point, point.series.Name, pointIndex);
+				}
+			}
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="FillPieSlice(ChartArea, DataPoint, SolidBrush, Pen, PointF, PointF, PointF, PointF, PointF, float, float, bool, int)"/> (Milestone B2 — see chart-gdi-type-abstraction.md).</summary>
+		internal void FillPieSlice(ChartArea area, DataPoint point, ISolidBrush brush, IPen pen, PointF firstRectPoint, PointF firstPoint, PointF secondRectPoint, PointF secondPoint, PointF center, float startAngle, float sweepAngle, bool fill, int pointIndex)
+		{
+			CommonElements common = area.Common;
+			IGraphicsPath graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+			RectangleF rectangleF = default(RectangleF);
+			rectangleF.X = firstRectPoint.X;
+			rectangleF.Y = firstRectPoint.Y;
+			rectangleF.Height = secondRectPoint.Y - firstRectPoint.Y;
+			rectangleF.Width = secondRectPoint.X - firstRectPoint.X;
+			double correction = rectangleF.Height / rectangleF.Width;
+			float num = AngleCorrection(startAngle + sweepAngle, correction, area.Area3DStyle.XAngle);
+			startAngle = AngleCorrection(startAngle, correction, area.Area3DStyle.XAngle);
+			sweepAngle = num - startAngle;
+			graphicsPath.AddLine(center, firstPoint);
+			if (rectangleF.Height > 0f)
+			{
+				graphicsPath.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle, sweepAngle);
+			}
+			graphicsPath.AddLine(secondPoint, center);
+			if (common.ProcessModePaint)
+			{
+				area.matrix3D.GetLight(brush.Color, out Color front, out Color _, out Color _, out Color _, out Color _, out Color _);
+				IPen pen2 = pen.Clone();
+				if (area.Area3DStyle.Light == LightStyle.Realistic && point.BorderColor == Color.Empty)
+				{
+					pen2.Color = front;
+				}
+				if (fill)
+				{
+					((ChartGraphics)this).FillPath(((ChartGraphics)this).ResourceFactory.CreateSolidBrush(front), graphicsPath);
+				}
+				if (point.BorderColor != Color.Empty && point.BorderWidth > 0 && point.BorderStyle != 0)
+				{
+					DrawGraphicsPath(pen2, graphicsPath);
+				}
+			}
+			if (common.ProcessModeRegions && fill)
+			{
+				if (point.IsAttributeSet("_COLLECTED_DATA_POINT"))
+				{
+					common.HotRegionsList.AddHotRegion((ChartGraphics)this, graphicsPath, relativePath: false, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), point, ChartElementType.DataPoint);
+				}
+				else
+				{
+					common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, (ChartGraphics)this, point, point.series.Name, pointIndex);
+				}
+			}
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="FillDoughnutSlice(ChartArea, DataPoint, SolidBrush, Pen, PointF, PointF, PointF, PointF, PointF, PointF, PointF, float, float, bool, float, int)"/> (Milestone B2 — see chart-gdi-type-abstraction.md).</summary>
+		internal void FillDoughnutSlice(ChartArea area, DataPoint point, ISolidBrush brush, IPen pen, PointF firstRectPoint, PointF firstPoint, PointF secondRectPoint, PointF secondPoint, PointF threePoint, PointF fourPoint, PointF center, float startAngle, float sweepAngle, bool fill, float doughnutRadius, int pointIndex)
+		{
+			CommonElements common = area.Common;
+			doughnutRadius = 1f - doughnutRadius / 100f;
+			IGraphicsPath graphicsPath = ((ChartGraphics)this).ResourceFactory.CreatePath();
+			RectangleF rectangleF = default(RectangleF);
+			rectangleF.X = firstRectPoint.X;
+			rectangleF.Y = firstRectPoint.Y;
+			rectangleF.Height = secondRectPoint.Y - firstRectPoint.Y;
+			rectangleF.Width = secondRectPoint.X - firstRectPoint.X;
+			RectangleF rectangleF2 = default(RectangleF);
+			rectangleF2.X = rectangleF.X + rectangleF.Width * (1f - doughnutRadius) / 2f;
+			rectangleF2.Y = rectangleF.Y + rectangleF.Height * (1f - doughnutRadius) / 2f;
+			rectangleF2.Height = rectangleF.Height * doughnutRadius;
+			rectangleF2.Width = rectangleF.Width * doughnutRadius;
+			double correction = rectangleF.Height / rectangleF.Width;
+			float num = AngleCorrection(startAngle + sweepAngle, correction, area.Area3DStyle.XAngle);
+			startAngle = AngleCorrection(startAngle, correction, area.Area3DStyle.XAngle);
+			sweepAngle = num - startAngle;
+			graphicsPath.AddLine(fourPoint, firstPoint);
+			if (rectangleF.Height > 0f)
+			{
+				graphicsPath.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle, sweepAngle);
+			}
+			graphicsPath.AddLine(secondPoint, threePoint);
+			if (rectangleF2.Height > 0f)
+			{
+				graphicsPath.AddArc(rectangleF2.X, rectangleF2.Y, rectangleF2.Width, rectangleF2.Height, startAngle + sweepAngle, 0f - sweepAngle);
+			}
+			if (common.ProcessModePaint)
+			{
+				area.matrix3D.GetLight(brush.Color, out Color front, out Color _, out Color _, out Color _, out Color _, out Color _);
+				IPen pen2 = pen.Clone();
+				if (area.Area3DStyle.Light == LightStyle.Realistic && point.BorderColor == Color.Empty)
+				{
+					pen2.Color = front;
+				}
+				if (fill)
+				{
+					((ChartGraphics)this).FillPath(((ChartGraphics)this).ResourceFactory.CreateSolidBrush(front), graphicsPath);
 				}
 				if (point.BorderColor != Color.Empty && point.BorderWidth > 0 && point.BorderStyle != 0)
 				{
