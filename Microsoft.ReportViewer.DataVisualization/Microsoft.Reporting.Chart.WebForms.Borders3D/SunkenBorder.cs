@@ -176,34 +176,34 @@ namespace Microsoft.Reporting.Chart.WebForms.Borders3D
 				empty.Y = rectangleF2.Bottom - num2 - empty.Height;
 				DrawScrew(graph, empty);
 			}
-			Region region = null;
+			IClipRegion region = null;
 			if (drawBottomShadow)
 			{
 				rectangleF2 = rectangleF;
 				rectangleF2.Width -= val * 0.3f;
 				rectangleF2.Height -= val * 0.3f;
-				region = new Region(graph.CreateRoundedRectPath(new RectangleF(rectangleF2.X - val, rectangleF2.Y - val, rectangleF2.Width + 0.5f * val, rectangleF2.Height + 0.5f * val), cornerRadius));
-				region.Complement(graph.CreateRoundedRectPath(rectangleF2, cornerRadius));
-				graph.Clip = region;
+				region = graph.ResourceFactory.CreateRegion(graph.CreateRoundedRectPathResource(new RectangleF(rectangleF2.X - val, rectangleF2.Y - val, rectangleF2.Width + 0.5f * val, rectangleF2.Height + 0.5f * val), cornerRadius));
+				region.Complement(graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius));
+				graph.SetClipRegion(region);
 				rectangleF2.X -= 0.5f * val;
 				rectangleF2.Width += 0.5f * val;
 				rectangleF2.Y -= 0.5f * val;
 				rectangleF2.Height += 0.5f * val;
 				graph.DrawRoundedRectShadowAbs(rectangleF2, cornerRadius, val, Color.Transparent, Color.FromArgb(175, sunken ? Color.White : color), 1f);
-				graph.Clip = new Region();
+				graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			}
 			rectangleF2 = rectangleF;
 			rectangleF2.Width -= val * 0.3f;
 			rectangleF2.Height -= val * 0.3f;
-			region = new Region(graph.CreateRoundedRectPath(new RectangleF(rectangleF2.X + val * 0.5f, rectangleF2.Y + val * 0.5f, rectangleF2.Width - 0.2f * val, rectangleF2.Height - 0.2f * val), cornerRadius));
+			region = graph.ResourceFactory.CreateRegion(graph.CreateRoundedRectPathResource(new RectangleF(rectangleF2.X + val * 0.5f, rectangleF2.Y + val * 0.5f, rectangleF2.Width - 0.2f * val, rectangleF2.Height - 0.2f * val), cornerRadius));
 			RectangleF rect2 = rectangleF2;
 			rect2.Width += val;
 			rect2.Height += val;
-			region.Complement(graph.CreateRoundedRectPath(rect2, cornerRadius));
-			region.Intersect(graph.CreateRoundedRectPath(rectangleF2, cornerRadius));
-			graph.Clip = region;
+			region.Complement(graph.CreateRoundedRectPathResource(rect2, cornerRadius));
+			region.Intersect(graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius));
+			graph.SetClipRegion(region);
 			graph.DrawRoundedRectShadowAbs(rect2, cornerRadius, val, Color.Transparent, Color.FromArgb(175, sunken ? color : Color.White), 1f);
-			graph.Clip = new Region();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 		}
 
 		private void DrawScrew(ChartGraphics graph, RectangleF rect)

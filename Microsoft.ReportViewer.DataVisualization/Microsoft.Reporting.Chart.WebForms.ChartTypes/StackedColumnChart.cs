@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -380,8 +381,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			StringFormat format = new StringFormat();
 			format.Alignment = StringAlignment.Center;
 			format.LineAlignment = StringAlignment.Center;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			if (point.ShowLabelAsValue || point.Label.Length > 0)
 			{
 				string text;
@@ -444,7 +445,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 				}
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 		}
 
 		public virtual double GetYValue(CommonElements common, ChartArea area, Series series, DataPoint point, int pointIndex, int yValueIndex)
@@ -773,8 +774,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			StringFormat format = new StringFormat();
 			format.Alignment = StringAlignment.Center;
 			format.LineAlignment = StringAlignment.Center;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			if (dataPoint.ShowLabelAsValue || dataPoint.Label.Length > 0)
 			{
 				string text;
@@ -835,7 +836,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graph.DrawPointLabelStringRel(backPosition: new RectangleF(pointF.X - sizeF.Width / 2f, pointF.Y - sizeF.Height / 2f - labelSize.Height / 10f, sizeF.Width, sizeF.Height), common: common, text: text, font: dataPoint.Font, brush: new SolidBrush(dataPoint.FontColor), position: pointF, format: format, angle: angle, backColor: dataPoint.LabelBackColor, borderColor: dataPoint.LabelBorderColor, borderWidth: dataPoint.LabelBorderWidth, borderStyle: dataPoint.LabelBorderStyle, series: series, point: dataPoint, pointIndex: pointIndex);
 				}
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 		}
 
 		public void AddSmartLabelMarkerPositions(CommonElements common, ChartArea area, Series series, ArrayList list)

@@ -110,11 +110,13 @@ namespace Microsoft.Reporting.Chart.WebForms.Borders3D
 			IGraphicsPath graphicsPath = graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius);
 			graph.DrawPathAbs(graphicsPath, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, PenAlignment.Inset);
 			graphicsPath?.Dispose();
-			Region region = new Region(graph.CreateRoundedRectPath(new RectangleF(rectangleF2.X - val, rectangleF2.Y - val, rectangleF2.Width + val - val * 0.25f, rectangleF2.Height + val - val * 0.25f), cornerRadius));
-			region.Complement(graph.CreateRoundedRectPath(rectangleF2, cornerRadius));
-			graph.Clip = region;
+			IGraphicsPath outerPath = graph.CreateRoundedRectPathResource(new RectangleF(rectangleF2.X - val, rectangleF2.Y - val, rectangleF2.Width + val - val * 0.25f, rectangleF2.Height + val - val * 0.25f), cornerRadius);
+			IClipRegion region = graph.ResourceFactory.CreateRegion(outerPath);
+			IGraphicsPath innerPath = graph.CreateRoundedRectPathResource(rectangleF2, cornerRadius);
+			region.Complement(innerPath);
+			graph.SetClipRegion(region);
 			graph.DrawRoundedRectShadowAbs(rectangleF2, cornerRadius, val, Color.Transparent, Color.FromArgb(128, Color.Gray), 0.5f);
-			graph.Clip = new Region();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 		}
 	}
 }

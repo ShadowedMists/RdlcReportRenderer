@@ -38,6 +38,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void Exclude(RectangleF rect) => NativeRegion.Exclude(rect);
 
+		public void Complement(IGraphicsPath path) => NativeRegion.Complement(((GdiGraphicsPath)path).NativePath);
+
 		public void Xor(RectangleF rect) => NativeRegion.Xor(rect);
 
 		public void MakeEmpty() => NativeRegion.MakeEmpty();
@@ -52,9 +54,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			NativeRegion.Transform(nativeMatrix);
 		}
 
+		public void Translate(float dx, float dy) => NativeRegion.Translate(dx, dy);
+
+		public IClipRegion Clone() => new GdiClipRegion(NativeRegion.Clone());
+
 		public RectangleF GetBounds(IChartRenderingEngine engine) => NativeRegion.GetBounds(engine.Graphics);
 
 		public bool IsEmpty(IChartRenderingEngine engine) => NativeRegion.IsEmpty(engine.Graphics);
+
+		public bool IsInfinite(IChartRenderingEngine engine) => NativeRegion.IsInfinite(engine.Graphics);
 
 		public void Dispose() => NativeRegion.Dispose();
 	}

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Drawing;
@@ -76,8 +77,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			StringFormat stringFormat = new StringFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			if (point.ShowLabelAsValue || point.Label.Length > 0)
 			{
 				string text;
@@ -109,7 +110,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				graph.StopAnimation();
 				graph.EndHotRegion();
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 		}
 
 		protected override void ProcessSinglePoint3D(DataPoint3D pointEx, bool selection, ChartGraphics graph, CommonElements common, ChartArea area, RectangleF columnPosition, int pointIndex)
@@ -122,8 +123,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			StringFormat stringFormat = new StringFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
-			Region clip = graph.Clip;
-			graph.Clip = new Region();
+			IClipRegion clip = graph.GetClipRegion();
+			graph.SetClipRegion(graph.ResourceFactory.CreateRegion());
 			if (dataPoint.ShowLabelAsValue || dataPoint.Label.Length > 0)
 			{
 				string text;
@@ -160,7 +161,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				graph.DrawPointLabelStringRel(common, text, dataPoint.Font, new SolidBrush(dataPoint.FontColor), empty, stringFormat, dataPoint.FontAngle, empty2, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, pointIndex);
 				graph.EndHotRegion();
 			}
-			graph.Clip = clip;
+			graph.SetClipRegion(clip);
 		}
 	}
 }
