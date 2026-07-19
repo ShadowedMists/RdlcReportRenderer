@@ -79,6 +79,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void AddClosedCurve(PointF[] points) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void AddClosedCurve(PointF[] points, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void AddEllipse(float x, float y, float width, float height) => NativePath.AddOval(new SKRect(x, y, x + width, y + height));
 
 		public void AddEllipse(RectangleF rect) => NativePath.AddOval(SkiaConvert.ToSKRect(rect));

@@ -330,7 +330,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, rectangleF, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation, string.Empty);
 				}
 			}
-			PaintSelectionHandles(graphics, rect, null);
+			PaintSelectionHandles(graphics, rect, (GraphicsPath)null);
 		}
 
 		private GraphicsPath DrawRoundedRectCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint, bool isEllipse)
