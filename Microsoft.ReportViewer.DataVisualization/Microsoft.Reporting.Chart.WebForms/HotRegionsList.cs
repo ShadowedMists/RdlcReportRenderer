@@ -342,6 +342,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, float[], DataPoint, string, int)"/>
+		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
+		/// </summary>
+		internal void AddHotRegion(ChartGraphics graph, IGraphicsPath path, bool relativePath, float[] coord, DataPoint point, string seriesName, int pointIndex)
+		{
+			AddHotRegion(graph, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, coord, point, seriesName, pointIndex);
+		}
+
 		internal void AddHotRegion(ChartGraphics graph, GraphicsPath path, bool relativePath, float[] coord, DataPoint point, string seriesName, int pointIndex)
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
@@ -502,6 +511,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				hotRegion.RelativeCoordinates = relativePath;
 				regionList.Add(hotRegion);
 			}
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, ChartElementType, object)"/>
+		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
+		/// </summary>
+		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, ChartElementType type, object selectedObject)
+		{
+			AddHotRegion(new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, type, selectedObject);
 		}
 
 		internal int FindInsertIndex()

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
@@ -357,12 +358,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			if (Chart.chartPicture.common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 				graphicsPath.AddLine(graphics.GetAbsolutePoint(location), graphics.GetAbsolutePoint(point));
-				using (Pen pen = (Pen)graphics.pen.Clone())
+				using (IPen pen = graphics.ResourceFactory.CreatePen(graphics.pen.Color, graphics.pen.Width + 2f))
 				{
 					pen.DashStyle = DashStyle.Solid;
-					pen.Width += 2f;
 					ChartGraphics.Widen(graphicsPath, pen);
 				}
 				Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);

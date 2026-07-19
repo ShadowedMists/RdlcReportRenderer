@@ -123,7 +123,26 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Flatten() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
-		public void Widen(IPen pen) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		/// <summary>
+		/// Real implementation (not spike-scoped) — GDI+'s <c>GraphicsPath.Widen(Pen)</c> converts
+		/// a stroked path into the filled outline geometry of that stroke. <see cref="SKPaint.GetFillPath"/>
+		/// is Skia's direct equivalent (used by Skia internally to rasterize strokes), so this needs
+		/// no hand-rolled geometry algorithm.
+		/// </summary>
+		public void Widen(IPen pen)
+		{
+			using SKPaint strokePaint = new SKPaint
+			{
+				Style = SKPaintStyle.Stroke,
+				StrokeWidth = pen.Width,
+				StrokeCap = SkiaConvert.ToSKStrokeCap(pen.StartCap),
+				StrokeJoin = SkiaConvert.ToSKStrokeJoin(pen.LineJoin),
+			};
+			using SKPath widened = new SKPath();
+			strokePaint.GetFillPath(NativePath, widened);
+			NativePath.Reset();
+			NativePath.AddPath(widened, SKPathAddMode.Append);
+		}
 
 		public void Reverse() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 

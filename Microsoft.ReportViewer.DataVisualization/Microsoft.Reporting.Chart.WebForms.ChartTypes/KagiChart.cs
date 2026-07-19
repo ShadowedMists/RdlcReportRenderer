@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel.Design;
@@ -313,10 +314,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			if (common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddLine(pointF, pointF2);
 				graphicsPath.AddLine(pointF2, pointF3);
-				ChartGraphics.Widen(graphicsPath, new Pen(point.Color, point.BorderWidth + 2));
+				ChartGraphics.Widen(graphicsPath, graph.ResourceFactory.CreatePen(point.Color, point.BorderWidth + 2));
 				PointF empty2 = PointF.Empty;
 				float[] array = new float[graphicsPath.PointCount * 2];
 				PointF[] pathPoints = graphicsPath.PathPoints;

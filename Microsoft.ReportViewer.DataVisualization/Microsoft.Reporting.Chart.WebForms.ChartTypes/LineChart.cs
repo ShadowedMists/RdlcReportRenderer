@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -372,7 +373,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				return;
 			}
 			int num = borderWidth + 2;
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			if (lineTension == 0f)
 			{
 				if (pointIndex > 0)
@@ -423,7 +424,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				try
 				{
 					graphicsPath.AddCurve(points, pointIndex - 1, 1, lineTension);
-					ChartGraphics.Widen(graphicsPath, new Pen(point.Color, borderWidth + 2));
+					ChartGraphics.Widen(graphicsPath, graph.ResourceFactory.CreatePen(point.Color, borderWidth + 2));
 					graphicsPath.Flatten();
 				}
 				catch

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -228,9 +229,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						common.HotRegionsList.AddHotRegion(graph, graphicsPath, relativePath: false, array, point, item.Name, num2);
 						if (point.BorderWidth > 1 && point.BorderStyle != 0 && point.BorderColor != Color.Empty)
 						{
-							GraphicsPath graphicsPath2 = new GraphicsPath();
+							IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 							graphicsPath2.AddLine(pointF.X, pointF.Y, pointF2.X, pointF2.Y);
-							ChartGraphics.Widen(graphicsPath2, new Pen(point.Color, point.BorderWidth + 2));
+							ChartGraphics.Widen(graphicsPath2, graph.ResourceFactory.CreatePen(point.Color, point.BorderWidth + 2));
 							empty = PointF.Empty;
 							array = new float[graphicsPath2.PointCount * 2];
 							for (int j = 0; j < graphicsPath2.PointCount; j++)
