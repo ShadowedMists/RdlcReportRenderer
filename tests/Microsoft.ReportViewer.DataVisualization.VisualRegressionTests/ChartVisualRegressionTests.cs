@@ -250,5 +250,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "CalloutSimpleLine.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void LineChart3D_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderLineChart3D();
+            var result = ImageComparer.CompareToBaseline(actual, "LineChart3D.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

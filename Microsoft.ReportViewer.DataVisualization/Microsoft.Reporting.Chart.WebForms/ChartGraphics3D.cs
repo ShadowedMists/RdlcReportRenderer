@@ -16,7 +16,26 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal PointF frontLinePoint2 = PointF.Empty;
 
-		internal Pen frontLinePen;
+		internal IPen frontLinePen;
+
+		/// <summary>
+		/// Bridges a concrete <see cref="Pen"/> (still used for the surrounding, more deeply
+		/// entangled drawing/Widen logic in Draw3DPolygon/Draw3DSurface) into the interface-typed
+		/// <see cref="frontLinePen"/> field, capturing its state at the moment of assignment
+		/// (callers may mutate the concrete pen's properties, e.g. EndCap, after constructing it
+		/// but before this runs) — the same bridge-at-the-sink pattern used throughout this
+		/// migration for values that can't have their whole surrounding method converted at once.
+		/// </summary>
+		private IPen BridgeFrontLinePen(Pen concretePen)
+		{
+			IPen pen = ((ChartGraphics)this).ResourceFactory.CreatePen(concretePen.Color, concretePen.Width);
+			pen.StartCap = concretePen.StartCap;
+			pen.EndCap = concretePen.EndCap;
+			pen.DashStyle = concretePen.DashStyle;
+			pen.LineJoin = concretePen.LineJoin;
+			pen.Alignment = concretePen.Alignment;
+			return pen;
+		}
 
 		internal void Draw3DGridLine(ChartArea area, Color color, int width, ChartDashStyle style, PointF point1, PointF point2, bool horizontal, CommonElements common, object obj)
 		{
@@ -771,7 +790,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				if (flag)
 				{
-					frontLinePen = pen;
+					frontLinePen = BridgeFrontLinePen(pen);
 					frontLinePoint1 = array2[0];
 					frontLinePoint2 = array2[1];
 				}
@@ -1265,7 +1284,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				if (flag)
 				{
-					frontLinePen = ((borderWidth > 1) ? pen3 : pen);
+					frontLinePen = BridgeFrontLinePen((borderWidth > 1) ? pen3 : pen);
 					frontLinePoint1 = array2[0];
 					frontLinePoint2 = array2[1];
 				}
