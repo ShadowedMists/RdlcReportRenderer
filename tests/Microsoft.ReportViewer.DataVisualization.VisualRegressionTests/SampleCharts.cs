@@ -505,5 +505,171 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises RangeChart's shadow block (RangeChart.cs's DrawLine) with a plain solid
+        /// fill: Region-from-path, Save/TranslateTransform/Restore, FillRegion, and the
+        /// solid-brush hairline pen at the fill-region edges, plus the `brush is ISolidBrush`
+        /// forced-border redraw right after.
+        /// </summary>
+        internal static byte[] RenderRangeChartWithShadow()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Range");
+            series.ChartType = SeriesChartType.Range;
+            series.ShadowColor = System.Drawing.Color.Black;
+            series.ShadowOffset = 3;
+            series.Points.AddXY(1, 5, 15);
+            series.Points.AddXY(2, 8, 20);
+            series.Points.AddXY(3, 3, 18);
+            series.Points.AddXY(4, 10, 22);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises RangeChart's hatch-brush fill path (RangeChart.cs's DrawLine):
+        /// GetHatchBrushResource, FillPath(IBrush, IGraphicsPath), and the hairline pen built
+        /// from the hatch brush's ForegroundColor via CreatePen(IBrush, float).
+        /// </summary>
+        internal static byte[] RenderRangeChartWithHatch()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Range");
+            series.ChartType = SeriesChartType.Range;
+            series.BackHatchStyle = ChartHatchStyle.Cross;
+            series.Points.AddXY(1, 5, 15);
+            series.Points.AddXY(2, 8, 20);
+            series.Points.AddXY(3, 3, 18);
+            series.Points.AddXY(4, 10, 22);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises RangeChart's gradient-fill path (RangeChart.cs's DrawLine/
+        /// FillLastSeriesGradient): the `gradientFill = true` branch that skips the
+        /// per-segment fill/shadow blocks entirely, deferring to the series-level gradient
+        /// fill built once the whole series has been walked.
+        /// </summary>
+        internal static byte[] RenderRangeChartWithGradient()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Range");
+            series.ChartType = SeriesChartType.Range;
+            series.BackGradientType = GradientType.TopBottom;
+            series.BackGradientEndColor = System.Drawing.Color.White;
+            series.Points.AddXY(1, 5, 15);
+            series.Points.AddXY(2, 8, 20);
+            series.Points.AddXY(3, 3, 18);
+            series.Points.AddXY(4, 10, 22);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        private static byte[] RenderCallout(CalloutStyle style, double anchorX, double anchorY)
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Column;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            var annotation = new CalloutAnnotation
+            {
+                CalloutStyle = style,
+                Text = "Peak",
+                X = 40,
+                Y = 40,
+                Width = 20,
+                Height = 15,
+                AnchorX = anchorX,
+                AnchorY = anchorY,
+            };
+            chart.Annotations.Add(annotation);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawRoundedRectCallout (non-ellipse branch:
+        /// CreateRoundedRectPath, then re-pointing the nearest path vertex at the anchor).
+        /// </summary>
+        internal static byte[] RenderCalloutRoundedRectangle() =>
+            RenderCallout(CalloutStyle.RoundedRectangle, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawRoundedRectCallout (ellipse branch).
+        /// </summary>
+        internal static byte[] RenderCalloutEllipse() =>
+            RenderCallout(CalloutStyle.Ellipse, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawRectangleCallout with the anchor point outside the
+        /// callout rectangle (builds the 7-point custom polygon, one of 8 direction cases).
+        /// </summary>
+        internal static byte[] RenderCalloutRectangle() =>
+            RenderCallout(CalloutStyle.Rectangle, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawCloudCallout: GetCloudPath/GetCloudOutlinePath
+        /// (bridged from their still-concrete cached GDI+ geometry) plus the decorative
+        /// anchor-line ellipse chain.
+        /// </summary>
+        internal static byte[] RenderCalloutCloud() =>
+            RenderCallout(CalloutStyle.Cloud, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawPerspectiveCallout: the triangular wedge(s) merged
+        /// into the main rectangle via SetMarkers/AddPath, which SplitAtMarkers later has to
+        /// carve back apart for hot-region generation.
+        /// </summary>
+        internal static byte[] RenderCalloutPerspective() =>
+            RenderCallout(CalloutStyle.Perspective, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawRectangleLineCallout with drawRectangle: true
+        /// (Borderline style) — the anchor-line stroke widened via
+        /// ChartGraphics.Widen(IGraphicsPath, IPen) and merged via SetMarkers/AddPath.
+        /// </summary>
+        internal static byte[] RenderCalloutBorderline() =>
+            RenderCallout(CalloutStyle.Borderline, 10, 10);
+
+        /// <summary>
+        /// Exercises CalloutAnnotation's DrawRectangleLineCallout with drawRectangle: false
+        /// (SimpleLine style) — no filled rectangle, just the widened anchor-line stroke(s).
+        /// </summary>
+        internal static byte[] RenderCalloutSimpleLine() =>
+            RenderCallout(CalloutStyle.SimpleLine, 10, 10);
     }
 }

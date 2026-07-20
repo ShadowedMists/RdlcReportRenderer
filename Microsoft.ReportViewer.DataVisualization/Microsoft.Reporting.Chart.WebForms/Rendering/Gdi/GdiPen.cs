@@ -13,6 +13,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			NativePen = new Pen(color, width);
 		}
 
+		internal GdiPen(Brush brush, float width)
+		{
+			NativePen = new Pen(brush, width);
+		}
+
 		public Color Color
 		{
 			get => NativePen.Color;

@@ -164,14 +164,91 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         }
 
         // SunburstChart.Name has been fixed (was hardcoded "TreeMap", now correctly "Sunburst" -
-        // see SunburstChart.cs:16), so the combine-check InvalidOperationException no longer
-        // fires. However, no automated regression test exists yet: SunburstChart reads its
-        // hierarchy from ChartArea.CategoryNodes, which nothing in the engine ever populates
-        // automatically (unlike TreeMapChart, which builds its own tree from Series/DataPoints
-        // directly), and CategoryNode/CategoryNodeCollection are internal sealed classes with no
-        // public constructor - so there is currently no way for any external consumer to
-        // populate CategoryNodes at all. This is a separate, pre-existing design gap, flagged
-        // for a future decision (auto-build from flat Series/Points like TreeMapChart, or expose
-        // a public hierarchy-building API).
+        // see SunburstChart.cs:16). SunburstChart reads its hierarchy from
+        // ChartArea.CategoryNodes, which is only ever populated by the RDL rendering bridge
+        // (ChartMapper.RenderCategoryGrouping), not by this project's direct Chart/Series API -
+        // so it has no regression test here. See
+        // tests/Microsoft.ReportViewer.Chart.Rdl.Tests/SunburstChartRdlTests.cs for its real,
+        // RDL-driven regression coverage.
+
+        [TestMethod]
+        public void RangeChartWithShadow_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderRangeChartWithShadow();
+            var result = ImageComparer.CompareToBaseline(actual, "RangeChartWithShadow.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void RangeChartWithHatch_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderRangeChartWithHatch();
+            var result = ImageComparer.CompareToBaseline(actual, "RangeChartWithHatch.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void RangeChartWithGradient_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderRangeChartWithGradient();
+            var result = ImageComparer.CompareToBaseline(actual, "RangeChartWithGradient.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutRoundedRectangle_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutRoundedRectangle();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutRoundedRectangle.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutEllipse_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutEllipse();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutEllipse.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutRectangle_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutRectangle();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutRectangle.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutCloud_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutCloud();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutCloud.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutPerspective_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutPerspective();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutPerspective.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutBorderline_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutBorderline();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutBorderline.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void CalloutSimpleLine_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderCalloutSimpleLine();
+            var result = ImageComparer.CompareToBaseline(actual, "CalloutSimpleLine.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

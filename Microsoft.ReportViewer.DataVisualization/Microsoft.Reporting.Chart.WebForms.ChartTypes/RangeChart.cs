@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -123,21 +124,21 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			PointF pointF2 = points[pointIndex];
 			PointF pointF3 = lowPoints[pointIndex - 1];
 			PointF pointF4 = lowPoints[pointIndex];
-			Brush brush = null;
+			IBrush brush = null;
 			if (point.BackHatchStyle != 0)
 			{
-				brush = graph.GetHatchBrush(point.BackHatchStyle, point.Color, point.BackGradientEndColor);
+				brush = graph.GetHatchBrushResource(point.BackHatchStyle, point.Color, point.BackGradientEndColor);
 			}
 			else if (point.BackGradientType == GradientType.None)
 			{
-				brush = ((point.BackImage.Length <= 0 || point.BackImageMode == ChartImageWrapMode.Unscaled || point.BackImageMode == ChartImageWrapMode.Scaled) ? new SolidBrush(point.Color) : graph.GetTextureBrush(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color));
+				brush = ((point.BackImage.Length <= 0 || point.BackImageMode == ChartImageWrapMode.Unscaled || point.BackImageMode == ChartImageWrapMode.Scaled) ? graph.ResourceFactory.CreateSolidBrush(point.Color) : graph.GetTextureBrushResource(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color));
 			}
 			else
 			{
 				gradientFill = true;
 				this.series = point.series;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			graphicsPath.AddLine(pointF.X, pointF3.Y, pointF.X, pointF.Y);
 			if (lineTension == 0f)
 			{
@@ -150,7 +151,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			graphicsPath.AddLine(pointF2.X, pointF2.Y, pointF2.X, pointF4.Y);
 			if (graph.ActiveRenderingType == RenderingType.Svg)
 			{
-				GraphicsPath graphicsPath2 = new GraphicsPath();
+				IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 				if (lineTension == 0f)
 				{
 					graphicsPath.AddLine(lowPoints[pointIndex - 1], lowPoints[pointIndex]);
@@ -200,21 +201,21 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			if (series.ShadowColor != Color.Empty && series.ShadowOffset != 0 && point.Color != Color.Empty && point.Color != Color.Transparent)
 			{
-				Matrix matrix = graph.Transform.Clone();
-				matrix.Translate(series.ShadowOffset, series.ShadowOffset);
-				Matrix transform = graph.Transform;
-				graph.Transform = matrix;
-				Region region = new Region(graphicsPath);
-				Brush brush2 = new SolidBrush((series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb((int)point.Color.A / 2, series.ShadowColor));
-				Region region2 = null;
-				if (!graph.IsClipEmpty && !graph.Clip.IsInfinite(graph.Graphics))
+				GraphicsState gstate = graph.Save();
+				IClipRegion region2 = null;
+				IClipRegion region3 = null;
+				if (!graph.IsClipEmpty && !graph.GetClipRegion().IsInfinite(graph))
 				{
-					region2 = graph.Clip;
+					region3 = graph.GetClipRegion().Clone();
+					region2 = graph.GetClipRegion();
 					region2.Translate(series.ShadowOffset + 1, series.ShadowOffset + 1);
-					graph.Clip = region2;
+					graph.SetClipRegion(region2);
 				}
+				graph.TranslateTransform(series.ShadowOffset, series.ShadowOffset);
+				IClipRegion region = graph.ResourceFactory.CreateRegion(graphicsPath);
+				IBrush brush2 = graph.ResourceFactory.CreateSolidBrush((series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb((int)point.Color.A / 2, series.ShadowColor));
 				graph.FillRegion(brush2, region);
-				Pen pen = new Pen(brush2, 1f);
+				IPen pen = graph.ResourceFactory.CreatePen(brush2, 1f);
 				if (pointIndex == 0)
 				{
 					graph.DrawLine(pen, pointF.X, pointF3.Y, pointF.X, pointF.Y);
@@ -223,7 +224,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					graph.DrawLine(pen, pointF2.X, pointF2.Y, pointF2.X, pointF4.Y);
 				}
-				graph.Transform = transform;
+				graph.Restore(gstate);
 				graph.shadowDrawingMode = true;
 				drawShadowOnly = true;
 				base.DrawLine(graph, common, point, series, points, pointIndex, tension);
@@ -232,11 +233,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				yValueIndex = 0;
 				drawShadowOnly = false;
 				graph.shadowDrawingMode = false;
-				if (region2 != null)
+				if (region2 != null && region3 != null)
 				{
-					region2 = graph.Clip;
-					region2.Translate(-(series.ShadowOffset + 1), -(series.ShadowOffset + 1));
-					graph.Clip = region2;
+					graph.SetClipRegion(region3);
 				}
 			}
 			if (!gradientFill)
@@ -248,10 +247,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				graph.SmoothingMode = smoothingMode;
 				if (graph.SmoothingMode != SmoothingMode.None)
 				{
-					Pen pen2 = new Pen(brush, 1f);
-					if (brush is HatchBrush)
+					IPen pen2 = graph.ResourceFactory.CreatePen(brush, 1f);
+					if (brush is IHatchBrush hatchBrush)
 					{
-						pen2.Color = ((HatchBrush)brush).ForegroundColor;
+						pen2.Color = hatchBrush.ForegroundColor;
 					}
 					if (pointIndex == 0)
 					{
@@ -300,7 +299,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				areaBottomPath.AddCurve(lowPoints, pointIndex - 1, 1, lineTension);
 			}
-			if ((point.BorderWidth > 0 && point.BorderStyle != 0 && point.BorderColor != Color.Empty) || brush is SolidBrush)
+			if ((point.BorderWidth > 0 && point.BorderStyle != 0 && point.BorderColor != Color.Empty) || brush is ISolidBrush)
 			{
 				useBorderColor = true;
 				disableShadow = true;
@@ -331,7 +330,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					graphicsPath.AddCurve(lowPoints, pointIndex - 1, 1, lineTension);
 				}
-				GraphicsPath graphicsPath3 = new GraphicsPath();
+				IGraphicsPath graphicsPath3 = graph.ResourceFactory.CreatePath();
 				graphicsPath3.AddLine(pointF.X, pointF3.Y, pointF.X, pointF.Y);
 				if (lineTension == 0f)
 				{

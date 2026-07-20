@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -13,6 +14,18 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 	internal sealed class GdiResourceFactory : IDrawingResourceFactory
 	{
 		public IPen CreatePen(Color color, float width) => new GdiPen(color, width);
+
+		public IPen CreatePen(IBrush brush, float width) => new GdiPen(NativeBrush(brush), width);
+
+		private static Brush NativeBrush(IBrush brush) => brush switch
+		{
+			GdiSolidBrush b => b.NativeBrush,
+			GdiLinearGradientBrush b => b.NativeBrush,
+			GdiTextureBrush b => b.NativeBrush,
+			GdiHatchBrush b => b.NativeBrush,
+			GdiPathGradientBrush b => b.NativeBrush,
+			_ => throw new NotSupportedException($"Unrecognized IBrush implementation: {brush.GetType()}"),
+		};
 
 		public ISolidBrush CreateSolidBrush(Color color) => new GdiSolidBrush(color);
 
