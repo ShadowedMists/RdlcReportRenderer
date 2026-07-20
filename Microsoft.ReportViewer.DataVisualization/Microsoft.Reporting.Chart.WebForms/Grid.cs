@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -529,7 +530,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				else if (!axis.chartArea.chartAreaIsCurcular)
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
+					using IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 					if (Math.Abs(empty.X - empty2.X) > Math.Abs(empty.Y - empty2.Y))
 					{
 						graphicsPath.AddLine(empty.X, empty.Y - 1f, empty2.X, empty2.Y - 1f);
@@ -619,7 +620,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					if (!axis.chartArea.Area3DStyle.Enable3D || axis.chartArea.chartAreaIsCurcular)
 					{
-						GraphicsPath graphicsPath = new GraphicsPath();
+						using IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 						if (Math.Abs(empty.X - empty2.X) > Math.Abs(empty.Y - empty2.Y))
 						{
 							graphicsPath.AddLine(empty.X, empty.Y - 1f, empty2.X, empty2.Y - 1f);

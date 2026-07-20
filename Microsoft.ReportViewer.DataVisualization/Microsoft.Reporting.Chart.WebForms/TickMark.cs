@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -285,9 +286,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 						if (axis.chartArea.chartAreaIsCurcular)
 						{
 							RectangleF relative = new RectangleF(empty.X - 0.5f, empty.Y - 0.5f, Math.Abs(empty2.X - empty.X) + 1f, Math.Abs(empty2.Y - empty.Y) + 1f);
-							GraphicsPath graphicsPath = new GraphicsPath();
+							using IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 							graphicsPath.AddRectangle(graph.GetAbsoluteRectangle(relative));
-							graphicsPath.Transform(graph.Transform);
+							graphicsPath.Transform(graph.GetTransform());
 							axis.Common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, graph, ChartElementType.TickMarks, this);
 						}
 						else if (!axis.chartArea.Area3DStyle.Enable3D || axis.chartArea.chartAreaIsCurcular)
