@@ -19,6 +19,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 	{
 		public IPen CreatePen(Color color, float width) => new SkiaPen(color, width);
 
+		public IPen CreatePen(IBrush brush, float width) =>
+			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public ISolidBrush CreateSolidBrush(Color color) => new SkiaSolidBrush(color);
 
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>

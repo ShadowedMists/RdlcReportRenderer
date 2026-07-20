@@ -16,6 +16,13 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 		// --- Pens (A.4) ---
 		IPen CreatePen(Color color, float width);
 
+		/// <summary>
+		/// Construct a pen that strokes with an arbitrary brush (solid/hatch/texture/gradient) —
+		/// GDI+'s <c>Pen(Brush, float)</c> constructor, needed by <c>RangeChart.DrawLine</c>'s
+		/// brush-backed hairline strokes (found during B2).
+		/// </summary>
+		IPen CreatePen(IBrush brush, float width);
+
 		// --- Brushes (A.5) ---
 		ISolidBrush CreateSolidBrush(Color color);
 

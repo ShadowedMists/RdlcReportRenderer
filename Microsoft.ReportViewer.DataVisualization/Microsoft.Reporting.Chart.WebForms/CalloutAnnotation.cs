@@ -1,5 +1,7 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -285,7 +287,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				return;
 			}
-			GraphicsPath graphicsPath = null;
+			IGraphicsPath graphicsPath = null;
 			if (Chart.chartPicture.common.ProcessModePaint)
 			{
 				switch (calloutStyle)
@@ -317,12 +319,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (graphicsPath != null)
 				{
-					GraphicsPathIterator graphicsPathIterator = new GraphicsPathIterator(graphicsPath);
-					GraphicsPath graphicsPath2 = new GraphicsPath();
-					while (graphicsPathIterator.NextMarker(graphicsPath2) > 0)
+					foreach (IGraphicsPath graphicsPath2 in SplitAtMarkers(graphics, graphicsPath))
 					{
-						Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, (GraphicsPath)graphicsPath2.Clone(), relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
-						graphicsPath2.Reset();
+						using (graphicsPath2)
+						{
+							Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath2, relativePath: false, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
+						}
 					}
 				}
 				else
@@ -333,14 +335,51 @@ namespace Microsoft.Reporting.Chart.WebForms
 			PaintSelectionHandles(graphics, rect, (GraphicsPath)null);
 		}
 
-		private GraphicsPath DrawRoundedRectCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint, bool isEllipse)
+		/// <summary>
+		/// Splits a path at its PathMarker-flagged points, mirroring
+		/// <see cref="GraphicsPathIterator.NextMarker(GraphicsPath)"/>'s behavior — used to carve
+		/// a combined callout outline (e.g. the perspective wedge or the anchor-line stroke,
+		/// merged into the main shape via <c>SetMarkers</c>/<c>AddPath</c>) into separate hot
+		/// regions per sub-shape, without depending on the GDI+-only
+		/// <see cref="GraphicsPathIterator"/> type. <c>PathTypes</c> already carries the same
+		/// <see cref="PathPointType.PathMarker"/> flag bits GDI+ uses internally, so this reads
+		/// directly off the port's own path data rather than a GDI+-specific API.
+		/// </summary>
+		private static IEnumerable<IGraphicsPath> SplitAtMarkers(ChartGraphics graph, IGraphicsPath path)
+		{
+			const byte PathMarker = 0x20;
+			PointF[] points = path.PathPoints;
+			byte[] types = path.PathTypes;
+			int start = 0;
+			for (int i = 0; i < points.Length; i++)
+			{
+				if ((types[i] & PathMarker) != 0)
+				{
+					yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, i + 1), CopySegment(types, start, i + 1));
+					start = i + 1;
+				}
+			}
+			if (start < points.Length)
+			{
+				yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, points.Length), CopySegment(types, start, points.Length));
+			}
+		}
+
+		private static T[] CopySegment<T>(T[] source, int start, int endExclusive)
+		{
+			T[] array = new T[endExclusive - start];
+			Array.Copy(source, start, array, 0, array.Length);
+			return array;
+		}
+
+		private IGraphicsPath DrawRoundedRectCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint, bool isEllipse)
 		{
 			RectangleF absoluteRectangle = graphics.GetAbsoluteRectangle(rectanglePosition);
 			if (absoluteRectangle.Width <= 0f || absoluteRectangle.Height <= 0f)
 			{
 				return null;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 			if (isEllipse)
 			{
 				graphicsPath.AddEllipse(absoluteRectangle);
@@ -349,7 +388,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				float num = Math.Min(absoluteRectangle.Width, absoluteRectangle.Height);
 				num /= 5f;
-				graphicsPath = CreateRoundedRectPath(absoluteRectangle, num);
+				graphicsPath = CreateRoundedRectPath(graphics, absoluteRectangle, num);
 			}
 			if (!float.IsNaN(anchorPoint.X) && !float.IsNaN(anchorPoint.Y) && !rectanglePosition.Contains(anchorPoint.X, anchorPoint.Y))
 			{
@@ -383,9 +422,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return graphicsPath;
 		}
 
-		private GraphicsPath DrawRectangleCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
+		private IGraphicsPath DrawRectangleCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
 		{
-			GraphicsPath graphicsPath = null;
+			IGraphicsPath graphicsPath = null;
 			bool flag = false;
 			_ = RectangleF.Empty;
 			if (!float.IsNaN(anchorPoint.X) && !float.IsNaN(anchorPoint.Y))
@@ -481,7 +520,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						array[5] = absolutePoint;
 						array[6] = new PointF(absoluteRectangle.X, absoluteRectangle.Y + absoluteRectangle.Height / 2f - num);
 					}
-					graphicsPath = new GraphicsPath();
+					graphicsPath = graphics.ResourceFactory.CreatePath();
 					graphicsPath.AddLines(array);
 					graphicsPath.CloseAllFigures();
 					graphics.GetRelativeRectangle(graphicsPath.GetBounds());
@@ -491,14 +530,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (!flag)
 			{
 				graphics.FillRectangleRelResource(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
-				graphicsPath = new GraphicsPath();
+				graphicsPath = graphics.ResourceFactory.CreatePath();
 				graphicsPath.AddRectangle(graphics.GetAbsoluteRectangle(rectanglePosition));
 			}
 			DrawText(graphics, rectanglePosition, noSpacingForCenteredText: false, getTextPosition: false);
 			return graphicsPath;
 		}
 
-		private GraphicsPath DrawCloudCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
+		private IGraphicsPath DrawCloudCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
 		{
 			RectangleF absoluteRectangle = graphics.GetAbsoluteRectangle(rectanglePosition);
 			if (!float.IsNaN(anchorPoint.X) && !float.IsNaN(anchorPoint.Y) && !rectanglePosition.Contains(anchorPoint.X, anchorPoint.Y))
@@ -545,7 +584,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				num2 = ((!(num2 > 0f)) ? (num2 + sizeF.Height) : (num2 - sizeF.Height));
 				for (int i = 0; i < 3; i++)
 				{
-					using (GraphicsPath graphicsPath = new GraphicsPath())
+					using (IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath())
 					{
 						graphicsPath.AddEllipse(pointF.X - absoluteSize.Width / 2f, pointF.Y - absoluteSize.Height / 2f, absoluteSize.Width, absoluteSize.Height);
 						graphics.DrawPathAbs(graphicsPath, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, 1, LineStyle, PenAlignment.Center, ShadowOffset, ShadowColor);
@@ -556,20 +595,25 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 				}
 			}
-			GraphicsPath graphicsPath2 = GetCloudPath(absoluteRectangle);
-			graphics.DrawPathAbs(graphicsPath2, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, 1, LineStyle, PenAlignment.Center, ShadowOffset, ShadowColor);
-			using (GraphicsPath path = GetCloudOutlinePath(absoluteRectangle))
+			IGraphicsPath graphicsPath2;
+			using (GraphicsPath nativeCloudPath = GetCloudPath(absoluteRectangle))
 			{
+				graphicsPath2 = graphics.ResourceFactory.CreatePath(nativeCloudPath.PathPoints, nativeCloudPath.PathTypes);
+			}
+			graphics.DrawPathAbs(graphicsPath2, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, 1, LineStyle, PenAlignment.Center, ShadowOffset, ShadowColor);
+			using (GraphicsPath nativeOutlinePath = GetCloudOutlinePath(absoluteRectangle))
+			{
+				using IGraphicsPath path = graphics.ResourceFactory.CreatePath(nativeOutlinePath.PathPoints, nativeOutlinePath.PathTypes);
 				graphics.DrawPathAbs(path, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, 1, LineStyle, PenAlignment.Center);
 			}
 			DrawText(graphics, rectanglePosition, noSpacingForCenteredText: true, getTextPosition: false);
 			return graphicsPath2;
 		}
 
-		private GraphicsPath DrawPerspectiveCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
+		private IGraphicsPath DrawPerspectiveCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint)
 		{
 			graphics.FillRectangleRelResource(rectanglePosition, BackColor, BackHatchStyle, string.Empty, ChartImageWrapMode.Scaled, Color.Empty, ChartImageAlign.Center, BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, 0, PenAlignment.Center);
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 			graphicsPath.AddRectangle(graphics.GetAbsoluteRectangle(rectanglePosition));
 			DrawText(graphics, rectanglePosition, noSpacingForCenteredText: false, getTextPosition: false);
 			if (!float.IsNaN(anchorPoint.X) && !float.IsNaN(anchorPoint.Y) && !rectanglePosition.Contains(anchorPoint.X, anchorPoint.Y))
@@ -578,10 +622,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 				Color beginColor = BackColor.IsEmpty ? Color.White : BackColor;
 				array[0] = graphics.GetBrightGradientColor(beginColor, 0.6);
 				array[1] = graphics.GetBrightGradientColor(beginColor, 0.8);
-				GraphicsPath[] array2 = new GraphicsPath[2];
-				using (array2[0] = new GraphicsPath())
+				IGraphicsPath[] array2 = new IGraphicsPath[2];
+				using (array2[0] = graphics.ResourceFactory.CreatePath())
 				{
-					using (array2[1] = new GraphicsPath())
+					using (array2[1] = graphics.ResourceFactory.CreatePath())
 					{
 						RectangleF absoluteRectangle = graphics.GetAbsoluteRectangle(rectanglePosition);
 						PointF absolutePoint = graphics.GetAbsolutePoint(anchorPoint);
@@ -666,8 +710,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 							array2[1].AddLines(points8);
 						}
 						int num = 0;
-						GraphicsPath[] array3 = array2;
-						foreach (GraphicsPath graphicsPath2 in array3)
+						IGraphicsPath[] array3 = array2;
+						foreach (IGraphicsPath graphicsPath2 in array3)
 						{
 							if (graphicsPath2.PointCount > 0)
 							{
@@ -685,7 +729,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return graphicsPath;
 		}
 
-		private GraphicsPath DrawRectangleLineCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint, bool drawRectangle)
+		private IGraphicsPath DrawRectangleLineCallout(ChartGraphics graphics, RectangleF rectanglePosition, PointF anchorPoint, bool drawRectangle)
 		{
 			if (drawRectangle)
 			{
@@ -698,7 +742,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				SizeF relativeSize = graphics.GetRelativeSize(new SizeF(2f, 2f));
 				rectanglePosition.Inflate(relativeSize);
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 			graphicsPath.AddRectangle(graphics.GetAbsoluteRectangle(rectanglePosition));
 			PointF relative = new PointF(rectanglePosition.X, rectanglePosition.Bottom);
 			PointF relative2 = new PointF(rectanglePosition.Right, rectanglePosition.Bottom);
@@ -764,10 +808,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 						}
 					}
 					graphics.DrawLineAbs(LineColor, LineWidth, LineStyle, graphics.GetAbsolutePoint(anchorPoint), graphics.GetAbsolutePoint(empty), ShadowColor, ShadowOffset);
-					using (GraphicsPath graphicsPath2 = new GraphicsPath())
+					using (IGraphicsPath graphicsPath2 = graphics.ResourceFactory.CreatePath())
 					{
 						graphicsPath2.AddLine(graphics.GetAbsolutePoint(anchorPoint), graphics.GetAbsolutePoint(empty));
-						ChartGraphics.Widen(graphicsPath2, new Pen(Color.Black, LineWidth + 2));
+						ChartGraphics.Widen(graphicsPath2, graphics.ResourceFactory.CreatePen(Color.Black, LineWidth + 2));
 						graphicsPath.SetMarkers();
 						graphicsPath.AddPath(graphicsPath2, connect: false);
 					}
@@ -799,10 +843,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (!drawRectangle)
 				{
 					graphics.DrawLineAbs(LineColor, LineWidth, LineStyle, graphics.GetAbsolutePoint(relative), graphics.GetAbsolutePoint(relative2), ShadowColor, ShadowOffset);
-					using (GraphicsPath graphicsPath3 = new GraphicsPath())
+					using (IGraphicsPath graphicsPath3 = graphics.ResourceFactory.CreatePath())
 					{
 						graphicsPath3.AddLine(graphics.GetAbsolutePoint(relative), graphics.GetAbsolutePoint(relative2));
-						ChartGraphics.Widen(graphicsPath3, new Pen(Color.Black, LineWidth + 2));
+						ChartGraphics.Widen(graphicsPath3, graphics.ResourceFactory.CreatePen(Color.Black, LineWidth + 2));
 						graphicsPath.SetMarkers();
 						graphicsPath.AddPath(graphicsPath3, connect: false);
 						return graphicsPath;
@@ -917,7 +961,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return result;
 		}
 
-		private void PathAddLineAsSegments(GraphicsPath path, float x1, float y1, float x2, float y2, int segments)
+		private void PathAddLineAsSegments(IGraphicsPath path, float x1, float y1, float x2, float y2, int segments)
 		{
 			if (x1 == x2)
 			{
@@ -942,9 +986,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			throw new InvalidOperationException(SR.ExceptionAnnotationPathAddLineAsSegmentsInvalid);
 		}
 
-		private GraphicsPath CreateRoundedRectPath(RectangleF rect, float cornerRadius)
+		private IGraphicsPath CreateRoundedRectPath(ChartGraphics graphics, RectangleF rect, float cornerRadius)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 			int segments = 10;
 			PathAddLineAsSegments(graphicsPath, rect.X + cornerRadius, rect.Y, rect.Right - cornerRadius, rect.Y, segments);
 			graphicsPath.AddArc(rect.Right - 2f * cornerRadius, rect.Y, 2f * cornerRadius, 2f * cornerRadius, 270f, 90f);
