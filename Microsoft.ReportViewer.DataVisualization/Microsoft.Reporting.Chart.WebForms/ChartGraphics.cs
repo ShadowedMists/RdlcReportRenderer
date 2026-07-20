@@ -707,6 +707,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return MeasureString(text, font, layoutArea, stringFormat);
 		}
 
+		public SizeF MeasureString(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat, TextOrientation textOrientation)
+		{
+			if (textOrientation == TextOrientation.Stacked)
+			{
+				text = GetStackedText(text);
+			}
+			return MeasureString(text, font, layoutArea, stringFormat);
+		}
+
 		internal SizeF MeasureStringRel(string text, Font font, SizeF layoutArea, StringFormat stringFormat, TextOrientation textOrientation)
 		{
 			if (textOrientation == TextOrientation.Stacked)
@@ -716,7 +725,25 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return MeasureStringRel(text, font, layoutArea, stringFormat);
 		}
 
+		internal SizeF MeasureStringRel(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat, TextOrientation textOrientation)
+		{
+			if (textOrientation == TextOrientation.Stacked)
+			{
+				text = GetStackedText(text);
+			}
+			return MeasureStringRel(text, font, layoutArea, stringFormat);
+		}
+
 		public void DrawString(string text, Font font, Brush brush, RectangleF rect, StringFormat format, TextOrientation textOrientation)
+		{
+			if (textOrientation == TextOrientation.Stacked)
+			{
+				text = GetStackedText(text);
+			}
+			DrawString(text, font, brush, rect, format);
+		}
+
+		public void DrawString(string text, IChartFont font, IBrush brush, RectangleF rect, ITextFormat format, TextOrientation textOrientation)
 		{
 			if (textOrientation == TextOrientation.Stacked)
 			{
@@ -1466,6 +1493,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		internal Size MeasureStringAbs(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
+		{
+			SizeF sizeF = MeasureString(text, font, layoutArea, stringFormat);
+			return new Size((int)Math.Ceiling(sizeF.Width), (int)Math.Ceiling(sizeF.Height));
+		}
+
+		internal Size MeasureStringAbs(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat)
 		{
 			SizeF sizeF = MeasureString(text, font, layoutArea, stringFormat);
 			return new Size((int)Math.Ceiling(sizeF.Width), (int)Math.Ceiling(sizeF.Height));

@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.Collections;
@@ -820,7 +821,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				text = axis.chart.LocalizeTextHandler(this, text, 0, ChartElementType.StripLines);
 			}
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = TitleAlignment;
 			stringFormat.LineAlignment = TitleLineAlignment;
 			int num = 0;
@@ -850,7 +851,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 				num = 180;
 				break;
 			}
-			SizeF sizeF = graph.MeasureStringRel(text.Replace("\\n", "\n"), TitleFont, new SizeF(100f, 100f), stringFormat, GetTextOrientation());
+			IChartFont bridgedTitleFont = graph.ResourceFactory.WrapFont(TitleFont);
+			SizeF sizeF = graph.MeasureStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, new SizeF(100f, 100f), stringFormat, GetTextOrientation());
 			float z = 0f;
 			if (axis.chartArea.Area3DStyle.Enable3D)
 			{
@@ -922,7 +924,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					num += (int)num3;
 				}
 			}
-			graph.DrawStringRel(text.Replace("\\n", "\n"), TitleFont, new SolidBrush(TitleColor), position, stringFormat, num, GetTextOrientation());
+			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), position, stringFormat, num, GetTextOrientation());
 		}
 
 		private void Invalidate()

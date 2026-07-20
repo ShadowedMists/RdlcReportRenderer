@@ -765,6 +765,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				return;
 			}
 			CommonElements common = chart.chartPicture.common;
+			IChartFont bridgedTitleFont = chartGraph.ResourceFactory.WrapFont(Font);
 			string text = Text;
 			if (chart != null && chart.LocalizeTextHandler != null)
 			{
@@ -781,7 +782,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					relative.Height = width;
 				}
 				relative = chartGraph.GetAbsoluteSize(relative);
-				SizeF size = chartGraph.MeasureString(text.Replace("\\n", "\n"), Font, relative, new StringFormat(), GetTextOrientation());
+				ITextFormat measureFormat = chartGraph.ResourceFactory.CreateTextFormat();
+				SizeF size = chartGraph.MeasureString(text.Replace("\\n", "\n"), bridgedTitleFont, relative, measureFormat, GetTextOrientation());
 				if (BackGroundIsVisible)
 				{
 					size.Width += titleBorderSpacing;
@@ -833,7 +835,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				chartGraph.StartHotRegion(href, toolTip);
 				SizeF absoluteSize = chartGraph.GetAbsoluteSize(rectangleF.Size);
-				SizeF size2 = chartGraph.MeasureString(text.Replace("\\n", "\n"), Font, absoluteSize, new StringFormat(), GetTextOrientation());
+				ITextFormat measureFormat2 = chartGraph.ResourceFactory.CreateTextFormat();
+				SizeF size2 = chartGraph.MeasureString(text.Replace("\\n", "\n"), bridgedTitleFont, absoluteSize, measureFormat2, GetTextOrientation());
 				size2 = chartGraph.GetRelativeSize(size2);
 				RectangleF rectF = new RectangleF(rectangleF.X, rectangleF.Y, size2.Width, size2.Height);
 				if (Alignment == ContentAlignment.BottomCenter || Alignment == ContentAlignment.BottomLeft || Alignment == ContentAlignment.BottomRight)
@@ -865,7 +868,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				relative2.X += (float)titleBorderSpacing / 2f;
 				relative2.Y += (float)titleBorderSpacing / 2f;
 			}
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
 			if (Alignment == ContentAlignment.BottomCenter || Alignment == ContentAlignment.BottomLeft || Alignment == ContentAlignment.BottomRight)
@@ -920,16 +923,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 				case TextStyle.Default:
 					chartGraph.StartHotRegion(href, toolTip);
-					chartGraph.DrawString(text, Font, new SolidBrush(Color), relative2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(Color), relative2, stringFormat, GetTextOrientation());
 					chartGraph.EndHotRegion();
 					break;
 				case TextStyle.Frame:
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
-					graphicsPath.AddString(ChartGraphics.GetStackedText(text), Font.FontFamily, (int)Font.Style, Font.Size * 1.3f, relative2, stringFormat);
+					IChartFont bridgedFrameFont = chartGraph.ResourceFactory.CreateFont(Font.FontFamily.Name, Font.Size * 1.3f, Font.Style, Font.Unit);
+					using IGraphicsPath graphicsPath = chartGraph.ResourceFactory.CreatePath();
+					graphicsPath.AddString(ChartGraphics.GetStackedText(text), bridgedFrameFont, relative2, stringFormat);
 					graphicsPath.CloseAllFigures();
 					chartGraph.StartHotRegion(href, toolTip);
-					chartGraph.DrawPath(new Pen(Color, 1f), graphicsPath);
+					chartGraph.DrawPath(chartGraph.ResourceFactory.CreatePen(Color, 1f), graphicsPath);
 					chartGraph.EndHotRegion();
 					break;
 				}
@@ -938,13 +942,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF rect3 = new RectangleF(relative2.Location, relative2.Size);
 					rect3.X -= 1f;
 					rect3.Y -= 1f;
-					chartGraph.DrawString(text, Font, new SolidBrush(gradientColor), rect3, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(gradientColor), rect3, stringFormat, GetTextOrientation());
 					rect3.X += 2f;
 					rect3.Y += 2f;
 					Color gradientColor3 = ChartGraphics.GetGradientColor(Color.White, Color, 0.3);
-					chartGraph.DrawString(text, Font, new SolidBrush(gradientColor3), rect3, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(gradientColor3), rect3, stringFormat, GetTextOrientation());
 					chartGraph.StartHotRegion(href, toolTip);
-					chartGraph.DrawString(text, Font, new SolidBrush(Color), relative2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(Color), relative2, stringFormat, GetTextOrientation());
 					chartGraph.EndHotRegion();
 					break;
 				}
@@ -953,13 +957,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF rect2 = new RectangleF(relative2.Location, relative2.Size);
 					rect2.X += 1f;
 					rect2.Y += 1f;
-					chartGraph.DrawString(text, Font, new SolidBrush(gradientColor), rect2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(gradientColor), rect2, stringFormat, GetTextOrientation());
 					rect2.X -= 2f;
 					rect2.Y -= 2f;
 					Color gradientColor2 = ChartGraphics.GetGradientColor(Color.White, Color, 0.3);
-					chartGraph.DrawString(text, Font, new SolidBrush(gradientColor2), rect2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(gradientColor2), rect2, stringFormat, GetTextOrientation());
 					chartGraph.StartHotRegion(href, toolTip);
-					chartGraph.DrawString(text, Font, new SolidBrush(Color), relative2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(Color), relative2, stringFormat, GetTextOrientation());
 					chartGraph.EndHotRegion();
 					break;
 				}
@@ -968,9 +972,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF rect = new RectangleF(relative2.Location, relative2.Size);
 					rect.X += num;
 					rect.Y += num;
-					chartGraph.DrawString(text, Font, new SolidBrush(gradientColor), rect, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(gradientColor), rect, stringFormat, GetTextOrientation());
 					chartGraph.StartHotRegion(href, toolTip);
-					chartGraph.DrawString(text, Font, new SolidBrush(Color), relative2, stringFormat, GetTextOrientation());
+					chartGraph.DrawString(text, bridgedTitleFont, chartGraph.ResourceFactory.CreateSolidBrush(Color), relative2, stringFormat, GetTextOrientation());
 					chartGraph.EndHotRegion();
 					break;
 				}
@@ -998,7 +1002,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				return;
 			}
 			RectangleF rectangleF = default(RectangleF);
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 			SizeF relative = new SizeF(chartAreasRectangle.Width, chartAreasRectangle.Height);
 			if (IsTextVertical)
 			{
@@ -1009,7 +1013,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			relative.Width -= 2f * elementSpacing;
 			relative.Height -= 2f * elementSpacing;
 			relative = chartGraph.GetAbsoluteSize(relative);
-			SizeF size = chartGraph.MeasureString(Text.Replace("\\n", "\n"), Font, relative, stringFormat, GetTextOrientation());
+			IChartFont bridgedFont = chartGraph.ResourceFactory.WrapFont(Font);
+			SizeF size = chartGraph.MeasureString(Text.Replace("\\n", "\n"), bridgedFont, relative, stringFormat, GetTextOrientation());
 			if (BackGroundIsVisible)
 			{
 				size.Width += titleBorderSpacing;
