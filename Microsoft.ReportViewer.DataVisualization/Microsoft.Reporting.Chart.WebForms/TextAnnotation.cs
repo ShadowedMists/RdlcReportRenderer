@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
@@ -235,7 +236,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (isEllipse)
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
+					using IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath();
 					graphicsPath.AddEllipse(rectangleF);
 					Chart.chartPicture.common.HotRegionsList.AddHotRegion(graphics, graphicsPath, relativePath: true, ReplaceKeywords(ToolTip), ReplaceKeywords(Href), ReplaceKeywords(MapAreaAttributes), this, ChartElementType.Annotation);
 				}
@@ -290,9 +291,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					rectangleF.X += textSpacing.X / 2f;
 				}
 			}
-			using (Brush brush = new SolidBrush(TextColor))
+			using (IBrush brush = graphics.ResourceFactory.CreateSolidBrush(TextColor))
 			{
-				StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic);
+				ITextFormat stringFormat = graphics.ResourceFactory.CreateTypographicTextFormat();
 				stringFormat.FormatFlags ^= StringFormatFlags.LineLimit;
 				stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 				if (Alignment == ContentAlignment.BottomRight || Alignment == ContentAlignment.MiddleRight || Alignment == ContentAlignment.TopRight)
@@ -311,6 +312,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					stringFormat.LineAlignment = StringAlignment.Center;
 				}
+				IChartFont bridgedTextFont = graphics.ResourceFactory.WrapFont(TextFont);
 				Color color = ChartGraphics.GetGradientColor(TextColor, Color.Black, 0.8);
 				int num3 = 1;
 				TextStyle textStyle = TextStyle;
@@ -321,7 +323,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				if (getTextPosition)
 				{
-					SizeF size = graphics.MeasureStringRel(ReplaceKeywords(this.text.Replace("\\n", "\n")), TextFont, rectangleF.Size, stringFormat);
+					SizeF size = graphics.MeasureStringRel(ReplaceKeywords(this.text.Replace("\\n", "\n")), bridgedTextFont, rectangleF.Size, stringFormat);
 					result = new RectangleF(rectangleF.Location, size);
 					if (Alignment == ContentAlignment.BottomRight || Alignment == ContentAlignment.MiddleRight || Alignment == ContentAlignment.TopRight)
 					{
@@ -345,15 +347,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 				switch (textStyle)
 				{
 				case TextStyle.Default:
-					graphics.DrawStringRel(text, TextFont, brush, rectangleF, stringFormat);
+					graphics.DrawStringRel(text, bridgedTextFont, brush, rectangleF, stringFormat);
 					return result;
 				case TextStyle.Frame:
 				{
-					using (GraphicsPath graphicsPath = new GraphicsPath())
+					IChartFont bridgedFrameFont = graphics.ResourceFactory.CreateFont(TextFont.FontFamily.Name, TextFont.Size * 1.3f, TextFont.Style, TextFont.Unit);
+					using (IGraphicsPath graphicsPath = graphics.ResourceFactory.CreatePath())
 					{
-						graphicsPath.AddString(text, TextFont.FontFamily, (int)TextFont.Style, TextFont.Size * 1.3f, absoluteRectangle, stringFormat);
+						graphicsPath.AddString(text, bridgedFrameFont, absoluteRectangle, stringFormat);
 						graphicsPath.CloseAllFigures();
-						graphics.DrawPath(new Pen(TextColor, 1f), graphicsPath);
+						graphics.DrawPath(graphics.ResourceFactory.CreatePen(TextColor, 1f), graphicsPath);
 						return result;
 					}
 				}
@@ -362,12 +365,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF layoutRectangle3 = new RectangleF(absoluteRectangle.Location, absoluteRectangle.Size);
 					layoutRectangle3.X -= 1f;
 					layoutRectangle3.Y -= 1f;
-					graphics.DrawString(text, TextFont, brush, layoutRectangle3, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, brush, layoutRectangle3, stringFormat);
 					layoutRectangle3.X += 2f;
 					layoutRectangle3.Y += 2f;
 					Color gradientColor2 = ChartGraphics.GetGradientColor(Color.White, TextColor, 0.3);
-					graphics.DrawString(text, TextFont, new SolidBrush(gradientColor2), layoutRectangle3, stringFormat);
-					graphics.DrawString(text, TextFont, brush, absoluteRectangle, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, graphics.ResourceFactory.CreateSolidBrush(gradientColor2), layoutRectangle3, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, brush, absoluteRectangle, stringFormat);
 					return result;
 				}
 				case TextStyle.Emboss:
@@ -375,12 +378,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF layoutRectangle2 = new RectangleF(absoluteRectangle.Location, absoluteRectangle.Size);
 					layoutRectangle2.X += 1f;
 					layoutRectangle2.Y += 1f;
-					graphics.DrawString(text, TextFont, new SolidBrush(color), layoutRectangle2, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, graphics.ResourceFactory.CreateSolidBrush(color), layoutRectangle2, stringFormat);
 					layoutRectangle2.X -= 2f;
 					layoutRectangle2.Y -= 2f;
 					Color gradientColor = ChartGraphics.GetGradientColor(Color.White, TextColor, 0.3);
-					graphics.DrawString(text, TextFont, new SolidBrush(gradientColor), layoutRectangle2, stringFormat);
-					graphics.DrawString(text, TextFont, brush, absoluteRectangle, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, graphics.ResourceFactory.CreateSolidBrush(gradientColor), layoutRectangle2, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, brush, absoluteRectangle, stringFormat);
 					return result;
 				}
 				case TextStyle.Shadow:
@@ -388,8 +391,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					RectangleF layoutRectangle = new RectangleF(absoluteRectangle.Location, absoluteRectangle.Size);
 					layoutRectangle.X += num3;
 					layoutRectangle.Y += num3;
-					graphics.DrawString(text, TextFont, new SolidBrush(color), layoutRectangle, stringFormat);
-					graphics.DrawString(text, TextFont, brush, absoluteRectangle, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, graphics.ResourceFactory.CreateSolidBrush(color), layoutRectangle, stringFormat);
+					graphics.DrawString(text, bridgedTextFont, brush, absoluteRectangle, stringFormat);
 					return result;
 				}
 				default:
@@ -419,8 +422,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			RectangleF result = RectangleF.Empty;
 			if (GetGraphics() != null && Text.Trim().Length > 0)
 			{
-				StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic);
-				contentSize = GetGraphics().MeasureString("W" + ReplaceKeywords(Text.Replace("\\n", "\n")), TextFont, new SizeF(2000f, 2000f), stringFormat);
+				ITextFormat stringFormat = GetGraphics().ResourceFactory.CreateTypographicTextFormat();
+				IChartFont bridgedTextFont = GetGraphics().ResourceFactory.WrapFont(TextFont);
+				contentSize = GetGraphics().MeasureString("W" + ReplaceKeywords(Text.Replace("\\n", "\n")), bridgedTextFont, new SizeF(2000f, 2000f), stringFormat);
 				contentSize.Height *= 1.04f;
 				contentSize = GetGraphics().GetRelativeSize(contentSize);
 				bool annotationRelative = false;

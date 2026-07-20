@@ -53,6 +53,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		void AddString(string text, IChartFont font, PointF origin, ITextFormat format);
 
+		void AddString(string text, IChartFont font, RectangleF layoutRect, ITextFormat format);
+
 		void StartFigure();
 
 		void CloseFigure();

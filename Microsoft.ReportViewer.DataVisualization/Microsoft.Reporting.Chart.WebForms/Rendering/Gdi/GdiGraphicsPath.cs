@@ -70,6 +70,13 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			NativePath.AddString(text, nativeFont.FontFamily, (int)nativeFont.Style, nativeFont.Size, origin, nativeFormat);
 		}
 
+		public void AddString(string text, IChartFont font, RectangleF layoutRect, ITextFormat format)
+		{
+			var nativeFont = ((GdiChartFont)font).NativeFont;
+			var nativeFormat = format == null ? null : ((GdiTextFormat)format).NativeFormat;
+			NativePath.AddString(text, nativeFont.FontFamily, (int)nativeFont.Style, nativeFont.Size, layoutRect, nativeFormat);
+		}
+
 		public void StartFigure() => NativePath.StartFigure();
 
 		public void CloseFigure() => NativePath.CloseFigure();

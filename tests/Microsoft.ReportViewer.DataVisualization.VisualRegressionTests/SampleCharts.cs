@@ -755,5 +755,81 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises TextAnnotation.DrawText for a given TextStyle — no prior baseline used
+        /// TextAnnotation at all, so its Font/Brush/StringFormat-to-IChartFont/IBrush/ITextFormat
+        /// bridge (added in the annotations B2 sweep) was previously unverified. TextStyle.Frame
+        /// in particular exercises the new IGraphicsPath.AddString(RectangleF) overload.
+        /// </summary>
+        private static byte[] RenderTextAnnotation(TextStyle style, bool ellipse = false)
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Column;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            TextAnnotation annotation = ellipse ? new EllipseAnnotation() : new TextAnnotation();
+            annotation.Text = "Peak Quarter";
+            annotation.TextStyle = style;
+            annotation.X = 20;
+            annotation.Y = 20;
+            annotation.Width = 40;
+            annotation.Height = 15;
+            chart.Annotations.Add(annotation);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        internal static byte[] RenderTextAnnotationDefault() => RenderTextAnnotation(TextStyle.Default);
+
+        internal static byte[] RenderTextAnnotationFrame() => RenderTextAnnotation(TextStyle.Frame);
+
+        internal static byte[] RenderTextAnnotationEmbed() => RenderTextAnnotation(TextStyle.Embed);
+
+        internal static byte[] RenderTextAnnotationEmboss() => RenderTextAnnotation(TextStyle.Emboss);
+
+        internal static byte[] RenderTextAnnotationShadow() => RenderTextAnnotation(TextStyle.Shadow);
+
+        internal static byte[] RenderTextAnnotationEllipse() => RenderTextAnnotation(TextStyle.Default, ellipse: true);
+
+        /// <summary>
+        /// Exercises Label.PaintCircular (the circular-chart-area axis title path) — a Radar
+        /// series makes the chart area circular (RadarChart.CircularChartArea), and each point's
+        /// AxisLabel becomes a circular axis title (ChartArea.GetCircularAxisList).
+        /// </summary>
+        internal static byte[] RenderRadarChartWithAxisLabels()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 400;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Radar;
+            series.Points.AddXY(1, 12);
+            series.Points[0].AxisLabel = "North";
+            series.Points.AddXY(2, 18);
+            series.Points[1].AxisLabel = "East";
+            series.Points.AddXY(3, 9);
+            series.Points[2].AxisLabel = "South";
+            series.Points.AddXY(4, 24);
+            series.Points[3].AxisLabel = "West";
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }

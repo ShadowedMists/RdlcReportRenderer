@@ -274,5 +274,65 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "Chart3DWithAxisTitles.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void TextAnnotationDefault_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationDefault();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationDefault.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TextAnnotationFrame_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationFrame();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationFrame.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TextAnnotationEmbed_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationEmbed();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationEmbed.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TextAnnotationEmboss_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationEmboss();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationEmboss.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TextAnnotationShadow_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationShadow();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationShadow.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TextAnnotationEllipse_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTextAnnotationEllipse();
+            var result = ImageComparer.CompareToBaseline(actual, "TextAnnotationEllipse.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void RadarChartWithAxisLabels_MatchesBaseline()
+        {
+            // maxDiffPixels: 10 — Label.PaintCircular's rotated-text anti-aliasing is not
+            // perfectly deterministic across process runs (confirmed against fully unmodified
+            // code too; see ImageComparer.CompareToBaseline's remarks). A handful of edge pixels
+            // on the rotated glyphs, not a real regression.
+            var actual = SampleCharts.RenderRadarChartWithAxisLabels();
+            var result = ImageComparer.CompareToBaseline(actual, "RadarChartWithAxisLabels.png", maxDiffPixels: 10);
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

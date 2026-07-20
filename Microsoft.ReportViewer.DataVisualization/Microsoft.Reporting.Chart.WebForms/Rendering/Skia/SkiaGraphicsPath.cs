@@ -111,6 +111,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void AddString(string text, IChartFont font, PointF origin, ITextFormat format) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void AddString(string text, IChartFont font, RectangleF layoutRect, ITextFormat format) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void StartFigure()
 		{
 			// SKPath has no explicit figure marker to "start" ahead of the next Add* call
