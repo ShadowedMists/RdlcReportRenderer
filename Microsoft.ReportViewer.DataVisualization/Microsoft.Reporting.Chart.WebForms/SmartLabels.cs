@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -107,13 +108,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 		internal virtual void DrawCallout(CommonElements common, ChartGraphics graph, ChartArea area, SmartLabelsStyle smartLabelsStyle, PointF labelPosition, SizeF labelSize, StringFormat format, PointF markerPosition, SizeF markerSize, LabelAlignmentTypes labelAlignment)
 		{
 			RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(GetLabelPosition(graph, labelPosition, labelSize, format, adjustForDrawing: true));
+			// AdjustableArrowCap (below) has no IPen equivalent (documented gap, chart-gdi-type-abstraction.md
+			// C3 notes), so this pen stays concrete rather than being half-converted.
 			Pen pen = new Pen(smartLabelsStyle.CalloutLineColor, smartLabelsStyle.CalloutLineWidth);
 			pen.DashStyle = graph.GetPenStyle(smartLabelsStyle.CalloutLineStyle);
 			if (smartLabelsStyle.CalloutStyle == LabelCalloutStyle.Box)
 			{
 				if (smartLabelsStyle.CalloutBackColor != Color.Transparent)
 				{
-					Brush brush = new SolidBrush(smartLabelsStyle.CalloutBackColor);
+					IBrush brush = graph.ResourceFactory.CreateSolidBrush(smartLabelsStyle.CalloutBackColor);
 					graph.FillRectangle(brush, absoluteRectangle);
 				}
 				graph.DrawRectangle(pen, absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height);

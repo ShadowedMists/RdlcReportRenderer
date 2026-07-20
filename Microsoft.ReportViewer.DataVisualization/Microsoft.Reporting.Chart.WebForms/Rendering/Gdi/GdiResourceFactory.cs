@@ -68,6 +68,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			return new GdiChartFont(new Font(nativePrototype.FontFamily, newSizeInPoints, nativePrototype.Style, GraphicsUnit.Point));
 		}
 
+		public IChartFont WrapFont(Font font) => new GdiChartFont(font);
+
 		public ITextFormat CreateTextFormat() => new GdiTextFormat(new StringFormat());
 
 		public ITextFormat CreateTypographicTextFormat() => new GdiTextFormat(new StringFormat(StringFormat.GenericTypographic));

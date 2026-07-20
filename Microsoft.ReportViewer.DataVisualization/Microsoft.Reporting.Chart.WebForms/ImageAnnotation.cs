@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System.ComponentModel;
 using System.Drawing;
@@ -293,14 +294,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (imageName.Length == 0 && Chart.IsDesignMode())
 				{
 					graphics.FillRectangleRelResource(rectangleF, BackColor, BackHatchStyle, imageName, imageMode, imageTransparentColor, GetImageAlignment(Alignment), BackGradientType, BackGradientEndColor, LineColor, LineWidth, LineStyle, ShadowColor, ShadowOffset, PenAlignment.Center);
-					using (Brush brush = new SolidBrush(TextColor))
+					using (IBrush brush = graphics.ResourceFactory.CreateSolidBrush(TextColor))
 					{
-						StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic);
+						ITextFormat stringFormat = graphics.ResourceFactory.CreateTypographicTextFormat();
 						stringFormat.Alignment = StringAlignment.Center;
 						stringFormat.LineAlignment = StringAlignment.Center;
 						stringFormat.FormatFlags = StringFormatFlags.LineLimit;
 						stringFormat.Trimming = StringTrimming.EllipsisCharacter;
-						graphics.DrawStringRel("(no image)", TextFont, brush, rectangleF, stringFormat);
+						IChartFont bridgedTextFont = graphics.ResourceFactory.WrapFont(TextFont);
+						graphics.DrawStringRel("(no image)", bridgedTextFont, brush, rectangleF, stringFormat);
 					}
 				}
 				else

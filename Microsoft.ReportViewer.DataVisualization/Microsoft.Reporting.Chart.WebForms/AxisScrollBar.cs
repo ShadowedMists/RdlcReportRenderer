@@ -371,7 +371,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					array2[2].X = absoluteRectangle.Right - (num2 + 1f);
 					array2[2].Y = absoluteRectangle.Bottom - num2;
 				}
-				graph.FillPolygon(new SolidBrush(lineCurrentColor), array2);
+				graph.FillPolygon(graph.ResourceFactory.CreateSolidBrush(lineCurrentColor), array2);
 				break;
 			}
 			case ScrollBarButtonType.SmallIncrement:

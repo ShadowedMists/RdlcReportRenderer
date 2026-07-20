@@ -328,7 +328,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void PaintCircular(ChartGraphics graph)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			if (!axis.LabelStyle.Enabled)
@@ -406,11 +406,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						titleColor = item.TitleColor;
 					}
-					graph.DrawString(item.Title.Replace("\\n", "\n"), (axis.autoLabelFont == null) ? font : axis.autoLabelFont, new SolidBrush(titleColor), array[0], stringFormat);
+					Font titleFont = (axis.autoLabelFont == null) ? font : axis.autoLabelFont;
+					IChartFont bridgedTitleFont = graph.ResourceFactory.WrapFont(titleFont);
+					graph.DrawString(item.Title.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(titleColor), array[0], stringFormat);
 					graph.StopAnimation();
 					if (axis.Common.ProcessModeRegions)
 					{
-						SizeF size = graph.MeasureString(item.Title.Replace("\\n", "\n"), (axis.autoLabelFont == null) ? font : axis.autoLabelFont);
+						SizeF size = graph.MeasureString(item.Title.Replace("\\n", "\n"), bridgedTitleFont);
 						RectangleF labelPosition = GetLabelPosition(graph, array[0], size, stringFormat);
 						PointF[] points = new PointF[4]
 						{
@@ -419,10 +421,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 							new PointF(labelPosition.Right, labelPosition.Bottom),
 							new PointF(labelPosition.X, labelPosition.Bottom)
 						};
-						GraphicsPath graphicsPath = new GraphicsPath();
+						using IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 						graphicsPath.AddPolygon(points);
 						graphicsPath.CloseAllFigures();
-						graphicsPath.Transform(graph.Transform);
+						graphicsPath.Transform(graph.GetTransform());
 						try
 						{
 							axis.Common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, graph, ChartElementType.AxisLabels, item.Title);
@@ -440,7 +442,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		internal static RectangleF GetLabelPosition(ChartGraphics graph, PointF position, SizeF size, StringFormat format)
+		internal static RectangleF GetLabelPosition(ChartGraphics graph, PointF position, SizeF size, ITextFormat format)
 		{
 			RectangleF empty = RectangleF.Empty;
 			empty.Width = size.Width;

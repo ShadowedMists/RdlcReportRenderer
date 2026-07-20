@@ -23,7 +23,17 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         // inputs, so this only needs to absorb encoder rounding, not anti-aliasing drift.
         private const int ChannelTolerance = 2;
 
-        internal static ImageDiffResult CompareToBaseline(byte[] actualPngBytes, string baselineName)
+        /// <summary>
+        /// Allows a handful of pixels to exceed <see cref="ChannelTolerance"/>. Found (2026-07-20)
+        /// that GDI+'s anti-aliasing for rotated text is not perfectly deterministic across
+        /// separate process runs on this machine — confirmed by rendering fully unmodified,
+        /// pre-existing code twice in separate `dotnet test` invocations and seeing the same 3
+        /// pixels (out of 160000, all on a single rotated glyph edge) drift by a few tolerance
+        /// units each time. Not caused by any GDI+-abstraction conversion; a pre-existing property
+        /// of rotated-text rendering the harness's "fully deterministic" assumption didn't cover.
+        /// Default 0 preserves strict comparison for every other (axis-aligned or unrotated) test.
+        /// </summary>
+        internal static ImageDiffResult CompareToBaseline(byte[] actualPngBytes, string baselineName, int maxDiffPixels = 0)
         {
             var baselinePath = Path.Combine(AppContext.BaseDirectory, "Baselines", baselineName);
             var resultsDir = Path.Combine(AppContext.BaseDirectory, "Results");
@@ -79,7 +89,7 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
                 }
             }
 
-            if (diffPixels == 0)
+            if (diffPixels <= maxDiffPixels)
             {
                 return new ImageDiffResult { Matches = true };
             }

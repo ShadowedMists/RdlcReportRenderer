@@ -54,6 +54,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public IChartFont DeriveFont(IChartFont prototype, float newSizeInPoints) => new SkiaChartFont(prototype.FontFamilyName, newSizeInPoints, prototype.Style);
 
+		public IChartFont WrapFont(Font font) => new SkiaChartFont(font.FontFamily.Name, font.Size, font.Style);
+
 		public ITextFormat CreateTextFormat() => new SkiaTextFormat();
 
 		public ITextFormat CreateTypographicTextFormat() => new SkiaTextFormat();

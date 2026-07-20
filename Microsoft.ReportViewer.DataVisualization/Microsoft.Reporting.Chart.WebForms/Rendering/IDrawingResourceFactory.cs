@@ -65,6 +65,18 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		IChartFont DeriveFont(IChartFont prototype, float newSizeInPoints);
 
+		/// <summary>
+		/// Wrap an already-constructed native <see cref="Font"/> as an <see cref="IChartFont"/>,
+		/// without reconstructing it from decomposed properties. Reconstructing via
+		/// <c>CreateFont(familyName, size, style, unit)</c> is not always byte-for-byte lossless —
+		/// found during the annotations/labels B2 sweep, where re-deriving a font for a public
+		/// model <see cref="Font"/> property (e.g. <c>Label.font</c>) shifted anti-aliased glyph
+		/// edges by a few pixels versus reusing the original <see cref="Font"/> instance directly.
+		/// Use this instead of <c>CreateFont</c> whenever the original concrete <see cref="Font"/>
+		/// is already in scope.
+		/// </summary>
+		IChartFont WrapFont(Font font);
+
 		// --- Text formats (A.3) ---
 		ITextFormat CreateTextFormat();
 
