@@ -1110,7 +1110,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				stringFormat.LineAlignment = StringAlignment.Center;
 			}
-			graph.DrawStringRel(text.Replace("\\n", "\n"), TitleFont, new SolidBrush(TitleColor), titlePosition, stringFormat, GetTextOrientation());
+			IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
+			ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
+			bridgedTitleFormat.Alignment = stringFormat.Alignment;
+			bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
+			bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
+			bridgedTitleFormat.Trimming = stringFormat.Trimming;
+			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), titlePosition, bridgedTitleFormat, GetTextOrientation());
 			if (base.Common.ProcessModeRegions)
 			{
 				RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(titlePosition);
@@ -1119,7 +1125,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					new PointF(absoluteRectangle.X, absoluteRectangle.Y),
 					new PointF(absoluteRectangle.Right, absoluteRectangle.Bottom)
 				};
-				graph.Transform.TransformPoints(array);
+				graph.GetTransform().TransformPoints(array);
 				absoluteRectangle = new RectangleF(array[0].X, array[0].Y, array[1].X - array[0].X, array[1].Y - array[0].Y);
 				if (absoluteRectangle.Width < 0f)
 				{
@@ -1436,11 +1442,18 @@ namespace Microsoft.Reporting.Chart.WebForms
 			stringFormat.Alignment = StringAlignment.Center;
 			if (!pointF.IsEmpty && !float.IsNaN(pointF.X) && !float.IsNaN(pointF.Y))
 			{
-				graph.DrawStringRel(text.Replace("\\n", "\n"), TitleFont, new SolidBrush(TitleColor), pointF, stringFormat, num, GetTextOrientation());
+				IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
+				ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedTitleFormat.Alignment = stringFormat.Alignment;
+				bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
+				bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
+				bridgedTitleFormat.Trimming = stringFormat.Trimming;
+				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, bridgedTitleFormat, num, GetTextOrientation());
 				if (base.Common.ProcessModeRegions)
 				{
-					GraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
-					base.Common.HotRegionsList.AddHotRegion(tranformedTextRectPath, relativePath: false, graph, ChartElementType.AxisTitle, this);
+					using GraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
+					using IGraphicsPath tranformedTextRectPathResource = graph.ResourceFactory.CreatePath(tranformedTextRectPath.PathPoints, tranformedTextRectPath.PathTypes);
+					base.Common.HotRegionsList.AddHotRegion(tranformedTextRectPathResource, relativePath: false, graph, ChartElementType.AxisTitle, this);
 				}
 			}
 		}
@@ -1494,7 +1507,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (chartArea.chartAreaIsCurcular)
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
+					using IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 					PointF absolutePoint = graph.GetAbsolutePoint(pointF);
 					PointF absolutePoint2 = graph.GetAbsolutePoint(pointF2);
 					if (AxisPosition == AxisPosition.Bottom)
@@ -1521,12 +1534,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 						graphicsPath.AddLine(absolutePoint2.X + 1.5f, absolutePoint2.Y, absolutePoint.X + 1.5f, absolutePoint.Y);
 						graphicsPath.CloseAllFigures();
 					}
-					graphicsPath.Transform(graph.Transform);
+					graphicsPath.Transform(graph.GetTransform());
 					base.Common.HotRegionsList.AddHotRegion(graph, graphicsPath, relativePath: false, toolTip, href, mapAreaAttributes, this, ChartElementType.Axis);
 				}
 				else if (!chartArea.Area3DStyle.Enable3D)
 				{
-					GraphicsPath graphicsPath2 = new GraphicsPath();
+					using IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 					PointF absolutePoint3 = graph.GetAbsolutePoint(pointF);
 					PointF absolutePoint4 = graph.GetAbsolutePoint(pointF2);
 					if (AxisPosition == AxisPosition.Bottom)

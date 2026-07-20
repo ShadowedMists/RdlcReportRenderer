@@ -734,7 +734,25 @@ namespace Microsoft.Reporting.Chart.WebForms
 			DrawStringRel(text, font, brush, position, format, angle);
 		}
 
+		internal void DrawStringRel(string text, IChartFont font, IBrush brush, PointF position, ITextFormat format, int angle, TextOrientation textOrientation)
+		{
+			if (textOrientation == TextOrientation.Stacked)
+			{
+				text = GetStackedText(text);
+			}
+			DrawStringRel(text, font, brush, position, format, angle);
+		}
+
 		internal void DrawStringRel(string text, Font font, Brush brush, RectangleF position, StringFormat format, TextOrientation textOrientation)
+		{
+			if (textOrientation == TextOrientation.Stacked)
+			{
+				text = GetStackedText(text);
+			}
+			DrawStringRel(text, font, brush, position, format);
+		}
+
+		internal void DrawStringRel(string text, IChartFont font, IBrush brush, RectangleF position, ITextFormat format, TextOrientation textOrientation)
 		{
 			if (textOrientation == TextOrientation.Stacked)
 			{

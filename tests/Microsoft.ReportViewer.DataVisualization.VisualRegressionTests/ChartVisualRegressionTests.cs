@@ -258,5 +258,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "LineChart3D.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void ChartWithAxisTitles_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderChartWithAxisTitles();
+            var result = ImageComparer.CompareToBaseline(actual, "ChartWithAxisTitles.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void Chart3DWithAxisTitles_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderChart3DWithAxisTitles();
+            var result = ImageComparer.CompareToBaseline(actual, "Chart3DWithAxisTitles.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }
