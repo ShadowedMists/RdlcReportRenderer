@@ -700,5 +700,60 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises Axis.DrawAxisTitle (2D path) — no other sample chart sets Axis.Title, so the
+        /// TitleFont/TitleColor Font/Brush-to-IChartFont/IBrush bridge added during the B2 sweep
+        /// (tasks/chart-gdi-type-abstraction.md) was previously unverified against real pixels.
+        /// </summary>
+        internal static byte[] RenderChartWithAxisTitles()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].AxisX.Title = "Quarter";
+            chart.ChartAreas[0].AxisY.Title = "Revenue";
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises Axis.DrawAxis3DTitle (the 3D counterpart of DrawAxisTitle, taken by a
+        /// non-circular 3D chart area) — same TitleFont/TitleColor bridge, different call site,
+        /// previously unverified for the same reason as RenderChartWithAxisTitles.
+        /// </summary>
+        internal static byte[] RenderChart3DWithAxisTitles()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].Area3DStyle.Enable3D = true;
+            chart.ChartAreas[0].AxisX.Title = "Quarter";
+            chart.ChartAreas[0].AxisY.Title = "Revenue";
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Column;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }
