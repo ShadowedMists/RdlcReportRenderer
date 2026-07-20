@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.IO;
 using Microsoft.Reporting.Chart.WebForms;
 
@@ -826,6 +827,107 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points[2].AxisLabel = "South";
             series.Points.AddXY(4, 24);
             series.Points[3].AxisLabel = "West";
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises StripLine.PaintTitle — no prior baseline used a StripLine with a Title set,
+        /// so its StringFormat/Font/Brush-to-ITextFormat/IChartFont/IBrush bridge (annotations/
+        /// axis/label sweep) was previously unverified.
+        /// </summary>
+        internal static byte[] RenderStripLineWithTitle()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            var stripLine = new StripLine();
+            chart.ChartAreas[0].AxisY.StripLines.Add(stripLine);
+            stripLine.IntervalOffset = 15;
+            stripLine.StripWidth = 5;
+            stripLine.BackColor = Color.LightGray;
+            stripLine.Title = "Target";
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Exercises Title.Paint for a given TextStyle — no prior baseline set Title.Style away
+        /// from Default, so Title's own Font/Brush/StringFormat bridge (distinct from
+        /// TextAnnotation's, same switch shape) was previously unverified. TextStyle.Frame in
+        /// particular exercises the new IGraphicsPath.AddString(RectangleF) overload from a
+        /// second, independent call site.
+        /// </summary>
+        private static byte[] RenderTitleWithStyle(TextStyle style)
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            var title = chart.Titles.Add("Chart Title");
+            title.Style = style;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Column;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
+
+        internal static byte[] RenderTitleFrame() => RenderTitleWithStyle(TextStyle.Frame);
+
+        internal static byte[] RenderTitleEmbed() => RenderTitleWithStyle(TextStyle.Embed);
+
+        internal static byte[] RenderTitleEmboss() => RenderTitleWithStyle(TextStyle.Emboss);
+
+        internal static byte[] RenderTitleShadow() => RenderTitleWithStyle(TextStyle.Shadow);
+
+        /// <summary>
+        /// Exercises Legend.DrawLegendTitle and Legend.DrawLegendHeader — no prior baseline set
+        /// Legend.Title or a LegendCellColumn.HeaderText, so their Font/Brush/StringFormat
+        /// bridges (annotations/axis/label sweep) were previously unverified. (LegendCell.
+        /// PaintCellText itself is already exercised by every other baseline, since a default
+        /// "Default" legend with a text cell is always present.)
+        /// </summary>
+        internal static byte[] RenderLegendWithTitleAndHeader()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Bar;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            var legend = chart.Legends["Default"];
+            legend.Title = "Series";
+            legend.TitleAlignment = StringAlignment.Center;
+            legend.CellColumns.Add("Name", LegendCellColumnType.Text, "#LEGENDTEXT", ContentAlignment.MiddleCenter);
 
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);

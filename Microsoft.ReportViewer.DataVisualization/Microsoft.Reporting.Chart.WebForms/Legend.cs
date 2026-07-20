@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
@@ -2471,15 +2472,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 						chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), legendCellColumn.HeaderBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
 						chartGraph.StopAnimation();
 					}
-					using (SolidBrush brush = new SolidBrush(legendCellColumn.HeaderColor))
+					using (IBrush brush = chartGraph.ResourceFactory.CreateSolidBrush(legendCellColumn.HeaderColor))
 					{
-						StringFormat stringFormat = new StringFormat();
+						ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 						stringFormat.Alignment = legendCellColumn.HeaderTextAlignment;
 						stringFormat.LineAlignment = StringAlignment.Center;
 						stringFormat.FormatFlags = StringFormatFlags.LineLimit;
 						stringFormat.Trimming = StringTrimming.EllipsisCharacter;
+						IChartFont bridgedHeaderFont = chartGraph.ResourceFactory.WrapFont(legendCellColumn.HeaderFont);
 						chartGraph.StartAnimation();
-						chartGraph.DrawStringRel(legendCellColumn.HeaderText, legendCellColumn.HeaderFont, brush, chartGraph.GetRelativeRectangle(rectangle), stringFormat);
+						chartGraph.DrawStringRel(legendCellColumn.HeaderText, bridgedHeaderFont, brush, chartGraph.GetRelativeRectangle(rectangle), stringFormat);
 						chartGraph.StopAnimation();
 					}
 				}
@@ -2528,9 +2530,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), TitleBackColor, ChartHatchStyle.None, string.Empty, ChartImageWrapMode.Tile, Color.Empty, ChartImageAlign.Center, GradientType.None, Color.Empty, Color.Empty, 0, ChartDashStyle.NotSet, Color.Empty, 0, PenAlignment.Inset);
 					chartGraph.StopAnimation();
 				}
-				using (SolidBrush brush = new SolidBrush(TitleColor))
+				using (IBrush brush = chartGraph.ResourceFactory.CreateSolidBrush(TitleColor))
 				{
-					StringFormat stringFormat = new StringFormat();
+					ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 					stringFormat.Alignment = TitleAlignment;
 					Rectangle r2 = titlePosition;
 					r2.Y += offset.Height;
@@ -2539,7 +2541,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					r2.Width -= GetBorderSize() * 2 + offset.Width;
 					chartGraph.StartAnimation();
 					r2.Intersect(rect);
-					chartGraph.DrawStringRel(Title.Replace("\\n", "\n"), TitleFont, brush, chartGraph.GetRelativeRectangle(r2), stringFormat);
+					IChartFont bridgedTitleFont = chartGraph.ResourceFactory.WrapFont(TitleFont);
+					chartGraph.DrawStringRel(Title.Replace("\\n", "\n"), bridgedTitleFont, brush, chartGraph.GetRelativeRectangle(r2), stringFormat);
 					chartGraph.StopAnimation();
 				}
 				Rectangle rectangle = titlePosition;

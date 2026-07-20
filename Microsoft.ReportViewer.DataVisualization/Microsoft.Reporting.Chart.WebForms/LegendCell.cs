@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
+using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
 using System.ComponentModel;
@@ -741,9 +742,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Font cellFont = GetCellFont(legendAutoFont, fontSizeReducedBy, out disposeFont);
 			chartGraph.StartHotRegion(GetCellHref(), GetCellToolTip());
 			chartGraph.StartAnimation();
-			using (SolidBrush brush = new SolidBrush(GetCellTextColor()))
+			using (IBrush brush = chartGraph.ResourceFactory.CreateSolidBrush(GetCellTextColor()))
 			{
-				StringFormat stringFormat = new StringFormat(StringFormat.GenericDefault);
+				IChartFont bridgedCellFont = chartGraph.ResourceFactory.WrapFont(cellFont);
+				ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 				stringFormat.FormatFlags = StringFormatFlags.LineLimit;
 				stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 				stringFormat.Alignment = StringAlignment.Center;
@@ -764,7 +766,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					stringFormat.LineAlignment = StringAlignment.Near;
 				}
-				SizeF sizeF = chartGraph.MeasureStringAbs(GetCellText(), cellFont, new SizeF(10000f, 10000f), stringFormat);
+				SizeF sizeF = chartGraph.MeasureStringAbs(GetCellText(), bridgedCellFont, new SizeF(10000f, 10000f), stringFormat);
 				if (sizeF.Height > (float)cellPosition.Height && (stringFormat.FormatFlags & StringFormatFlags.LineLimit) != 0)
 				{
 					stringFormat.FormatFlags ^= StringFormatFlags.LineLimit;
@@ -773,7 +775,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 				}
-				chartGraph.DrawStringRel(GetCellText(), cellFont, brush, chartGraph.GetRelativeRectangle(cellPosition), stringFormat);
+				chartGraph.DrawStringRel(GetCellText(), bridgedCellFont, brush, chartGraph.GetRelativeRectangle(cellPosition), stringFormat);
 			}
 			chartGraph.StopAnimation();
 			chartGraph.EndHotRegion();

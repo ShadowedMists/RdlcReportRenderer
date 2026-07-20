@@ -334,5 +334,53 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "RadarChartWithAxisLabels.png", maxDiffPixels: 10);
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void StripLineWithTitle_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderStripLineWithTitle();
+            var result = ImageComparer.CompareToBaseline(actual, "StripLineWithTitle.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TitleFrame_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTitleFrame();
+            var result = ImageComparer.CompareToBaseline(actual, "TitleFrame.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TitleEmbed_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTitleEmbed();
+            var result = ImageComparer.CompareToBaseline(actual, "TitleEmbed.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TitleEmboss_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTitleEmboss();
+            var result = ImageComparer.CompareToBaseline(actual, "TitleEmboss.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void TitleShadow_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderTitleShadow();
+            var result = ImageComparer.CompareToBaseline(actual, "TitleShadow.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
+
+        [TestMethod]
+        public void LegendWithTitleAndHeader_MatchesBaseline()
+        {
+            var actual = SampleCharts.RenderLegendWithTitleAndHeader();
+            var result = ImageComparer.CompareToBaseline(actual, "LegendWithTitleAndHeader.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }
