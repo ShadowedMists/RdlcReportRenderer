@@ -671,5 +671,34 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// </summary>
         internal static byte[] RenderCalloutSimpleLine() =>
             RenderCallout(CalloutStyle.SimpleLine, 10, 10);
+
+        /// <summary>
+        /// Exercises ChartGraphics3D's frontLinePen field (Draw3DPolygon/Draw3DSurface): a 3D
+        /// line chart with the default Area3DStyle.Perspective == 0 defers drawing each
+        /// segment's front-facing edge until the next segment's call (or the series' last call),
+        /// carrying the pen across calls via the frontLinePen/frontLinePoint1/frontLinePoint2
+        /// fields. Multiple points ensure the carry-over path actually executes more than once.
+        /// </summary>
+        internal static byte[] RenderLineChart3D()
+        {
+            using var chart = new Chart();
+            chart.Width = 400;
+            chart.Height = 300;
+
+            chart.ChartAreas.Add("Default");
+            chart.ChartAreas[0].Area3DStyle.Enable3D = true;
+
+            var series = chart.Series.Add("Sales");
+            series.ChartType = SeriesChartType.Line;
+            series.BorderWidth = 3;
+            series.Points.AddXY("Q1", 12);
+            series.Points.AddXY("Q2", 18);
+            series.Points.AddXY("Q3", 9);
+            series.Points.AddXY("Q4", 24);
+
+            using var stream = new MemoryStream();
+            chart.Save(stream, ChartImageFormat.Png);
+            return stream.ToArray();
+        }
     }
 }
