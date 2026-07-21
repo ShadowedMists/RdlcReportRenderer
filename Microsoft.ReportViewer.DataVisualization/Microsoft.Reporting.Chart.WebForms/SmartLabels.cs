@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.ChartTypes;
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.Drawing;

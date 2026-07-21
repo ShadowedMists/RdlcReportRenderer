@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Numerics;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	/// <summary>
 	/// Mutable geometry builder. Abstracts <see cref="System.Drawing.Drawing2D.GraphicsPath"/>.

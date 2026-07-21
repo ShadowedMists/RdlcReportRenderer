@@ -1,5 +1,6 @@
 using System.Drawing;
 using SkiaSharp;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {

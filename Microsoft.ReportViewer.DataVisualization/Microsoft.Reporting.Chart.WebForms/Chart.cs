@@ -1293,25 +1293,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					chartPicture.SaveIntoMetafile(imageStream, emfType);
 					return;
 				}
-				Image image = chartPicture.GetImage(ImageResolution);
-				ImageFormat format2 = ImageFormat.Png;
-				switch (format)
-				{
-				case ChartImageFormat.Bmp:
-					format2 = ImageFormat.Bmp;
-					break;
-				case ChartImageFormat.Jpeg:
-					format2 = ImageFormat.Jpeg;
-					break;
-				case ChartImageFormat.Png:
-					format2 = ImageFormat.Png;
-					break;
-				case ChartImageFormat.Emf:
-					format2 = ImageFormat.Emf;
-					break;
-				}
-				image.Save(imageStream, format2);
-				image.Dispose();
+				chartPicture.SaveImage(imageStream, format, ImageResolution);
 			}
 			finally
 			{

@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.Borders3D;
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Svg;
 using Microsoft.Reporting.Chart.WebForms.Utilities;

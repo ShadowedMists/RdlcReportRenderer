@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	/// <summary>
 	/// Fill resource. Abstracts the <see cref="System.Drawing.Brush"/> hierarchy.

@@ -1,18 +1,18 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.IO;
+using System.Drawing.Imaging;
 using Microsoft.Reporting.Rendering;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
+namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 {
 	/// <summary>
-	/// Milestone A2 — the GDI+ implementation of <see cref="IDrawingResourceFactory"/>.
+	/// Milestone A2 — the GDI+ implementation of <see cref="IGaugeDrawingResourceFactory"/>.
 	/// Behavior-identical to today: every method constructs the same concrete
 	/// <c>System.Drawing</c> object the engine currently creates directly, just
 	/// wrapped behind its port interface.
 	/// </summary>
-	internal sealed class GdiResourceFactory : IDrawingResourceFactory
+	internal sealed class GdiResourceFactory : IGaugeDrawingResourceFactory
 	{
 		public IPen CreatePen(Color color, float width) => new GdiPen(color, width);
 
@@ -33,20 +33,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>
 			new GdiLinearGradientBrush(rect, startColor, endColor, angle);
 
-		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode) =>
-			new GdiTextureBrush(((GdiChartImage)image).NativeImage, wrapMode);
+		public ITextureBrush CreateTextureBrush(Image image, WrapMode wrapMode) => new GdiTextureBrush(image, wrapMode);
 
-		public ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options) =>
-			new GdiTextureBrush(((GdiChartImage)image).NativeImage, rect, ((GdiImageDrawOptions)options)?.NativeAttributes);
+		public ITextureBrush CreateTextureBrush(Image image, RectangleF rect, ImageAttributes attributes) =>
+			new GdiTextureBrush(image, rect, attributes);
 
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			new GdiHatchBrush(style, foreColor, backColor);
 
 		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new GdiPathGradientBrush(path);
-
-		public IChartImage LoadImage(Stream stream) => new GdiChartImage(Image.FromStream(stream));
-
-		public IChartImage WrapImage(Image image) => new GdiChartImage(image);
 
 		public IChartFont CreateFont(string familyName, float sizeInPoints) =>
 			new GdiChartFont(new Font(familyName, sizeInPoints));
@@ -57,36 +52,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		public IChartFont CreateFont(string familyName, float size, FontStyle style, GraphicsUnit unit) =>
 			new GdiChartFont(new Font(familyName, size, style, unit));
 
-		public IChartFont DeriveFont(IChartFont prototype, FontStyle style)
-		{
-			var nativePrototype = ((GdiChartFont)prototype).NativeFont;
-			return new GdiChartFont(new Font(nativePrototype.FontFamily, nativePrototype.Size, style, nativePrototype.Unit));
-		}
-
-		public IChartFont DeriveFont(IChartFont prototype, float newSizeInPoints)
-		{
-			var nativePrototype = ((GdiChartFont)prototype).NativeFont;
-			return new GdiChartFont(new Font(nativePrototype.FontFamily, newSizeInPoints, nativePrototype.Style, GraphicsUnit.Point));
-		}
-
 		public IChartFont WrapFont(Font font) => new GdiChartFont(font);
 
 		public ITextFormat CreateTextFormat() => new GdiTextFormat(new StringFormat());
 
 		public ITextFormat CreateTypographicTextFormat() => new GdiTextFormat(new StringFormat(StringFormat.GenericTypographic));
 
-		public ITextFormat CreateDefaultTextFormat() => new GdiTextFormat(new StringFormat(StringFormat.GenericDefault));
-
 		public IGraphicsPath CreatePath() => new GdiGraphicsPath();
 
 		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => new GdiGraphicsPath(points, types);
-
-		public IClipRegion CreateRegion() => new GdiClipRegion();
-
-		public IClipRegion CreateRegion(RectangleF rect) => new GdiClipRegion(rect);
-
-		public IClipRegion CreateRegion(IGraphicsPath path) => new GdiClipRegion(path);
-
-		public IImageDrawOptions CreateImageDrawOptions() => new GdiImageDrawOptions();
 	}
 }
