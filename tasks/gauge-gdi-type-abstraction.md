@@ -98,15 +98,72 @@ which stayed, why `IClipRegion` stayed put). Net result:
 
 ### Milestone B — Migrate the chokepoint
 
-- [ ] **B1. Inject `IGaugeDrawingResourceFactory` into `GaugeGraphics`** as a constructor/settable field
-  (mirrors Chart's B1a) — infrastructure only, not consumed yet.
-- [ ] **B2. Real call-site conversion**, file by file, same bridge-at-the-sink pattern as the Chart
-  engine: public model properties (e.g. any `Font`/`GraphicsPath` a consumer can set directly) stay
-  concrete forever; only the rendering call itself moves to interface types. `GaugeGraphics.cs` first
-  (chokepoint, ~20% of the surface), then the top files by construction-site count: `DigitalSegment.cs`,
-  `BackFrame.cs`, `Knob.cs`, `GaugeCore.cs`, `StateIndicator.cs`, `CircularPointer.cs`, `CircularScale.cs`,
-  `GaugeLabel.cs`, `XamlRenderer.cs`, `GaugeImage.cs`, `NumericIndicator.cs`, `LinearPointer.cs`,
-  `ScaleBase.cs`, `CircularGauge.cs`/`LinearGauge.cs`.
+- [x] **B1. Inject `IGaugeDrawingResourceFactory` into `GaugeGraphics`** (2026-07-21) — turned out to
+  already be satisfied by inheritance, not a new field: `GaugeGraphics : RenderingEngine`, and
+  `RenderingEngine.ResourceFactory` (settable, defaults to `new GdiResourceFactory()`) was already
+  added during A3 (see above) specifically so gauge painter classes could reach it. Unlike Chart, where
+  `ChartGraphics` doesn't inherit from a class carrying the factory (hence needing its own field for
+  B1a), `GaugeGraphics` gets it for free via the base class — adding a second, redundant field on
+  `GaugeGraphics` itself would just be duplication. No code change; documenting the check as done since
+  the infrastructure genuinely exists and is reachable (`this.ResourceFactory` from any `GaugeGraphics`
+  method).
+- [~] **B2. Real call-site conversion** — started (2026-07-21), first slice landed; large remaining
+  scope, same shape as the Chart engine's own multi-session B2 saga (see
+  `chart-gdi-type-abstraction.md`'s Milestone B2 entry for the pattern this is following: shared
+  brush/pen locals mixing multiple concrete-returning helpers block naive conversion; only genuinely
+  self-contained call clusters convert cleanly without a much larger atomic pass).
+  - **Landed**: `GaugeGraphics.cs`'s design-time/interactive **selection-drawing cluster**
+    (`GetDesignTimeSelectionFillBrush`, `GetDesignTimeSelectionBorderPen`, `DrawSelection` (both
+    overloads), and the marker-drawing half of `DrawRadialSelection`) — chosen because tracing actual
+    callers showed this cluster is genuinely self-contained: none of `DrawSelection`'s parameters are
+    concrete GDI+ resource types (only `RectangleF`/`bool`/`Color`), and its internal `Pen`/`Brush`
+    locals only ever flow into `DrawRectangle`/`FillEllipse`/`DrawEllipse` — all of which already have
+    interface-typed overloads on `RenderingEngine` from A3. Converted `GetDesignTimeSelectionFillBrush`
+    or `GetDesignTimeSelectionBorderPen`'s return types directly to `IBrush`/`IPen` (both had exactly 2
+    internal-only callers, safe to retype outright, no dual-overload needed). Added a new sibling
+    `GetSelectionPenResource(bool, Color) : IPen` alongside the original concrete `GetSelectionPen`
+    (dual-overload strategy, same as Chart's) — the original stays because `DrawRadialSelection`'s
+    `DrawPath(pen, selectionPath)` call needs a concrete `Pen` (its `GraphicsPath` parameter is built by
+    `CircularScale.GetBarPath` and stays concrete; no mixed `DrawPath(IPen, GraphicsPath)` overload
+    exists, matching Chart's own `DrawPathAbs` finding). `DrawRadialSelection`'s marker-drawing loop
+    (independent of the path) converted fully to `IBrush`/`IPen`.
+  - **New, small, genuine gap found and fixed**: `IPen` (shared `Microsoft.Reporting.Rendering`
+    interface) had no `DashPattern` member — `GetSelectionPen`'s dotted-selection-outline behavior sets
+    a custom `{2f, 2f}` dash cadence that GDI+'s built-in `DashStyle.Dot` alone doesn't reproduce. Added
+    `float[] DashPattern { get; set; }` to `IPen` and implemented it in all 3 existing implementers:
+    Gauge's `GdiPen` (forwards to `NativePen.DashPattern`), Chart's `GdiPen` (same), and Chart's spike
+    `SkiaPen` (plain auto-property, spike-scope, matching its existing dash/cap/join stubs). Small,
+    additive, harmless regardless of what converts next — same category as the Chart engine's own
+    mid-investigation `ILinearGradientBrush.LinearColors` addition.
+  - **Not exercised by the current visual-regression harness** — `DrawSelection`/`DrawRadialSelection`
+    only run for design-time/interactive selection rendering (report designer, image-map selection),
+    not a plain `SaveAsImage` render of an unselected gauge, so `SimpleCircularGauge`/`SimpleLinearGauge`
+    don't touch this code. Safety instead comes from the adapters being trivially behavior-identical
+    (`GdiPen`/`GdiSolidBrush` construct the exact same concrete GDI+ object the code built directly
+    before) — same reasoning already relied on for A2. Verified: build 0 errors, full suite still 54/54
+    (zero baseline diffs, as expected — this code path isn't in either sample).
+  - **Deliberately not attempted this pass** — the much larger, harder cluster: `GetHatchBrush`/
+    `GetGradientBrush`/`GetPieGradientBrush`/`GetTextureBrush`/`CreateBrush`/`GetCircularRangeBrush`/
+    `GetLinearRangeBrush`/`GetMarkerBrush`/`DrawPathAbs` all interchange results through shared
+    `Brush brush`/`Brush brush2` locals (confirmed by reading `BackFrame.GetBrush`'s call to
+    `GaugeGraphics.GetHatchBrush`, which feeds the same kind of multi-branch shared local Chart hit) —
+    this is the actual chokepoint code (used by every real gauge render, unlike the selection cluster),
+    and per the Chart engine's precise findings, converting it requires either a large atomic pass
+    across all of `GetHatchBrush`/`GetGradientBrush`/`GetPieGradientBrush`/`GetTextureBrush` plus their
+    shared-local consumers, or solving `common.ImageLoader`'s concrete-`Image`-loading prerequisite
+    first (`GetTextureBrush` calls `common.ImageLoader.LoadImage(name)` directly). Left for a future
+    session — do not attempt a partial slice of this cluster without re-reading Chart's B2 findings in
+    full first, since the exact same trap (reverted attempts #1/#2) is very likely to recur here.
+  - Also shared `pen`/`solidBrush` instance fields on `GaugeGraphics` (used by `DrawPathAbs`) remain
+    untouched — same reasoning as Chart's B1b: `pen` is drawn via `DrawPath(pen, path)` with a
+    caller-supplied concrete `GraphicsPath`, and `solidBrush` is interchanged with the same shared-local
+    brush-family results above.
+  - Real call-site conversion continues file by file after the brush cluster is solved: `GaugeGraphics.cs`
+    (chokepoint, ~20% of the surface, this pass's partial start), then the top files by
+    construction-site count: `DigitalSegment.cs`, `BackFrame.cs`, `Knob.cs`, `GaugeCore.cs`,
+    `StateIndicator.cs`, `CircularPointer.cs`, `CircularScale.cs`, `GaugeLabel.cs`, `XamlRenderer.cs`,
+    `GaugeImage.cs`, `NumericIndicator.cs`, `LinearPointer.cs`, `ScaleBase.cs`,
+    `CircularGauge.cs`/`LinearGauge.cs`.
 
 ### Milestone E0 equivalent — Visual regression harness
 

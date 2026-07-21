@@ -51,6 +51,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public PenAlignment Alignment { get; set; }
 
+		public float[] DashPattern { get; set; }
+
 		public IPen Clone()
 		{
 			SkiaPen skiaPen = new SkiaPen(Color, Width);
