@@ -226,6 +226,36 @@ which stayed, why `IClipRegion` stayed put). Net result:
   unreachable — `DrawPathAbs(IGraphicsPath, ...)` — or a clip-swap around already-passing gauge frame
   rendering, confirmed byte-for-byte unchanged).
 
+  **Hue-recolor gap resolved (2026-07-21), user-directed ("Begin resolution of hue-recolor with
+  IImageDrawOptions").** Added `IImageDrawOptions.SetChannelScale(float red, float green, float blue,
+  float alpha)` to the **shared** interface (`Microsoft.Reporting.Rendering/IImageDrawOptions.cs`) —
+  abstracts GDI+'s `ColorMatrix` diagonal (`Matrix00`/`Matrix11`/`Matrix22`/`Matrix33`). Deliberately one
+  combined method rather than extending `SetOpacity` separately: GDI+'s `ImageAttributes.SetColorMatrix`
+  replaces the whole matrix on each call rather than merging with a prior one, so a caller needing both
+  colour scale and opacity together (found below) must set every diagonal entry in one call. Implemented
+  in all 3 existing implementers — Gauge's `GdiImageDrawOptions` (`Rendering/Gdi/GdiImage.cs`), Chart's
+  `GdiImageDrawOptions`, and Chart's `SkiaImageDrawOptions` spike stub (throws `NotImplementedException`,
+  matching its existing pattern for every other member). Confirmed the exact same shape recurs in Chart's
+  own `ChartGraphics.cs` (~line 418, a marker-image shadow using `Matrix00`/`Matrix11`/`Matrix22` = 0.25
+  plus `Matrix33` = 0.5 for a dimmed alpha) — not converted here since it's Chart-engine scope, but noted
+  as evidence this is a genuinely shared gap, not Gauge-specific, and `SetChannelScale`'s 4-parameter
+  shape (covering combined colour+alpha scaling) was chosen so it can close that site too later without
+  a second interface change.
+
+  Converted `BackFrame.DrawFrameImage` fully: `ImageAttributes imageAttributes` → `IImageDrawOptions`
+  via `ResourceFactory.CreateImageDrawOptions()`; `SetColorKey` → `SetTransparentColor`; the hue branch's
+  raw `ColorMatrix` → `imageAttributes.SetChannelScale(r, g, b, 1f)` (alpha `1f` reproduces the original's
+  untouched-alpha behavior, since `new ColorMatrix()`'s default diagonal is already identity); the
+  `DrawImage(Image, ...)` call → `DrawImage(ResourceFactory.WrapImage(image), ...)`. This closes out
+  `DrawFrameImage` completely — no remaining concrete GDI+ resource types in the method other than the
+  still-intentionally-concrete `graphicsPath`/`pen` (bridged via `WrapPath`/kept local respectively).
+
+  Verified: build 0 errors, full suite 54/54, zero baseline diffs — `DrawFrameImage` isn't exercised by
+  either current sample gauge (neither sets a frame `Image`), so this is "builds clean, behavior-identical
+  by construction" verified, not pixel-verified; a future sample gauge with a frame image (plain and
+  hue-recolored) would be worth adding to actually exercise this path, same open item already noted for
+  the hatch/gradient/texture brush cluster.
+
 ### Milestone B — Migrate the chokepoint
 
 - [x] **B1. Inject `IGaugeDrawingResourceFactory` into `GaugeGraphics`** (2026-07-21) — turned out to

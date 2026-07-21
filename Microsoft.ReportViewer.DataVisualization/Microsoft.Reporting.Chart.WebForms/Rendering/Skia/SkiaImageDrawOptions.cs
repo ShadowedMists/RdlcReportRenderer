@@ -20,6 +20,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void SetOpacity(float opacity) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void SetChannelScale(float red, float green, float blue, float alpha) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void Dispose()
 		{
 		}
