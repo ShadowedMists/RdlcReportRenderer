@@ -110,12 +110,30 @@ which stayed, why `IClipRegion` stayed put). Net result:
 
 ### Milestone E0 equivalent — Visual regression harness
 
-- [ ] **Build gauge test coverage from scratch**: no sample gauge definitions or baseline PNGs exist
-  anywhere in `tests/`. Needs its own `SampleGauges.cs`-equivalent (building `GaugeContainer`/gauge
-  objects directly against the internal engine API, mirroring `SampleCharts.cs`) plus baselines,
-  before any real B2 call-site conversion can be verified byte-for-byte the way the Chart engine's
-  conversions were. This blocks meaningful B2 progress — should be tackled early, likely right after
-  B1, not deferred to the end.
+- [x] **Build gauge test coverage from scratch** (2026-07-21): added
+  [`SampleGauges.cs`](../tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/SampleGauges.cs)
+  (mirrors `SampleCharts.cs` — builds a bare `GaugeContainer` directly against the internal engine
+  API, no .rdlc report or host required) with two samples: `RenderSimpleCircularGauge` (default
+  `CircularScale` + one `CircularPointer` at 65) and `RenderSimpleLinearGauge` (`LinearGauge` forced
+  to `GaugeOrientation.Horizontal` in a 300x100 container — the default `Auto` orientation on a
+  300x300 square container produced overlapping/illegible scale labels; this is pre-existing engine
+  behavior with a degenerate aspect ratio, not a bug, but a bad first baseline, so the sample uses a
+  saner container shape instead). Added
+  [`GaugeVisualRegressionTests.cs`](../tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/GaugeVisualRegressionTests.cs)
+  (mirrors `ChartVisualRegressionTests.cs`) with `SimpleCircularGauge_MatchesBaseline` /
+  `SimpleLinearGauge_MatchesBaseline`, reusing the existing `ImageComparer`/`Baselines/` machinery
+  as-is (no changes needed — it's already generic over any PNG). Both render through
+  `GaugeContainer.SaveAsImage(Stream)` → `GaugeCore.SaveTo` → `GdiGraphics`, exercising the
+  concrete/untouched call paths (Milestone A added no new callers, so this is the first-ever test
+  coverage of the Gauge engine's actual rendering, not a re-verification of anything). Rendered once,
+  visually inspected both PNGs (recognizable circular dial with needle at ~65, recognizable
+  horizontal linear scale with triangular pointer at ~65 — no garbage/corruption), then promoted
+  directly to `Baselines/SimpleCircularGauge.png` / `Baselines/SimpleLinearGauge.png` — no
+  `git stash` baseline dance needed here since nothing pre-existing was being changed, this is a
+  first baseline for previously-uncovered code. Verified: build 0 errors, full suite 54/54 passing
+  (53 `VisualRegressionTests` — up from 51, +2 new gauge tests — + 1 `Chart.Rdl.Tests`). This
+  unblocks B1/B2 real call-site conversion, which can now be checked byte-for-byte the same way the
+  Chart engine's conversions were.
 
 ## 4. Notes for future sessions
 
