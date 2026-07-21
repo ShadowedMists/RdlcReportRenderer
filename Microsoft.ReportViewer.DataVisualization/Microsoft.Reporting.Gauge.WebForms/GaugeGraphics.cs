@@ -78,6 +78,17 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString(CultureInfo.InvariantCulture)), foreColor, backColor);
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetHatchBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy per tasks/gauge-gdi-type-abstraction.md). Instance method (not static like the original)
+		/// since it needs <see cref="RenderingEngine.ResourceFactory"/>. Self-contained — no shared field or
+		/// image-loading dependency — so this converts cleanly, unlike <see cref="GetTextureBrush"/>.
+		/// </summary>
+		internal IHatchBrush GetHatchBrushResource(GaugeHatchStyle hatchStyle, Color backColor, Color foreColor)
+		{
+			return ResourceFactory.CreateHatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString(CultureInfo.InvariantCulture)), foreColor, backColor);
+		}
+
 		internal Brush GetTextureBrush(string name, Color backImageTranspColor, GaugeImageWrapMode mode)
 		{
 			Image image = common.ImageLoader.LoadImage(name);
@@ -161,6 +172,72 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return brush;
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetGradientBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy). Self-contained — its only geometry (the path-gradient branch's rectangle) is built
+		/// locally via <see cref="RenderingEngine.ResourceFactory"/>, no shared field or image dependency.
+		/// Mixed return shape (linear vs. path-gradient) mirrors the original's mixed concrete <c>Brush</c> return.
+		/// </summary>
+		internal IBrush GetGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)
+		{
+			rectangle.Inflate(1f, 1f);
+			float angle = 0f;
+			if (rectangle.Height == 0f || rectangle.Width == 0f)
+			{
+				return ResourceFactory.CreateSolidBrush(Color.Black);
+			}
+			switch (type)
+			{
+			case GradientType.LeftRight:
+			case GradientType.VerticalCenter:
+				angle = 0f;
+				break;
+			case GradientType.TopBottom:
+			case GradientType.HorizontalCenter:
+				angle = 90f;
+				break;
+			case GradientType.DiagonalLeft:
+				angle = (float)(Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
+				break;
+			case GradientType.DiagonalRight:
+				angle = (float)(180.0 - Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
+				break;
+			}
+			if (type == GradientType.TopBottom || type == GradientType.LeftRight || type == GradientType.DiagonalLeft || type == GradientType.DiagonalRight || type == GradientType.HorizontalCenter || type == GradientType.VerticalCenter)
+			{
+				RectangleF rect = new RectangleF(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+				ILinearGradientBrush linearBrush;
+				switch (type)
+				{
+				case GradientType.HorizontalCenter:
+					rect.Height /= 2f;
+					linearBrush = ResourceFactory.CreateLinearGradientBrush(rect, firstColor, secondColor, angle);
+					linearBrush.WrapMode = WrapMode.TileFlipX;
+					break;
+				case GradientType.VerticalCenter:
+					rect.Width /= 2f;
+					linearBrush = ResourceFactory.CreateLinearGradientBrush(rect, firstColor, secondColor, angle);
+					linearBrush.WrapMode = WrapMode.TileFlipX;
+					break;
+				default:
+					linearBrush = ResourceFactory.CreateLinearGradientBrush(rectangle, firstColor, secondColor, angle);
+					break;
+				}
+				return linearBrush;
+			}
+			IGraphicsPath resourcePath = ResourceFactory.CreatePath();
+			resourcePath.AddRectangle(rectangle);
+			IPathGradientBrush pathBrush = ResourceFactory.CreatePathGradientBrush(resourcePath);
+			pathBrush.CenterColor = firstColor;
+			pathBrush.CenterPoint = new PointF(rectangle.X + rectangle.Width / 2f, rectangle.Y + rectangle.Height / 2f);
+			pathBrush.SurroundColors = new Color[1]
+			{
+				secondColor
+			};
+			resourcePath.Dispose();
+			return pathBrush;
+		}
+
 		internal Brush GetPieGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor)
 		{
 			GraphicsPath graphicsPath = new GraphicsPath();
@@ -173,6 +250,26 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				secondColor
 			};
 			graphicsPath?.Dispose();
+			return pathGradientBrush;
+		}
+
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetPieGradientBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy). Self-contained — its ellipse geometry is built locally via
+		/// <see cref="RenderingEngine.ResourceFactory"/>, no shared field or image dependency.
+		/// </summary>
+		internal IPathGradientBrush GetPieGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor)
+		{
+			IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
+			graphicsPath.AddEllipse(rectangle);
+			IPathGradientBrush pathGradientBrush = ResourceFactory.CreatePathGradientBrush(graphicsPath);
+			pathGradientBrush.CenterColor = firstColor;
+			pathGradientBrush.CenterPoint = new PointF(rectangle.X + rectangle.Width / 2f, rectangle.Y + rectangle.Height / 2f);
+			pathGradientBrush.SurroundColors = new Color[1]
+			{
+				secondColor
+			};
+			graphicsPath.Dispose();
 			return pathGradientBrush;
 		}
 
