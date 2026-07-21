@@ -9,11 +9,11 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 	/// Gauge-engine counterpart of <c>Microsoft.Reporting.Chart.WebForms.Rendering.IDrawingResourceFactory</c>
 	/// (see tasks/gauge-gdi-type-abstraction.md Milestone A1). Constructs the shared, engine-agnostic
 	/// resource interfaces from <see cref="Microsoft.Reporting.Rendering"/>. Deliberately narrower than
-	/// the Chart engine's factory for now: no image-abstraction (<c>IChartImage</c>) or clip-region
-	/// members yet — <see cref="GaugeGraphics.GetTextureBrush"/> still loads a concrete
-	/// <see cref="System.Drawing.Image"/> directly, and gauge clipping stays on <see cref="Region"/>
-	/// until a gauge-specific clip-region abstraction is scoped (mirrors the Chart engine's own phased
-	/// rollout — those were later additions there too, not part of its first A1/A2 pass).
+	/// the Chart engine's factory for now: no clip-region members yet — gauge clipping stays on
+	/// <see cref="Region"/> until a gauge-specific clip-region abstraction is scoped (mirrors the Chart
+	/// engine's own phased rollout). Image abstraction (<see cref="IChartImage"/>/<see cref="IImageDrawOptions"/>)
+	/// was added during the GetTextureBrush prerequisite (Milestone B) via <see cref="WrapImage"/> — see
+	/// <see cref="GaugeGraphics.GetTextureBrushResource"/>.
 	/// </summary>
 	internal interface IGaugeDrawingResourceFactory
 	{
@@ -25,9 +25,14 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 
 		ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle);
 
-		ITextureBrush CreateTextureBrush(Image image, WrapMode wrapMode);
+		ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode);
 
-		ITextureBrush CreateTextureBrush(Image image, RectangleF rect, ImageAttributes attributes);
+		/// <summary>
+		/// Construct a texture brush drawn into <paramref name="rect"/> with colour-key/wrap-mode
+		/// <paramref name="options"/> applied — GDI+'s <c>TextureBrush(Image, RectangleF, ImageAttributes)</c>
+		/// constructor, needed by <see cref="GaugeGraphics.GetTextureBrushResource"/>.
+		/// </summary>
+		ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options);
 
 		IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor);
 
@@ -49,5 +54,15 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 		IGraphicsPath CreatePath();
 
 		IGraphicsPath CreatePath(PointF[] points, byte[] types);
+
+		/// <summary>
+		/// Wrap an already-loaded native image as an <see cref="IChartImage"/> — a bridge for
+		/// <c>common.ImageLoader</c>'s legacy loading pipeline, which remains GDI+-only/concrete
+		/// (found during the GetTextureBrush prerequisite; see tasks/gauge-gdi-type-abstraction.md
+		/// Milestone B). Not available on backends that can't construct <see cref="Image"/> at all.
+		/// </summary>
+		IChartImage WrapImage(Image image);
+
+		IImageDrawOptions CreateImageDrawOptions();
 	}
 }

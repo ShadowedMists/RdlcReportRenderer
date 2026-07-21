@@ -8,6 +8,7 @@ using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Timers;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -1514,7 +1515,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (BackColor != Color.Empty)
 			{
-				using (Brush brush2 = g.CreateBrush(absoluteRectangle, BackColor, BackHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.Center, BackGradientType, BackGradientEndColor))
+				using (IBrush brush2 = g.CreateBrushResource(absoluteRectangle, BackColor, BackHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.Center, BackGradientType, BackGradientEndColor))
 				{
 					g.FillRectangle(brush2, absoluteRectangle);
 				}

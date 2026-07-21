@@ -1,14 +1,14 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using Microsoft.Reporting.Rendering;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	/// <summary>
 	/// Options for drawing an image (color remap / transparency). Abstracts
-	/// <see cref="System.Drawing.Imaging.ImageAttributes"/> (25 occ / 6 files).
-	/// Coordinate with the existing <c>IImageProvider</c> background-image work
-	/// (chart-image-abstraction-analysis.md) during implementation (task C8).
+	/// <see cref="System.Drawing.Imaging.ImageAttributes"/>. Relocated from
+	/// <c>Microsoft.Reporting.Chart.WebForms.Rendering</c> to this shared namespace (verified
+	/// portable — no Chart-specific dependencies — during the Gauge engine's GetTextureBrush
+	/// prerequisite, see tasks/gauge-gdi-type-abstraction.md Milestone B).
 	/// </summary>
 	internal interface IImageDrawOptions : IRenderingResource
 	{

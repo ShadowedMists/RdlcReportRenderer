@@ -33,10 +33,11 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>
 			new GdiLinearGradientBrush(rect, startColor, endColor, angle);
 
-		public ITextureBrush CreateTextureBrush(Image image, WrapMode wrapMode) => new GdiTextureBrush(image, wrapMode);
+		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode) =>
+			new GdiTextureBrush(((GdiChartImage)image).NativeImage, wrapMode);
 
-		public ITextureBrush CreateTextureBrush(Image image, RectangleF rect, ImageAttributes attributes) =>
-			new GdiTextureBrush(image, rect, attributes);
+		public ITextureBrush CreateTextureBrush(IChartImage image, RectangleF rect, IImageDrawOptions options) =>
+			new GdiTextureBrush(((GdiChartImage)image).NativeImage, rect, ((GdiImageDrawOptions)options)?.NativeAttributes);
 
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			new GdiHatchBrush(style, foreColor, backColor);
@@ -61,5 +62,9 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		public IGraphicsPath CreatePath() => new GdiGraphicsPath();
 
 		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => new GdiGraphicsPath(points, types);
+
+		public IChartImage WrapImage(Image image) => new GdiChartImage(image);
+
+		public IImageDrawOptions CreateImageDrawOptions() => new GdiImageDrawOptions();
 	}
 }
