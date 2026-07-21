@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using Microsoft.Reporting.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
 using Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -28,6 +29,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		private static StringFormat Native(ITextFormat format) => format == null ? null : ((GdiTextFormat)format).NativeFormat;
 
 		private static GraphicsPath Native(IGraphicsPath path) => ((GdiGraphicsPath)path).NativePath;
+
+		private static Region Native(IGaugeClipRegion region) => ((GdiClipRegion)region).NativeRegion;
+
+		private static Image Native(IChartImage image) => ((GdiChartImage)image).NativeImage;
+
+		private static ImageAttributes Native(IImageDrawOptions options) => ((GdiImageDrawOptions)options).NativeAttributes;
 
 		public Matrix Transform
 		{
@@ -317,5 +324,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			graphics.MeasureString(text, Native(font), layoutArea, Native(stringFormat));
 
 		public SizeF MeasureString(string text, IChartFont font) => graphics.MeasureString(text, Native(font));
+
+		public IGaugeClipRegion GetClipRegion() => new GdiClipRegion(graphics.Clip);
+
+		public void SetClipRegion(IGaugeClipRegion region) => graphics.Clip = Native(region);
+
+		public void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr) =>
+			graphics.DrawImage(Native(image), destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, Native(imageAttr));
 	}
 }
