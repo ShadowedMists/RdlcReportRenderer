@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 {

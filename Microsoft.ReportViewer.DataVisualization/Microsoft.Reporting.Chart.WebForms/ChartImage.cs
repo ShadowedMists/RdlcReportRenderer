@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using Microsoft.Win32;
@@ -163,6 +164,56 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Paint(graphics, paintTopLevelElementOnly: false);
 			graphics.Dispose();
 			return bitmap;
+		}
+
+		/// <summary>
+		/// Paints and encodes directly to <paramref name="stream"/> via <see cref="IRenderSurface.Encode"/>,
+		/// instead of <see cref="GetImage"/>'s Bitmap-returning contract + a separate <c>Image.Save</c>
+		/// call. <see cref="Chart.Save(Stream, ChartImageFormat)"/> only ever encodes-and-discards the
+		/// result, so it never needed a live <see cref="Bitmap"/> in the first place — this removes that
+		/// unnecessary GDI+-typed round trip from the encode step. Painting itself still requires the
+		/// <see cref="GdiRenderSurface"/> downcast below (unavoidable until <c>Paint(Graphics, ...)</c>
+		/// itself stops being GDI+-typed — see chart-gdi-type-abstraction.md's Milestone B1b/B2 notes);
+		/// once that lands, a Skia-backed <see cref="IRenderSurface"/> only needs to implement
+		/// <see cref="IRenderSurface.Encode"/> to work here, no changes to this method required.
+		/// </summary>
+		internal void SaveImage(Stream stream, ChartImageFormat format, float resolution)
+		{
+			IRenderSurface renderSurface = null;
+			if (base.Width == 0 || base.Height == 0)
+			{
+				renderSurface = renderSurfaceFactory.CreateRasterSurface(Math.Max(1, base.Width), Math.Max(1, base.Height), resolution);
+			}
+			else
+			{
+				while (renderSurface == null)
+				{
+					try
+					{
+						renderSurface = renderSurfaceFactory.CreateRasterSurface(base.Width, base.Height, resolution);
+					}
+					catch
+					{
+						renderSurface = null;
+						float num = Math.Max(resolution / 2f, 96f);
+						base.Width = (int)Math.Ceiling((float)base.Width * num / resolution);
+						base.Height = (int)Math.Ceiling((float)base.Height * num / resolution);
+						resolution = num;
+					}
+				}
+			}
+			using (renderSurface)
+			{
+				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
+				Graphics graphics = gdiRenderSurface.NativeGraphics;
+				Color color = (!(base.BackColor != Color.Empty)) ? Color.White : base.BackColor;
+				Pen pen = new Pen(color);
+				graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
+				pen.Dispose();
+				Paint(graphics, paintTopLevelElementOnly: false);
+				graphics.Dispose();
+				renderSurface.Encode(stream, format);
+			}
 		}
 
 		public void GetSvgImage(XmlTextWriter svgTextWriter, string documentTitle, bool resizable, bool preserveAspectRatio)

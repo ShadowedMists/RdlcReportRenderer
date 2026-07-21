@@ -2,12 +2,32 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using Microsoft.Reporting.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class GdiGraphics : IGaugeRenderingEngine
 	{
 		private Graphics graphics;
+
+		private static Pen Native(IPen pen) => ((GdiPen)pen).NativePen;
+
+		private static Brush Native(IBrush brush) => brush switch
+		{
+			GdiSolidBrush b => b.NativeBrush,
+			GdiLinearGradientBrush b => b.NativeBrush,
+			GdiTextureBrush b => b.NativeBrush,
+			GdiHatchBrush b => b.NativeBrush,
+			GdiPathGradientBrush b => b.NativeBrush,
+			_ => throw new System.NotSupportedException($"Unrecognized IBrush implementation: {brush.GetType()}"),
+		};
+
+		private static Font Native(IChartFont font) => ((GdiChartFont)font).NativeFont;
+
+		private static StringFormat Native(ITextFormat format) => format == null ? null : ((GdiTextFormat)format).NativeFormat;
+
+		private static GraphicsPath Native(IGraphicsPath path) => ((GdiGraphicsPath)path).NativePath;
 
 		public Matrix Transform
 		{
@@ -243,5 +263,59 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		public void EndSelection()
 		{
 		}
+
+		public void DrawLine(IPen pen, PointF pt1, PointF pt2) => graphics.DrawLine(Native(pen), pt1, pt2);
+
+		public void DrawLine(IPen pen, float x1, float y1, float x2, float y2) => graphics.DrawLine(Native(pen), x1, y1, x2, y2);
+
+		public void DrawEllipse(IPen pen, float x, float y, float width, float height) => graphics.DrawEllipse(Native(pen), x, y, width, height);
+
+		public void DrawEllipse(IPen pen, RectangleF rect) => graphics.DrawEllipse(Native(pen), rect);
+
+		public void DrawCurve(IPen pen, PointF[] points, int offset, int numberOfSegments, float tension) =>
+			graphics.DrawCurve(Native(pen), points, offset, numberOfSegments, tension);
+
+		public void DrawRectangle(IPen pen, int x, int y, int width, int height) => graphics.DrawRectangle(Native(pen), x, y, width, height);
+
+		public void DrawRectangle(IPen pen, float x, float y, float width, float height) => graphics.DrawRectangle(Native(pen), x, y, width, height);
+
+		public void DrawPolygon(IPen pen, PointF[] points) => graphics.DrawPolygon(Native(pen), points);
+
+		public void DrawString(string s, IChartFont font, IBrush brush, RectangleF layoutRectangle, ITextFormat format) =>
+			graphics.DrawString(s, Native(font), Native(brush), layoutRectangle, Native(format));
+
+		public void DrawString(string s, IChartFont font, IBrush brush, PointF point, ITextFormat format) =>
+			graphics.DrawString(s, Native(font), Native(brush), point, Native(format));
+
+		public void DrawPath(IPen pen, IGraphicsPath path) => graphics.DrawPath(Native(pen), Native(path));
+
+		public void DrawPie(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			graphics.DrawPie(Native(pen), x, y, width, height, startAngle, sweepAngle);
+
+		public void DrawArc(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			graphics.DrawArc(Native(pen), x, y, width, height, startAngle, sweepAngle);
+
+		public void DrawLines(IPen pen, PointF[] points) => graphics.DrawLines(Native(pen), points);
+
+		public void FillEllipse(IBrush brush, RectangleF rect) => graphics.FillEllipse(Native(brush), rect);
+
+		public void FillPath(IBrush brush, IGraphicsPath path) => graphics.FillPath(Native(brush), Native(path));
+
+		public void FillPath(IBrush brush, IGraphicsPath path, float angle, bool useBrushOffset, bool circularFill) =>
+			graphics.FillPath(Native(brush), Native(path));
+
+		public void FillRectangle(IBrush brush, RectangleF rect) => graphics.FillRectangle(Native(brush), rect);
+
+		public void FillRectangle(IBrush brush, float x, float y, float width, float height) => graphics.FillRectangle(Native(brush), x, y, width, height);
+
+		public void FillPolygon(IBrush brush, PointF[] points) => graphics.FillPolygon(Native(brush), points);
+
+		public void FillPie(IBrush brush, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			graphics.FillPie(Native(brush), x, y, width, height, startAngle, sweepAngle);
+
+		public SizeF MeasureString(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat) =>
+			graphics.MeasureString(text, Native(font), layoutArea, Native(stringFormat));
+
+		public SizeF MeasureString(string text, IChartFont font) => graphics.MeasureString(text, Native(font));
 	}
 }

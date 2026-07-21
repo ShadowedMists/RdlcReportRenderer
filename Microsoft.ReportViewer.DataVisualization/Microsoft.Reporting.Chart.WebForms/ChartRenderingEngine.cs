@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Svg;
 using System.Drawing;
 using System.Drawing.Drawing2D;

@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.Borders3D;
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
 using System;
@@ -859,7 +860,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					try
 					{
 						AntiAliasing = AntiAliasingTypes.None;
-						using (Rendering.IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
+						using (IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
 						{
 							pen.DashStyle = GetPenStyle(borderStyle);
 							DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
@@ -1360,7 +1361,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Rectangle rectangle = Rectangle.Round(absPosition);
 			rectangle.Width = (int)Math.Round(absPosition.Right) - rectangle.X;
 			rectangle.Height = (int)Math.Round(absPosition.Bottom) - rectangle.Y;
-			Rendering.IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
+			IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
 			pen.DashStyle = GetPenStyle(axis.MajorTickMark.LineStyle);
 			if (axis.AxisPosition == AxisPosition.Left || axis.AxisPosition == AxisPosition.Right)
 			{
@@ -1451,7 +1452,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					array2[0] = array2[1];
 				}
-				Rendering.IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
+				IPen pen = resourceFactory.CreatePen(markColor.IsEmpty ? axis.MajorTickMark.LineColor : markColor, axis.MajorTickMark.LineWidth);
 				pen.DashStyle = GetPenStyle(axis.MajorTickMark.LineStyle);
 				DrawLines(pen, array);
 				DrawLines(pen, array2);
@@ -3865,7 +3866,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					try
 					{
 						AntiAliasing = AntiAliasingTypes.None;
-						using (Rendering.IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
+						using (IPen pen = resourceFactory.CreatePen(borderColor, borderWidth))
 						{
 							pen.DashStyle = GetPenStyle(borderStyle);
 							DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);

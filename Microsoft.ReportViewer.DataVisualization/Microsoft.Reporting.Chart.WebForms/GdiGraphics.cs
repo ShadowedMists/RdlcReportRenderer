@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Numerics;
 using Microsoft.Reporting.Chart.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Chart.WebForms.Rendering.Gdi;
 
 namespace Microsoft.Reporting.Chart.WebForms

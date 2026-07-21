@@ -2,6 +2,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using Microsoft.Reporting.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -12,6 +15,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		private RenderingType activeRenderingType;
 
 		private GdiGraphics gdiGraphics = new GdiGraphics();
+
+		/// <summary>Milestone B1a equivalent — exposed so gauge painter classes can construct interface-typed resources at the draw sink. Defaults to Gdi; no other backend exists yet.</summary>
+		internal IGaugeDrawingResourceFactory ResourceFactory { get; set; } = new GdiResourceFactory();
 
 		private string documentTitle = string.Empty;
 
@@ -308,5 +314,59 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			RenderingObject.EndSelection();
 		}
+
+		public void DrawLine(IPen pen, PointF pt1, PointF pt2) => RenderingObject.DrawLine(pen, pt1, pt2);
+
+		public void DrawLine(IPen pen, float x1, float y1, float x2, float y2) => RenderingObject.DrawLine(pen, x1, y1, x2, y2);
+
+		public void DrawEllipse(IPen pen, float x, float y, float width, float height) => RenderingObject.DrawEllipse(pen, x, y, width, height);
+
+		public void DrawEllipse(IPen pen, RectangleF rect) => RenderingObject.DrawEllipse(pen, rect);
+
+		public void DrawCurve(IPen pen, PointF[] points, int offset, int numberOfSegments, float tension) =>
+			RenderingObject.DrawCurve(pen, points, offset, numberOfSegments, tension);
+
+		public void DrawRectangle(IPen pen, int x, int y, int width, int height) => RenderingObject.DrawRectangle(pen, x, y, width, height);
+
+		public void DrawRectangle(IPen pen, float x, float y, float width, float height) => RenderingObject.DrawRectangle(pen, x, y, width, height);
+
+		public void DrawPolygon(IPen pen, PointF[] points) => RenderingObject.DrawPolygon(pen, points);
+
+		public void DrawString(string s, IChartFont font, IBrush brush, RectangleF layoutRectangle, ITextFormat format) =>
+			RenderingObject.DrawString(s, font, brush, layoutRectangle, format);
+
+		public void DrawString(string s, IChartFont font, IBrush brush, PointF point, ITextFormat format) =>
+			RenderingObject.DrawString(s, font, brush, point, format);
+
+		public void DrawPath(IPen pen, IGraphicsPath path) => RenderingObject.DrawPath(pen, path);
+
+		public void DrawPie(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			RenderingObject.DrawPie(pen, x, y, width, height, startAngle, sweepAngle);
+
+		public void DrawArc(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			RenderingObject.DrawArc(pen, x, y, width, height, startAngle, sweepAngle);
+
+		public void DrawLines(IPen pen, PointF[] points) => RenderingObject.DrawLines(pen, points);
+
+		public void FillEllipse(IBrush brush, RectangleF rect) => RenderingObject.FillEllipse(brush, rect);
+
+		public void FillPath(IBrush brush, IGraphicsPath path) => RenderingObject.FillPath(brush, path);
+
+		public void FillPath(IBrush brush, IGraphicsPath path, float angle, bool useBrushOffset, bool circularFill) =>
+			RenderingObject.FillPath(brush, path, angle, useBrushOffset, circularFill);
+
+		public void FillRectangle(IBrush brush, RectangleF rect) => RenderingObject.FillRectangle(brush, rect);
+
+		public void FillRectangle(IBrush brush, float x, float y, float width, float height) => RenderingObject.FillRectangle(brush, x, y, width, height);
+
+		public void FillPolygon(IBrush brush, PointF[] points) => RenderingObject.FillPolygon(brush, points);
+
+		public void FillPie(IBrush brush, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			RenderingObject.FillPie(brush, x, y, width, height, startAngle, sweepAngle);
+
+		public SizeF MeasureString(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat) =>
+			RenderingObject.MeasureString(text, font, layoutArea, stringFormat);
+
+		public SizeF MeasureString(string text, IChartFont font) => RenderingObject.MeasureString(text, font);
 	}
 }

@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	/// <summary>
 	/// Font resource. Abstracts <see cref="System.Drawing.Font"/>.

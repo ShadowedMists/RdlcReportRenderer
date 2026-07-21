@@ -1,6 +1,6 @@
 using System;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	// Milestone A1 skeleton — see tasks/chart-gdi-type-abstraction.md.
 	// Backend-agnostic port for chart rendering resources. Concrete GDI+ object

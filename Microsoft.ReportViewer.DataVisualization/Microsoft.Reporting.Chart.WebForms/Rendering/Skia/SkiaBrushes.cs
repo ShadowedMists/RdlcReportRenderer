@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using SkiaSharp;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {

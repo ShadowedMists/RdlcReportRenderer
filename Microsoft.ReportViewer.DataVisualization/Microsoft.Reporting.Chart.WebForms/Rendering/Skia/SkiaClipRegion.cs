@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Numerics;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {

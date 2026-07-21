@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using Microsoft.Reporting.Rendering;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
+namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 {
 	/// <summary>Milestone A2 adapter — wraps <see cref="System.Drawing.Pen"/> behind <see cref="IPen"/>.</summary>
 	internal sealed class GdiPen : IPen

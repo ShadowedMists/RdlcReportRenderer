@@ -3,7 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using Microsoft.Reporting.Rendering;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
+namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 {
 	/// <summary>Milestone A2 adapter — wraps <see cref="System.Drawing.SolidBrush"/> behind <see cref="ISolidBrush"/>.</summary>
 	internal sealed class GdiSolidBrush : ISolidBrush
@@ -100,7 +100,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		public void Dispose() => NativeBrush.Dispose();
 	}
 
-	/// <summary>Milestone C4 adapter — wraps <see cref="System.Drawing.Drawing2D.PathGradientBrush"/> behind <see cref="IPathGradientBrush"/>.</summary>
+	/// <summary>Milestone A2 adapter — wraps <see cref="System.Drawing.Drawing2D.PathGradientBrush"/> behind <see cref="IPathGradientBrush"/>.</summary>
 	internal sealed class GdiPathGradientBrush : IPathGradientBrush
 	{
 		internal PathGradientBrush NativeBrush { get; }

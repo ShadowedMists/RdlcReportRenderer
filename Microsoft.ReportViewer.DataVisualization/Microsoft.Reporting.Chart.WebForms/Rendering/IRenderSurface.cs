@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.Rendering
 {

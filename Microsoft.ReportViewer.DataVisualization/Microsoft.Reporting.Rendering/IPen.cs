@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Microsoft.Reporting.Chart.WebForms.Rendering
+namespace Microsoft.Reporting.Rendering
 {
 	/// <summary>
 	/// Stroke resource. Abstracts <see cref="System.Drawing.Pen"/>.

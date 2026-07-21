@@ -1,4 +1,5 @@
 using Microsoft.Reporting.Chart.WebForms.Utilities;
+using Microsoft.Reporting.Rendering;
 using System;
 using System.ComponentModel;
 using System.Drawing;
@@ -400,7 +401,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			case ScrollBarButtonType.ZoomReset:
 			{
-				Rendering.IPen pen = graph.ResourceFactory.CreatePen(lineCurrentColor, 1f);
+				IPen pen = graph.ResourceFactory.CreatePen(lineCurrentColor, 1f);
 				graph.DrawEllipse(pen, absoluteRectangle.X + num2 - 0.5f, absoluteRectangle.Y + num2 - 0.5f, absoluteRectangle.Width - 2f * num2, absoluteRectangle.Height - 2f * num2);
 				graph.DrawLine(pen, absoluteRectangle.X + num2 + 1.5f, absoluteRectangle.Y + absoluteRectangle.Height / 2f - 0.5f, absoluteRectangle.Right - num2 - 2.5f, absoluteRectangle.Y + absoluteRectangle.Height / 2f - 0.5f);
 				break;
