@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Gauge.WebForms.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -746,16 +747,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		}
 
 		/// <summary>
-		/// Milestone A4 note: the clip-swap below uses the interface-typed <see cref="IGaugeClipRegion"/>
-		/// surface (<c>region</c>/<c>clip</c> retyped, bridged from the still-concrete <c>graphicsPath</c>
-		/// via <c>ResourceFactory.WrapPath</c> — <see cref="GetFramePath"/> itself stays concrete since it
-		/// has 9 other callers not touched this pass; see tasks/gauge-gdi-type-abstraction.md). The
-		/// image-draw call below is deliberately NOT converted to the interface-typed
-		/// <c>DrawImage(IChartImage, ...)</c>/<c>IImageDrawOptions</c> pair: the hue-recolor branch below
-		/// needs a raw <see cref="ColorMatrix"/> (`Matrix00`/`Matrix11`/`Matrix22` channel scaling), which
-		/// has no equivalent on <c>IImageDrawOptions</c> today (only `SetColorRemap`/`SetTransparentColor`/
-		/// `SetWrapMode`/`SetOpacity` exist) — a new, small, found-but-not-fixed gap, same shape as the
-		/// previously-found `ILinearGradientBrush`/`IPathGradientBrush` transform gaps.
+		/// Milestone A4 — fully converted to the interface-typed surface. The clip-swap uses
+		/// <see cref="IGaugeClipRegion"/> (<c>region</c>/<c>clip</c>, bridged from the still-concrete
+		/// <c>graphicsPath</c> via <c>ResourceFactory.WrapPath</c> — <see cref="GetFramePath"/> itself
+		/// stays concrete since it has 9 other callers not touched this pass). The image draw uses
+		/// <c>DrawImage(IChartImage, ...)</c>/<see cref="IImageDrawOptions"/>, including the hue-recolor
+		/// branch, once <see cref="IImageDrawOptions.SetChannelScale"/> was added to close the gap found
+		/// here (no per-channel `ColorMatrix` equivalent existed before). See
+		/// tasks/gauge-gdi-type-abstraction.md Milestone A4.
 		/// </summary>
 		internal void DrawFrameImage(GaugeGraphics g)
 		{
@@ -783,25 +782,21 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						g.FillRectangle(brush, rect);
 					}
 				}
-				ImageAttributes imageAttributes = new ImageAttributes();
+				IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 				if (ImageTransColor != Color.Empty)
 				{
-					imageAttributes.SetColorKey(ImageTransColor, ImageTransColor, ColorAdjustType.Default);
+					imageAttributes.SetTransparentColor(ImageTransColor);
 				}
 				Image image = Common.ImageLoader.LoadImage(Image);
 				Rectangle destRect = new Rectangle((int)Math.Round(frameRectangle.X), (int)Math.Round(frameRectangle.Y), (int)Math.Round(frameRectangle.Width), (int)Math.Round(frameRectangle.Height));
 				if (!ImageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(ImageHueColor);
-					ColorMatrix colorMatrix = new ColorMatrix();
-					colorMatrix.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix.Matrix22 = (float)(int)color.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix);
+					imageAttributes.SetChannelScale((float)(int)color.R / 255f, (float)(int)color.G / 255f, (float)(int)color.B / 255f, 1f);
 				}
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 				if (ClipImage)
 				{

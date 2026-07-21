@@ -51,6 +51,18 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 			NativeAttributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
 		}
 
+		public void SetChannelScale(float red, float green, float blue, float alpha)
+		{
+			ColorMatrix matrix = new ColorMatrix
+			{
+				Matrix00 = red,
+				Matrix11 = green,
+				Matrix22 = blue,
+				Matrix33 = alpha
+			};
+			NativeAttributes.SetColorMatrix(matrix);
+		}
+
 		public void Dispose() => NativeAttributes.Dispose();
 	}
 }
