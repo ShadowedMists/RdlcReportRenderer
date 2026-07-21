@@ -101,6 +101,24 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new TextureBrush(image, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetTextureBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy per tasks/gauge-gdi-type-abstraction.md). <c>common.ImageLoader</c> itself remains
+		/// GDI+-only/concrete (documented, deliberate) — its loaded <see cref="Image"/> is bridged into
+		/// <see cref="IChartImage"/> via <see cref="RenderingEngine.ResourceFactory"/>'s <c>WrapImage</c>.
+		/// </summary>
+		internal ITextureBrush GetTextureBrushResource(string name, Color backImageTranspColor, GaugeImageWrapMode mode)
+		{
+			Image image = common.ImageLoader.LoadImage(name);
+			IImageDrawOptions imageAttributes = ResourceFactory.CreateImageDrawOptions();
+			imageAttributes.SetWrapMode((WrapMode)((mode == GaugeImageWrapMode.Unscaled) ? GaugeImageWrapMode.Scaled : mode));
+			if (backImageTranspColor != Color.Empty)
+			{
+				imageAttributes.SetTransparentColor(backImageTranspColor);
+			}
+			return ResourceFactory.CreateTextureBrush(ResourceFactory.WrapImage(image), new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
+		}
+
 		internal Brush GetShadowBrush()
 		{
 			return new SolidBrush(GetShadowColor());
@@ -662,6 +680,30 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				result = GetGradientBrush(rect, backColor, backGradientEndColor, backGradientType);
 			}
 			return result;
+		}
+
+		/// <summary>
+		/// Interface-typed sibling of <see cref="CreateBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy). <see cref="CreateBrush"/> has exactly one real caller
+		/// (<c>NumericIndicator.DrawBackground</c>), which only ever hands the result to
+		/// <c>FillRectangle(IBrush, RectangleF)</c> (a value-type-only call, no concrete-GraphicsPath
+		/// coupling) — migrated below. See tasks/gauge-gdi-type-abstraction.md Milestone B.
+		/// </summary>
+		internal IBrush CreateBrushResource(RectangleF rect, Color backColor, GaugeHatchStyle backHatchStyle, string backImage, GaugeImageWrapMode backImageMode, Color backImageTranspColor, GaugeImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor)
+		{
+			if (backImage.Length > 0 && backImageMode != GaugeImageWrapMode.Unscaled && backImageMode != GaugeImageWrapMode.Scaled)
+			{
+				return GetTextureBrushResource(backImage, backImageTranspColor, backImageMode);
+			}
+			if (backHatchStyle != 0)
+			{
+				return GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (backGradientType != 0)
+			{
+				return GetGradientBrushResource(rect, backColor, backGradientEndColor, backGradientType);
+			}
+			return ResourceFactory.CreateSolidBrush(backColor);
 		}
 
 		public PointF PixelsToPercents(PointF pointInPixels)

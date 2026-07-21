@@ -167,6 +167,51 @@ which stayed, why `IClipRegion` stayed put). Net result:
     `StateIndicator.cs`, `CircularPointer.cs`, `CircularScale.cs`, `GaugeLabel.cs`, `XamlRenderer.cs`,
     `GaugeImage.cs`, `NumericIndicator.cs`, `LinearPointer.cs`, `ScaleBase.cs`,
     `CircularGauge.cs`/`LinearGauge.cs`.
+  - **GetTextureBrush/ImageLoader prerequisite — solved (2026-07-21)**, per the handoff doc
+    (`tasks/gauge-texturebrush-imageloader-handoff.md`). User chose **Option B** (full abstraction,
+    not the quick concrete-`Image`/`ImageAttributes`-parameter shortcut): confirmed `ImageLoader.LoadImage`
+    has no DPI logic (unlike Chart's), so the DPI rabbit hole did not recur. Relocated Chart's
+    `IChartImage`/`IImageDrawOptions` (previously Chart-only, `Microsoft.Reporting.Chart.WebForms.Rendering`)
+    to the shared `Microsoft.Reporting.Rendering` namespace — verified portable by attempting the move and
+    building (0 errors): both interfaces only depend on `IRenderingResource` (already shared) and
+    `System.Drawing`/`System.Drawing.Drawing2D`, no Chart-engine coupling. All Chart consumer files already
+    had `using Microsoft.Reporting.Rendering;`, so no using-directive churn was needed there. Added
+    Gauge-owned `GdiChartImage`/`GdiImageDrawOptions` adapters (`Rendering/Gdi/GdiImage.cs`) — separate
+    classes from Chart's identically-shaped ones, per the established decoupled-adapter design (not shared
+    instances). Extended `IGaugeDrawingResourceFactory`/`GdiResourceFactory` with `WrapImage(Image):IChartImage`,
+    `CreateImageDrawOptions():IImageDrawOptions`, and replaced the two concrete-`Image`/`ImageAttributes`
+    `CreateTextureBrush` overloads with `CreateTextureBrush(IChartImage, WrapMode)` /
+    `CreateTextureBrush(IChartImage, RectangleF, IImageDrawOptions)` (safe to replace outright, not
+    dual-overload, since neither concrete overload had any caller yet). Added
+    `GaugeGraphics.GetTextureBrushResource` mirroring Chart's `GetTextureBrushResource` calling pattern
+    exactly (`common.ImageLoader.LoadImage` stays concrete; `ResourceFactory.WrapImage(image)` bridges it
+    into `IChartImage` at the call site) — simpler than Chart's version since Gauge's `GetTextureBrush` has
+    no Metafile/backColor-compositing branch to mirror. Verified: build 0 errors, full suite 54/54, zero
+    baseline diffs.
+  - **Pure-rename attempt on `CreateBrush`/`GetCircularRangeBrush`/`GetLinearRangeBrush` (2026-07-21)** —
+    only `CreateBrush` actually qualified. It has exactly one real caller
+    (`NumericIndicator.DrawBackground`, via `g.CreateBrush(...)` feeding straight into
+    `FillRectangle(Brush, RectangleF)`), a value-type-only consumption path with no concrete-`GraphicsPath`
+    coupling. Added `CreateBrushResource : IBrush` (dual-overload, built from
+    `GetTextureBrushResource`/`GetHatchBrushResource`/`GetGradientBrushResource`/`ResourceFactory.CreateSolidBrush`)
+    and migrated the one caller to it (`NumericIndicator.cs`, now `using Microsoft.Reporting.Rendering;`).
+    **`GetCircularRangeBrush`/`GetLinearRangeBrush` do NOT qualify** — reading their actual callers (not
+    just the signature) shows every one of them assigns into a `Brush`-typed field on `BarStyleAttrib`
+    (`primaryBrush`/`secondaryBrushes[]`/`totalBrush`, all concrete `Brush`) that is later consumed by
+    `GaugeGraphics.FillPath(Brush, GraphicsPath)` alongside a concrete `GraphicsPath` field
+    (`BarStyleAttrib.primaryPath`, etc. — confirmed in `CircularPointer.cs`/`LinearPointer.cs`). No mixed
+    `FillPath(IBrush, GraphicsPath)` overload exists, the identical blocker already documented for
+    `DrawPathAbs`. Converting either getter would require retyping `BarStyleAttrib`'s brush fields too,
+    which is a materially larger, not-this-pass change. Left concrete, undocumented-no-longer: this finding
+    replaces the handoff doc's hopeful "good pure-rename candidates" assumption for these two specifically.
+  - **`DrawPathAbs`/`BackFrame.GetBrush` investigated, confirmed still blocked (2026-07-21)** — both read
+    in full. `DrawPathAbs` mixes the shared `pen`/`solidBrush` instance fields with `brush`/`brush2` locals
+    that flow into `FillPath(Brush, GraphicsPath)` and `DrawPath(Pen, GraphicsPath)` against a
+    caller-supplied concrete `GraphicsPath` (same shape as previously documented). `BackFrame.GetBrush` has
+    a second, independent blocker beyond the concrete-`GraphicsPath` coupling: its circular-gradient
+    branches do `((LinearGradientBrush)brush).Transform = matrix` — a GDI+ brush-transform assignment with
+    no equivalent on `ILinearGradientBrush` today (the same gap already noted for `GetMarkerBrush`'s
+    `RotateTransform`/`TranslateTransform` calls). Neither converts this pass.
 
 ### Milestone E0 equivalent — Visual regression harness
 
