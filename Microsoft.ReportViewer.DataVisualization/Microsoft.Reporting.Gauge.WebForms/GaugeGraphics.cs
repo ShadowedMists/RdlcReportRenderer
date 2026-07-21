@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -1207,17 +1208,50 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return pen;
 		}
 
-		internal Brush GetDesignTimeSelectionFillBrush()
+		/// <summary>Milestone B2 equivalent — self-contained (no shared field/concrete-path coupling), fully converted to the interface-typed resource surface. See tasks/gauge-gdi-type-abstraction.md.</summary>
+		internal IBrush GetDesignTimeSelectionFillBrush()
 		{
-			return new SolidBrush(Color.White);
+			return ResourceFactory.CreateSolidBrush(Color.White);
 		}
 
-		internal Pen GetDesignTimeSelectionBorderPen()
+		/// <summary>Milestone B2 equivalent — see <see cref="GetDesignTimeSelectionFillBrush"/>.</summary>
+		internal IPen GetDesignTimeSelectionBorderPen()
 		{
-			return new Pen(Color.Black)
+			return ResourceFactory.CreatePen(Color.Black, 1f / Graphics.PageScale);
+		}
+
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetSelectionPen"/> (Milestone B2 equivalent, dual-overload
+		/// strategy per tasks/gauge-gdi-type-abstraction.md). Used wherever the resulting pen is only ever
+		/// handed to an interface-typed drawing call (e.g. <see cref="DrawSelection"/>'s rectangle border) —
+		/// <see cref="DrawRadialSelection"/> still needs the original concrete-returning method, since it draws
+		/// onto a concrete <see cref="GraphicsPath"/> and no mixed <c>DrawPath(IPen, GraphicsPath)</c> overload exists.
+		/// </summary>
+		internal IPen GetSelectionPenResource(bool designTimeSelection, Color borderColor)
+		{
+			IPen pen;
+			if (designTimeSelection)
 			{
-				Width = 1f / Graphics.PageScale
-			};
+				pen = ResourceFactory.CreatePen(Color.Black, 1f);
+				pen.DashStyle = DashStyle.Dot;
+				pen.DashPattern = new float[2]
+				{
+					2f,
+					2f
+				};
+				pen.Width = 1f / Graphics.PageScale;
+			}
+			else
+			{
+				pen = ResourceFactory.CreatePen(borderColor, 1f);
+				pen.DashStyle = DashStyle.Dot;
+				pen.DashPattern = new float[2]
+				{
+					2f,
+					2f
+				};
+			}
+			return pen;
 		}
 
 		internal void DrawSelection(RectangleF rect, bool designTimeSelection, Color borderColor, Color markerColor)
@@ -1232,7 +1266,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			rect = RectangleF.Intersect(rect, Graphics.VisibleClipBounds);
 			PointF pointF = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
 			float num2 = 6f / Graphics.PageScale;
-			using (Pen pen = GetSelectionPen(designTimeSelection, borderColor))
+			using (IPen pen = GetSelectionPenResource(designTimeSelection, borderColor))
 			{
 				DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
 			}
@@ -1253,8 +1287,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			array[6].Y = rect.Y + rect.Height;
 			array[7].X = rect.X + rect.Width;
 			array[7].Y = rect.Y + rect.Height;
-			Brush brush = null;
-			Pen pen2 = null;
+			IBrush brush = null;
+			IPen pen2 = null;
 			if (designTimeSelection)
 			{
 				brush = GetDesignTimeSelectionFillBrush();
@@ -1262,8 +1296,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			else
 			{
-				brush = new SolidBrush(markerColor);
-				pen2 = new Pen(borderColor, 1f);
+				brush = ResourceFactory.CreateSolidBrush(markerColor);
+				pen2 = ResourceFactory.CreatePen(borderColor, 1f);
 			}
 			for (int i = 0; i < array.Length; i++)
 			{
@@ -1279,10 +1313,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal void DrawRadialSelection(GaugeGraphics g, GraphicsPath selectionPath, PointF[] markerPositions, bool designTimeSelection, Color borderColor, Color markerColor)
 		{
+			// selectionPath is a concrete GraphicsPath built by the caller (e.g. CircularScale.GetBarPath) and no
+			// mixed DrawPath(IPen, GraphicsPath) overload exists, so this call stays on the original concrete
+			// GetSelectionPen. See tasks/gauge-gdi-type-abstraction.md Milestone B2 notes.
 			DrawPath(GetSelectionPen(designTimeSelection, borderColor), selectionPath);
 			float num = 6f / Graphics.PageScale;
-			Brush brush = null;
-			Pen pen = null;
+			IBrush brush = null;
+			IPen pen = null;
 			if (designTimeSelection)
 			{
 				brush = GetDesignTimeSelectionFillBrush();
@@ -1290,8 +1327,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			else
 			{
-				brush = new SolidBrush(markerColor);
-				pen = new Pen(borderColor, 1f);
+				brush = ResourceFactory.CreateSolidBrush(markerColor);
+				pen = ResourceFactory.CreatePen(borderColor, 1f);
 			}
 			for (int i = 0; i < markerPositions.Length; i++)
 			{

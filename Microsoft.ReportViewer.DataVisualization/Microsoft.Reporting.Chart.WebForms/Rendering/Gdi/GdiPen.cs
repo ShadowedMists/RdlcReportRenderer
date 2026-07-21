@@ -61,6 +61,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativePen.Alignment = value;
 		}
 
+		public float[] DashPattern
+		{
+			get => NativePen.DashPattern;
+			set => NativePen.DashPattern = value;
+		}
+
 		public IPen Clone()
 		{
 			GdiPen gdiPen = new GdiPen(Color, Width);
