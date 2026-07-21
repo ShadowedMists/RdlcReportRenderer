@@ -26,5 +26,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "SimpleLinearGauge.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void CircularGaugeWithFrameImage_MatchesBaseline()
+        {
+            var actual = SampleGauges.RenderCircularGaugeWithFrameImage();
+            var result = ImageComparer.CompareToBaseline(actual, "CircularGaugeWithFrameImage.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

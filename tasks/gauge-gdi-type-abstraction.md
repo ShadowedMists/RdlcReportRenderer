@@ -256,6 +256,22 @@ which stayed, why `IClipRegion` stayed put). Net result:
   hue-recolored) would be worth adding to actually exercise this path, same open item already noted for
   the hatch/gradient/texture brush cluster.
 
+  **Now pixel-verified (2026-07-21), user-directed ("proceed").** Added
+  [`SampleGauges.RenderCircularGaugeWithFrameImage`](../tests/Microsoft.ReportViewer.DataVisualization.VisualRegressionTests/SampleGauges.cs) —
+  a 64x64 in-memory bitmap (CornflowerBlue background, white filled circle) registered via
+  `container.NamedImages`, assigned as `BackFrame.Image` with `ClipImage = true` (exercises the
+  `IGaugeClipRegion` clip-swap), `ImageTransColor = CornflowerBlue` (exercises `SetTransparentColor`),
+  and `ImageHueColor = Firebrick` (exercises `SetChannelScale`) — all three of `DrawFrameImage`'s
+  converted code paths in one render. Rendered, visually inspected the PNG (via `Read`): a circular
+  gauge with a Firebrick-tinted disc (white circle × Firebrick's R/G/B factors ≈ Firebrick — confirms
+  `SetChannelScale` is scaling correctly) clipped to the circular frame ring, CornflowerBlue keyed
+  transparent, default blue/white scale ticks and needle drawn normally on top — no garbage or
+  corruption. Promoted to `Baselines/CircularGaugeWithFrameImage.png`. Added
+  `CircularGaugeWithFrameImage_MatchesBaseline` to `GaugeVisualRegressionTests.cs`. Verified: build 0
+  errors, full suite now 55/55 (54 `VisualRegressionTests` — up from 53, +1 — + 1 `Chart.Rdl.Tests`),
+  zero baseline diffs on the pre-existing tests, new test passing byte-for-byte against its own
+  freshly-promoted baseline.
+
 ### Milestone B — Migrate the chokepoint
 
 - [x] **B1. Inject `IGaugeDrawingResourceFactory` into `GaugeGraphics`** (2026-07-21) — turned out to
