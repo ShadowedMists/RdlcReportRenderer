@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using Microsoft.Reporting.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -661,6 +662,129 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			if (borderColor != Color.Empty && borderWidth > 0 && borderStyle != 0)
 			{
 				DrawPath(pen, path);
+			}
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="DrawPathAbs(GraphicsPath, Color, GaugeHatchStyle, string, GaugeImageWrapMode, Color, GaugeImageAlign, GradientType, Color, Color, int, GaugeDashStyle, PenAlignment)"/>
+		/// (Milestone A4 — coexists until a real caller builds its path via <see cref="IGraphicsPath"/>;
+		/// see tasks/gauge-gdi-type-abstraction.md). Unlike the concrete overload, this one does not
+		/// touch the shared <c>pen</c>/<c>solidBrush</c> fields — it constructs its own local
+		/// <see cref="IPen"/>/<see cref="IBrush"/> resources via <see cref="RenderingEngine.ResourceFactory"/>,
+		/// which is what avoids the ripple that would otherwise force every real caller (all of which still
+		/// build their paths as concrete <see cref="GraphicsPath"/>) to convert their own path-building code
+		/// at the same time. Mirrors Chart's identically-shaped `DrawPathAbs(IGraphicsPath, ...)` exactly,
+		/// including reusing its clip-swap/`DrawImage` pattern now that both are available here too.
+		/// </summary>
+		internal void DrawPathAbs(IGraphicsPath path, Color backColor, GaugeHatchStyle backHatchStyle, string backImage, GaugeImageWrapMode backImageMode, Color backImageTranspColor, GaugeImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, GaugeDashStyle borderStyle, PenAlignment penAlignment)
+		{
+			IBrush brush = null;
+			IBrush brush2 = null;
+			if (backColor.IsEmpty)
+			{
+				backColor = Color.White;
+			}
+			if (backGradientEndColor.IsEmpty)
+			{
+				backGradientEndColor = Color.White;
+			}
+			if (borderColor.IsEmpty)
+			{
+				borderColor = Color.White;
+				borderWidth = 0;
+			}
+			IPen pathPen = ResourceFactory.CreatePen(borderColor, borderWidth);
+			pathPen.Alignment = penAlignment;
+			pathPen.DashStyle = GetPenStyle(borderStyle);
+			if (backGradientType == GradientType.None)
+			{
+				brush = ResourceFactory.CreateSolidBrush(backColor);
+			}
+			else
+			{
+				RectangleF bounds = path.GetBounds();
+				bounds.Inflate(new SizeF(2f, 2f));
+				brush = GetGradientBrushResource(bounds, backColor, backGradientEndColor, backGradientType);
+			}
+			if (backHatchStyle != 0)
+			{
+				brush = GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (backImage.Length > 0 && backImageMode != GaugeImageWrapMode.Unscaled && backImageMode != GaugeImageWrapMode.Scaled)
+			{
+				brush2 = brush;
+				brush = GetTextureBrushResource(backImage, backImageTranspColor, backImageMode);
+			}
+			RectangleF bounds2 = path.GetBounds();
+			if (backImage.Length > 0 && (backImageMode == GaugeImageWrapMode.Unscaled || backImageMode == GaugeImageWrapMode.Scaled))
+			{
+				Image image = common.ImageLoader.LoadImage(backImage);
+				IImageDrawOptions imageAttributes = ResourceFactory.CreateImageDrawOptions();
+				if (backImageTranspColor != Color.Empty)
+				{
+					imageAttributes.SetTransparentColor(backImageTranspColor);
+				}
+				RectangleF rectangleF = default(RectangleF);
+				rectangleF.X = bounds2.X;
+				rectangleF.Y = bounds2.Y;
+				rectangleF.Width = bounds2.Width;
+				rectangleF.Height = bounds2.Height;
+				if (backImageMode == GaugeImageWrapMode.Unscaled)
+				{
+					rectangleF.Width = image.Width;
+					rectangleF.Height = image.Height;
+					if (rectangleF.Width < bounds2.Width)
+					{
+						switch (backImageAlign)
+						{
+						case GaugeImageAlign.TopRight:
+						case GaugeImageAlign.Right:
+						case GaugeImageAlign.BottomRight:
+							rectangleF.X = bounds2.Right - rectangleF.Width;
+							break;
+						case GaugeImageAlign.Top:
+						case GaugeImageAlign.Bottom:
+						case GaugeImageAlign.Center:
+							rectangleF.X = bounds2.X + (bounds2.Width - rectangleF.Width) / 2f;
+							break;
+						}
+					}
+					if (rectangleF.Height < bounds2.Height)
+					{
+						switch (backImageAlign)
+						{
+						case GaugeImageAlign.BottomRight:
+						case GaugeImageAlign.Bottom:
+						case GaugeImageAlign.BottomLeft:
+							rectangleF.Y = bounds2.Bottom - rectangleF.Height;
+							break;
+						case GaugeImageAlign.Right:
+						case GaugeImageAlign.Left:
+						case GaugeImageAlign.Center:
+							rectangleF.Y = bounds2.Y + (bounds2.Height - rectangleF.Height) / 2f;
+							break;
+						}
+					}
+				}
+				FillPath(brush, path);
+				IGaugeClipRegion originalClip = GetClipRegion();
+				IGaugeClipRegion pathClip = ResourceFactory.CreateRegion(path);
+				SetClipRegion(pathClip);
+				DrawImage(ResourceFactory.WrapImage(image), new Rectangle((int)Math.Round(rectangleF.X), (int)Math.Round(rectangleF.Y), (int)Math.Round(rectangleF.Width), (int)Math.Round(rectangleF.Height)), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				SetClipRegion(originalClip);
+				pathClip.Dispose();
+			}
+			else
+			{
+				if (brush2 != null && backImageTranspColor != Color.Empty)
+				{
+					FillPath(brush2, path);
+				}
+				FillPath(brush, path);
+			}
+			if (borderColor != Color.Empty && borderWidth > 0 && borderStyle != 0)
+			{
+				DrawPath(pathPen, path);
 			}
 		}
 

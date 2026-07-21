@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -744,22 +745,34 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Milestone A4 note: the clip-swap below uses the interface-typed <see cref="IGaugeClipRegion"/>
+		/// surface (<c>region</c>/<c>clip</c> retyped, bridged from the still-concrete <c>graphicsPath</c>
+		/// via <c>ResourceFactory.WrapPath</c> — <see cref="GetFramePath"/> itself stays concrete since it
+		/// has 9 other callers not touched this pass; see tasks/gauge-gdi-type-abstraction.md). The
+		/// image-draw call below is deliberately NOT converted to the interface-typed
+		/// <c>DrawImage(IChartImage, ...)</c>/<c>IImageDrawOptions</c> pair: the hue-recolor branch below
+		/// needs a raw <see cref="ColorMatrix"/> (`Matrix00`/`Matrix11`/`Matrix22` channel scaling), which
+		/// has no equivalent on <c>IImageDrawOptions</c> today (only `SetColorRemap`/`SetTransparentColor`/
+		/// `SetWrapMode`/`SetOpacity` exist) — a new, small, found-but-not-fixed gap, same shape as the
+		/// previously-found `ILinearGradientBrush`/`IPathGradientBrush` transform gaps.
+		/// </summary>
 		internal void DrawFrameImage(GaugeGraphics g)
 		{
 			GraphicsPath graphicsPath = null;
 			Pen pen = null;
-			Region region = null;
+			IGaugeClipRegion region = null;
 			try
 			{
 				graphicsPath = GetFramePath(g, 0f);
 				RectangleF frameRectangle = GetFrameRectangle(g);
-				Region clip = null;
+				IGaugeClipRegion clip = null;
 				if (ClipImage)
 				{
 					RenderShadow(g);
-					region = new Region(graphicsPath);
-					clip = g.Clip;
-					g.Clip = region;
+					region = g.ResourceFactory.CreateRegion(g.ResourceFactory.WrapPath(graphicsPath));
+					clip = g.GetClipRegion();
+					g.SetClipRegion(region);
 				}
 				else if (ShadowOffset != 0f)
 				{
@@ -792,7 +805,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				imageSmoothingState.Restore();
 				if (ClipImage)
 				{
-					g.Clip = clip;
+					g.SetClipRegion(clip);
 				}
 				if (BorderWidth > 0 && BorderStyle != 0)
 				{

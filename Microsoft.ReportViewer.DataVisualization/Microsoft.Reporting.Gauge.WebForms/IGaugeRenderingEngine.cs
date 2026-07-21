@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using Microsoft.Reporting.Rendering;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -162,5 +163,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		SizeF MeasureString(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat);
 
 		SizeF MeasureString(string text, IChartFont font);
+
+		/// <summary>Interface-typed equivalent of the <see cref="Clip"/> property getter (Milestone A4 equivalent).</summary>
+		IGaugeClipRegion GetClipRegion();
+
+		/// <summary>Interface-typed equivalent of the <see cref="Clip"/> property setter (Milestone A4 equivalent).</summary>
+		void SetClipRegion(IGaugeClipRegion region);
+
+		/// <summary>Interface-typed sibling of <see cref="DrawImage(Image, Rectangle, int, int, int, int, GraphicsUnit, ImageAttributes)"/> (Milestone A4 equivalent — added alongside the clip-region work since both real callers need it).</summary>
+		void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr);
 	}
 }

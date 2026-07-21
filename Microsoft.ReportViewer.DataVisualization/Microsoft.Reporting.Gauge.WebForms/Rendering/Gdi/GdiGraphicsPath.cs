@@ -20,6 +20,12 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 			NativePath = new GraphicsPath(points, types);
 		}
 
+		/// <summary>Wraps an already-constructed native <see cref="GraphicsPath"/> rather than building a new one (Milestone A4 — bridges legacy concrete-path-building code, mirroring <c>GdiChartImage</c>'s <c>WrapImage</c> role).</summary>
+		internal GdiGraphicsPath(GraphicsPath existingPath)
+		{
+			NativePath = existingPath;
+		}
+
 		public FillMode FillMode
 		{
 			get => NativePath.FillMode;

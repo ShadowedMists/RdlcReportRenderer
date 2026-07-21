@@ -63,8 +63,16 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 
 		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => new GdiGraphicsPath(points, types);
 
+		public IGraphicsPath WrapPath(GraphicsPath path) => new GdiGraphicsPath(path);
+
 		public IChartImage WrapImage(Image image) => new GdiChartImage(image);
 
 		public IImageDrawOptions CreateImageDrawOptions() => new GdiImageDrawOptions();
+
+		public IGaugeClipRegion CreateRegion() => new GdiClipRegion();
+
+		public IGaugeClipRegion CreateRegion(RectangleF rect) => new GdiClipRegion(rect);
+
+		public IGaugeClipRegion CreateRegion(IGraphicsPath path) => new GdiClipRegion(path);
 	}
 }

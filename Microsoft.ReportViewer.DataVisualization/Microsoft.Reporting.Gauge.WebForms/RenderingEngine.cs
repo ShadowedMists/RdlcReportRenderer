@@ -368,5 +368,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			RenderingObject.MeasureString(text, font, layoutArea, stringFormat);
 
 		public SizeF MeasureString(string text, IChartFont font) => RenderingObject.MeasureString(text, font);
+
+		public IGaugeClipRegion GetClipRegion() => RenderingObject.GetClipRegion();
+
+		public void SetClipRegion(IGaugeClipRegion region) => RenderingObject.SetClipRegion(region);
+
+		public void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr) =>
+			RenderingObject.DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr);
 	}
 }

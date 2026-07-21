@@ -8,12 +8,11 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 	/// <summary>
 	/// Gauge-engine counterpart of <c>Microsoft.Reporting.Chart.WebForms.Rendering.IDrawingResourceFactory</c>
 	/// (see tasks/gauge-gdi-type-abstraction.md Milestone A1). Constructs the shared, engine-agnostic
-	/// resource interfaces from <see cref="Microsoft.Reporting.Rendering"/>. Deliberately narrower than
-	/// the Chart engine's factory for now: no clip-region members yet — gauge clipping stays on
-	/// <see cref="Region"/> until a gauge-specific clip-region abstraction is scoped (mirrors the Chart
-	/// engine's own phased rollout). Image abstraction (<see cref="IChartImage"/>/<see cref="IImageDrawOptions"/>)
-	/// was added during the GetTextureBrush prerequisite (Milestone B) via <see cref="WrapImage"/> — see
-	/// <see cref="GaugeGraphics.GetTextureBrushResource"/>.
+	/// resource interfaces from <see cref="Microsoft.Reporting.Rendering"/>. Image abstraction
+	/// (<see cref="IChartImage"/>/<see cref="IImageDrawOptions"/>) was added during the GetTextureBrush
+	/// prerequisite (Milestone B) via <see cref="WrapImage"/> — see
+	/// <see cref="GaugeGraphics.GetTextureBrushResource"/>. Clip-region abstraction
+	/// (<see cref="IGaugeClipRegion"/>) was added during Milestone A4 via <see cref="CreateRegion()"/>.
 	/// </summary>
 	internal interface IGaugeDrawingResourceFactory
 	{
@@ -56,6 +55,14 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 		IGraphicsPath CreatePath(PointF[] points, byte[] types);
 
 		/// <summary>
+		/// Wrap an already-constructed native <see cref="GraphicsPath"/> as an <see cref="IGraphicsPath"/> —
+		/// a bridge for legacy concrete-path-building code (e.g. <c>BackFrame.GetFramePath</c>) that stays
+		/// GDI+-only/concrete for now (found during the clip-region prerequisite; see
+		/// tasks/gauge-gdi-type-abstraction.md Milestone A4). Mirrors <see cref="WrapImage"/>'s role.
+		/// </summary>
+		IGraphicsPath WrapPath(GraphicsPath path);
+
+		/// <summary>
 		/// Wrap an already-loaded native image as an <see cref="IChartImage"/> — a bridge for
 		/// <c>common.ImageLoader</c>'s legacy loading pipeline, which remains GDI+-only/concrete
 		/// (found during the GetTextureBrush prerequisite; see tasks/gauge-gdi-type-abstraction.md
@@ -64,5 +71,11 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 		IChartImage WrapImage(Image image);
 
 		IImageDrawOptions CreateImageDrawOptions();
+
+		IGaugeClipRegion CreateRegion();
+
+		IGaugeClipRegion CreateRegion(RectangleF rect);
+
+		IGaugeClipRegion CreateRegion(IGraphicsPath path);
 	}
 }
