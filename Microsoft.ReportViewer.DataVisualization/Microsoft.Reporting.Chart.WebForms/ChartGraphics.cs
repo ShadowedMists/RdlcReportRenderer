@@ -439,7 +439,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					base.SmoothingMode = SmoothingMode.AntiAlias;
 				}
-				SolidBrush brush = new SolidBrush(markerColor);
+				IBrush brush = resourceFactory.CreateSolidBrush(markerColor);
 				RectangleF empty2 = RectangleF.Empty;
 				empty2.X = point.X - (float)markerSize / 2f;
 				empty2.Y = point.Y - (float)markerSize / 2f;
@@ -471,12 +471,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 						Matrix3x2 transform5 = base.GetTransform();
 						base.SetTransform(transform5.Translate(shadowSize, shadowSize));
 						shadowDrawingMode = true;
-						FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), points);
+						FillPolygon(resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), points);
 						shadowDrawingMode = false;
 						base.SetTransform(transform5);
 					}
 					FillPolygon(brush, points);
-					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), points);
+					DrawPolygon(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), points);
 					break;
 				}
 				case MarkerStyle.Circle:
@@ -485,7 +485,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						shadowDrawingMode = true;
 						if (!softShadows)
 						{
-							SolidBrush brush2 = new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor));
+							IBrush brush2 = resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor));
 							RectangleF rect = empty2;
 							rect.X += shadowSize;
 							rect.Y += shadowSize;
@@ -493,11 +493,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 						}
 						else
 						{
-							GraphicsPath graphicsPath3 = new GraphicsPath();
+							IGraphicsPath graphicsPath3 = resourceFactory.CreatePath();
 							graphicsPath3.AddEllipse(empty2.X + (float)shadowSize - 1f, empty2.Y + (float)shadowSize - 1f, empty2.Width + 2f, empty2.Height + 2f);
-							PathGradientBrush pathGradientBrush3 = new PathGradientBrush(graphicsPath3);
+							IPathGradientBrush pathGradientBrush3 = resourceFactory.CreatePathGradientBrush(graphicsPath3);
 							pathGradientBrush3.CenterColor = shadowColor;
-							Color[] array8 = pathGradientBrush3.SurroundColors = new Color[1]
+							pathGradientBrush3.SurroundColors = new Color[1]
 							{
 								Color.Transparent
 							};
@@ -517,7 +517,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						shadowDrawingMode = false;
 					}
 					FillEllipse(brush, empty2);
-					DrawEllipse(new Pen(markerBorderColor, markerBorderSize), empty2);
+					DrawEllipse(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), empty2);
 					break;
 				case MarkerStyle.Square:
 					if (shadowSize != 0 && shadowColor != Color.Empty)
@@ -527,7 +527,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						shadowDrawingMode = false;
 					}
 					FillRectangle(brush, empty2);
-					DrawRectangle(new Pen(markerBorderColor, markerBorderSize), (int)Math.Round(empty2.X, 0), (int)Math.Round(empty2.Y, 0), (int)Math.Round(empty2.Width, 0), (int)Math.Round(empty2.Height, 0));
+					DrawRectangle(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), (int)Math.Round(empty2.X, 0), (int)Math.Round(empty2.Y, 0), (int)Math.Round(empty2.Width, 0), (int)Math.Round(empty2.Height, 0));
 					break;
 				case MarkerStyle.Cross:
 				{
@@ -566,15 +566,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 						base.SetTransform(transform2.Translate(softShadows ? (shadowSize + 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize));
 						if (!softShadows)
 						{
-							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array4);
+							FillPolygon(resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array4);
 						}
 						else
 						{
-							GraphicsPath graphicsPath2 = new GraphicsPath();
+							IGraphicsPath graphicsPath2 = resourceFactory.CreatePath();
 							graphicsPath2.AddPolygon(array4);
-							PathGradientBrush pathGradientBrush2 = new PathGradientBrush(graphicsPath2);
+							IPathGradientBrush pathGradientBrush2 = resourceFactory.CreatePathGradientBrush(graphicsPath2);
 							pathGradientBrush2.CenterColor = shadowColor;
-							Color[] array6 = pathGradientBrush2.SurroundColors = new Color[1]
+							pathGradientBrush2.SurroundColors = new Color[1]
 							{
 								Color.Transparent
 							};
@@ -597,7 +597,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					Matrix3x2 transform4 = base.GetTransform();
 					base.SetTransform(transform4);
 					FillPolygon(brush, array4);
-					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), array4);
+					DrawPolygon(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), array4);
 					base.SetTransform(transform4);
 					break;
 				}
@@ -620,7 +620,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						base.SetTransform(matrix5);
 						if (!softShadows)
 						{
-							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array9);
+							FillPolygon(resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array9);
 						}
 						else
 						{
@@ -638,7 +638,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						shadowDrawingMode = false;
 					}
 					FillPolygon(brush, array9);
-					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), array9);
+					DrawPolygon(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), array9);
 					break;
 				}
 				case MarkerStyle.Triangle:
@@ -657,15 +657,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 						base.SetTransform(transform.Translate(softShadows ? (shadowSize - 1) : shadowSize, softShadows ? (shadowSize + 1) : shadowSize));
 						if (!softShadows)
 						{
-							FillPolygon(new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array);
+							FillPolygon(resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)markerColor.A / 2, shadowColor)), array);
 						}
 						else
 						{
-							GraphicsPath graphicsPath = new GraphicsPath();
+							IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 							graphicsPath.AddPolygon(array);
-							PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
+							IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath);
 							pathGradientBrush.CenterColor = shadowColor;
-							Color[] array3 = pathGradientBrush.SurroundColors = new Color[1]
+							pathGradientBrush.SurroundColors = new Color[1]
 							{
 								Color.Transparent
 							};
@@ -686,7 +686,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						shadowDrawingMode = false;
 					}
 					FillPolygon(brush, array);
-					DrawPolygon(new Pen(markerBorderColor, markerBorderSize), array);
+					DrawPolygon(resourceFactory.CreatePen(markerBorderColor, markerBorderSize), array);
 					break;
 				}
 				default:
@@ -2218,7 +2218,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				RectangleF empty = RectangleF.Empty;
 				RectangleF rectangleF = Round(rect);
-				SolidBrush brush = new SolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)backColor.A / 2, shadowColor));
+				IBrush brush = resourceFactory.CreateSolidBrush((shadowColor.A != byte.MaxValue) ? shadowColor : Color.FromArgb((int)backColor.A / 2, shadowColor));
 				empty.X = rectangleF.X + shadowOffset;
 				empty.Y = rectangleF.Y + shadowOffset;
 				empty.Width = rectangleF.Width;
@@ -2251,7 +2251,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					val = empty2.Width / 2f;
 				}
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 				if (circular && empty2.Width != empty2.Height)
 				{
 					float num = empty2.Width / 2f;
@@ -2276,9 +2276,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 					graphicsPath.AddLine(empty2.X, empty2.Bottom - val, empty2.X, empty2.Y + val);
 					graphicsPath.AddArc(empty2.X, empty2.Y, 2f * val, 2f * val, 180f, 90f);
 				}
-				PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
+				IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath);
 				pathGradientBrush.CenterColor = shadowColor;
-				Color[] array2 = pathGradientBrush.SurroundColors = new Color[1]
+				pathGradientBrush.SurroundColors = new Color[1]
 				{
 					Color.Transparent
 				};
