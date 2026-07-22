@@ -107,3 +107,61 @@ The implementation is covered by the Linux renderer test project in [tests/Repor
 - The current implementation is intentionally small and focused on the first cross-platform seam.
 - The abstraction layer should be extended as more Windows-specific rendering paths are isolated.
 - Future work should consider adding richer document models and more platform-specific implementations behind the same interfaces.
+
+---
+
+## Excel image handling: `IImageProvider`
+
+Location: `Microsoft.ReportViewer.Common/.../IImageProvider.cs`, `WindowsImageProvider.cs`, `CrossPlatformImageProvider.cs`, `ImageProviderFactory.cs`
+
+Isolates the `System.Drawing`-dependent parts of Excel image handling (used by `ChartMapper.cs` and `GaugeMapper.cs` as well as plain embedded images) behind a small port:
+
+- `IImageProvider.LoadImage(Stream) : ImageMetadata` and `GetImageForChart(Stream) : object`
+- `ImageMetadata`: `Width`, `Height`, `HorizontalResolution`, `VerticalResolution`, `Format`
+- `WindowsImageProvider` (`System.Drawing`-based, `[SupportedOSPlatform("windows")]`) vs. `CrossPlatformImageProvider` (SixLabors.ImageSharp-based; `GetImageForChart` returns `null` since chart/gauge rendering itself is still Windows-only)
+- `ImageProviderFactory.CreateProvider()` selects an implementation via `RuntimeInformation.IsOSPlatform`
+
+Alongside it, `Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.ImageFormatType` (`Bmp`/`Gif`/`Jpeg`/`Png`/`Unknown`) plus `ImageFormatTypeHelper` (`ToFileExtension`, `ToMimeType`, `FromMimeType`, `DetectFromStream` via `SixLabors.ImageSharp.Image.Identify`) replaced `System.Drawing.Imaging.ImageFormat` in `IExcelGenerator`, `ImageInformation`, `OpenXmlGenerator`, and `BIFF8Generator`. Both changes are internal-only (no public API break).
+
+**Known limitation:** chart/gauge background images still cannot render on non-Windows — that depends on the much larger Chart/Gauge engine migration below.
+
+---
+
+## Chart and Gauge rendering: Ports & Adapters over GDI+
+
+The Chart engine (`Microsoft.Reporting.Chart.WebForms`) and Gauge engine (`Microsoft.Reporting.Gauge.WebForms`) are vendored, first-party rendering engines (not external libraries) that historically drew directly with GDI+ (`System.Drawing`). Both are being migrated to a Ports & Adapters design so a non-GDI+ backend (SkiaSharp) can eventually be plugged in for Linux/macOS. Full progress/open items: `tasks/chart-gdi-type-abstraction.md` and `tasks/gauge-gdi-type-abstraction.md`. See also `docs/platform-support.md` for cross-platform gaps and `docs/decisions.md` for why this design was chosen.
+
+### Shape
+
+```
+Painters (73 Chart files / ~30 Gauge files) ──► ChartGraphics / GaugeGraphics (chokepoint) ──► IChartRenderingEngine / IGaugeRenderingEngine
+        │                                              │                                                    │
+        └── construct resources via ──────── IDrawingResourceFactory / IGaugeDrawingResourceFactory ────────┘   (the PORT)
+                                                   ▲                    ▲
+                                            GdiResourceFactory   SkiaResourceFactory (Chart spike only)          (ADAPTERS)
+```
+
+Instead of `new Pen(color, width)`, code calls `factory.CreatePen(color, width)` and receives an `IPen`.
+
+### Namespaces
+
+- **`Microsoft.Reporting.Rendering`** (neutral, shared by both engines) — pure engine-agnostic resource contracts: `IRenderingResource`, `IPen`, `IBrush` (+ `ISolidBrush`/`ILinearGradientBrush`/`ITextureBrush`/`IHatchBrush`/`IPathGradientBrush`), `IChartFont`, `ITextFormat`, `IGraphicsPath`, `IChartImage`, `IImageDrawOptions`.
+- **`Microsoft.Reporting.Chart.WebForms.Rendering`** — Chart-specific pieces that couldn't move to the neutral namespace: `IClipRegion` (its `GetBounds`/`IsEmpty`/`IsInfinite` need an `IChartRenderingEngine` to reach a live `Graphics` — a genuine Chart-specific dependency, found by attempting the move), `IDrawingResourceFactory`, `IChartRenderingEngine`, `IRenderSurface`/`IRenderSurfaceFactory`, and the concrete `Gdi`/`Skia` adapter implementations.
+- **Gauge-owned** (`Microsoft.Reporting.Gauge.WebForms/Rendering/`) — `IGaugeDrawingResourceFactory`, `IGaugeRenderingEngine`, `IGaugeClipRegion` (Gauge's own clip-region interface — deliberately not shared with Chart's `IClipRegion` for the same per-engine-`Graphics` reason), and Gauge's own `Rendering/Gdi/` adapters. Gauge's adapters are separate implementations from Chart's identically-shaped ones by design, not shared instances.
+- Portable value types (`Color`, `PointF`/`Point`, `RectangleF`/`Rectangle`, `SizeF`/`Size` — the bulk of `System.Drawing` usage by occurrence count) and GDI+-namespaced enums (`SmoothingMode`, `LineCap`, `DashStyle`, `FillMode`, etc.) are kept concrete — `System.Drawing.Primitives` is fully cross-platform, so abstracting them would add churn for no portability gain. `Matrix` is represented as `System.Numerics.Matrix3x2` rather than a custom interface.
+
+### Recurring conversion patterns
+
+- **Dual-overload strategy:** rather than retype an existing method/field in place, add a new, separately-named interface-typed sibling (e.g. `GetHatchBrushResource` alongside `GetHatchBrush`, `DrawPathAbs(IGraphicsPath, ...)` alongside `DrawPathAbs(GraphicsPath, ...)`) that coexists with the concrete original, then migrate real callers one at a time. This is what makes the migration incremental and revert-safe — new callers get the interface-typed surface immediately; old callers keep working until they're converted.
+- **Bridge-at-the-sink:** when a concrete resource (a `Font`, a `GraphicsPath` built by a self-contained geometry helper, an already-loaded `Image`) can't reasonably be retyped at its source, wrap/reconstruct it into the interface type only at the point it's actually consumed (`WrapFont(Font)`, `WrapPath(GraphicsPath)`/`UnwrapPath(IGraphicsPath)`, `WrapImage(Image)`).
+- **Public model properties stay concrete forever:** `Series.Font`, `DataPoint.Font`, `PolylineAnnotation.Path`, `Annotation.TextFont`, etc. are consumer-facing API surface, not internal rendering plumbing — only the internal *rendering call* converts to the interface type.
+- **Position/layout-only helpers stay concrete:** methods that only compute layout (no adjacent draw call in the same method) are deliberately left on concrete types (e.g. `Legend.GetTitleSize`, `SmartLabels.cs`'s position math) — a consistent, intentional scope boundary.
+- **The "large atomic pass" trap:** shared concrete-field arrays on helper/attrib classes (e.g. Gauge's `KnobStyleAttrib`/`NeedleStyleAttrib`/`MarkerStyleAttrib`/`BarStyleAttrib`) look individually convertible per-getter but are all consumed together by the same `FillPath(Brush, GraphicsPath)`/`DrawPath(Pen, GraphicsPath)` call — converting one getter without converting the whole class plus its producers and consumer in one pass just adds unreachable dead code. These are identified and deliberately deferred until a dedicated single pass rather than sliced.
+
+### Verification convention
+
+Every increment is checked with: `dotnet build` (0 errors) + the full test suite (`VisualRegressionTests` + `Chart.Rdl.Tests`) passing + zero baseline PNG diffs. Two techniques back this:
+1. For previously-uncovered render paths, generate a "before" baseline by `git stash push --keep-index` on just the engine files being converted (keeping new test files), render through the pre-conversion code, pop the stash, and confirm byte-for-byte match against the post-conversion render.
+2. For pure hit-testing/metadata changes with no visible pixels, add dedicated `Chart.HitTest(x, y)`-based tests instead of relying on PNG diffs.
+
+Note: purely additive/unreachable interface surface is only "build-verified," not "pixel-verified," until some real caller or dedicated sample exercises it — this distinction is called out explicitly in both task docs' progress notes.

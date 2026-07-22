@@ -1,5 +1,7 @@
 # Quick Reference: PDF Rendering Call Stack & Implementation
 
+**Status (2026-07-22):** Still not started (LOWER PRIORITY per `TODO.md`). Note: the "Comparison with Excel" section below is stale — Excel Phases 4-5 it describes as pending are now complete.
+
 ## The Challenge
 
 **Goal:** Make PDF rendering cross-platform by replacing GDI+ graphics operations
@@ -312,8 +314,8 @@ public class SkiaGraphicsTests
 **Want full architectural details?**
 → Read: `tasks/pdf-render-callstack-analysis.md`
 
-**Want to see Excel rendering (simpler)?**
-→ Read: `tasks/excel-render-callstack-analysis.md`
+**Want to see Excel rendering (simpler, now complete)?**
+→ Read: `docs/rendering-abstractions.md`
 
 **Interested in chart rendering (shared challenge)?**
 → Read: `tasks/chart-image-abstraction-analysis.md`

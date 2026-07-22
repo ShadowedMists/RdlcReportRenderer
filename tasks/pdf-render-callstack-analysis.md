@@ -1,5 +1,7 @@
 # PDF Rendering Cross-Platform Analysis
 
+**Status (2026-07-22):** Not started — this remains the active roadmap/reference for future PDF work (see `TODO.md`'s "PDF Phase 1" entry). Excel Phases 4-5 referenced below as "pending" are now complete (`docs/rendering-abstractions.md`).
+
 ## Executive Summary
 
 The PDF rendering pipeline in ReportViewerCore has **significant Windows-specific dependencies** through System.Drawing and GDI+ operations. Unlike Excel rendering (which uses ClosedXML for cross-platform XLSX generation), PDF rendering is fundamentally tied to GDI+ graphics operations that don't have direct cross-platform equivalents.
@@ -465,13 +467,12 @@ Replacing charts affects BOTH renderers - see `chart-image-abstraction-analysis.
 - `Microsoft.ReportViewer.Common/Microsoft.Reporting/ControlService.cs:40-70` - Renderer registration
 
 ### Related Documentation
-- `tasks/excel-render-callstack-analysis.md` - Excel rendering (simpler, mostly cross-platform)
+- `docs/rendering-abstractions.md` - Excel rendering (simpler, now complete) and the Chart/Gauge abstraction design
 - `tasks/chart-image-abstraction-analysis.md` - Chart rendering (blocks both Excel and PDF)
-- `investigation/03-windows-dependencies.md` - Overall Windows dependency inventory
 
 ### Recommended Reading Order
 1. This file (pdf-render-callstack-analysis.md) - Overview and impact
-2. `tasks/excel-render-callstack-analysis.md` - Simpler example for context
+2. `docs/rendering-abstractions.md` - Simpler, completed example for context
 3. `tasks/chart-image-abstraction-analysis.md` - Shared challenge
 4. `TODO.md` - Project progress
 

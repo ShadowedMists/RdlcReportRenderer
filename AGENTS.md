@@ -12,24 +12,13 @@ Your primary objective is **to implement cross-platform Excel and PDF rendering 
 
 ## Immediate Priorities
 
-The current focus is on implementing cross-platform Excel and PDF rendering:
+**Do not treat the phase lists below as current status** — they drift. `TODO.md` is the single source of truth for what's done/in-progress/not-started; check it first.
 
-**Excel Rendering (Primary - Low Risk):**
-- Phase 4: ImageFormatType enum implementation (2-3 days)
-- Phase 5: IImageProvider abstraction for chart images (3-4 days)
-- Phase 6: Testing and cross-platform validation (2-3 days)
-- **Status:** 60% complete (core infrastructure + analysis done)
+**Excel Rendering:** image-format and background-image abstractions (`ImageFormatType`, `IImageProvider`) are complete.
 
-**PDF Rendering (Secondary - High Risk):**
-- Phase 1: SkiaSharp graphics library migration (2-3 weeks)
-- Phase 2: Font handling abstraction (3-5 days)
-- Phase 3: Image encoding migration (2-3 days)
-- Phase 4: Platform abstraction (1-2 days)
-- **Status:** Analysis complete, implementation planning ready
+**Chart & Gauge Rendering (Primary — active):** re-targeting the existing vendored GDI+ engines to SkiaSharp behind their existing rendering seams (Ports & Adapters), not replacing either engine with an external library — see `docs/rendering-abstractions.md` for the design and `tasks/chart-gdi-type-abstraction.md`/`tasks/gauge-gdi-type-abstraction.md` for progress. An earlier decision to replace the Chart engine with OxyPlot was retracted (`docs/decisions.md`) after its supporting evidence didn't hold up on review — don't resurrect it without re-reading that retraction first.
 
-**Shared Challenges (Both renderers):**
-- Chart library evaluation and replacement (blocking both)
-- See: `tasks/chart-image-abstraction-analysis.md` for details
+**PDF Rendering (Secondary — not started, high risk):** blocked on Metafile/EMF having no cross-platform equivalent, a deeper architectural blocker than Chart/Gauge's. See `tasks/pdf-render-callstack-analysis.md`.
 
 ---
 
@@ -438,33 +427,51 @@ The `docs` folder contains developer-facing documentation that must be kept curr
 
 **Purpose:** Enable developers to understand the rendering architecture without reading the full codebase.
 
-**Structure:**
+**Actual structure** (keep this list in sync with `docs/README.md` — that file is the authoritative index):
 
 ```
 docs/
-├── ARCHITECTURE.md            - System architecture overview
-├── RENDERING_PIPELINE.md      - Detailed rendering flow
-├── WINDOWS_DEPENDENCIES.md    - Current Windows dependency inventory
-├── CROSS_PLATFORM_STRATEGY.md - Plan for cross-platform support
-├── EXCEL_RENDERING.md         - Excel-specific details
-├── PDF_RENDERING.md           - PDF-specific details
-├── CHART_RENDERING.md         - Chart/gauge rendering analysis
-├── IMPLEMENTATION_PLAN.md     - Current implementation roadmap
-└── API_REFERENCE.md           - Key interfaces and patterns
+├── README.md                   - Index of the documents below
+├── rendering-abstractions.md   - Renderer interfaces + Chart/Gauge Ports & Adapters design
+├── architecture-map.md         - End-to-end render flow
+├── platform-support.md         - Current Windows/Linux/macOS support matrix and known gaps
+├── decisions.md                - Architecture decisions and why
+├── build-and-test.md           - Local build/test commands
+├── renderer-extension-guide.md - How to add another renderer implementation
+├── troubleshooting.md          - Common issues and known quirks
+└── examples.md                 - Small usage examples
 ```
 
 **Keep Up-To-Date:**
-- After implementing major features, update relevant docs
-- When discovering new Windows dependencies, update WINDOWS_DEPENDENCIES.md
-- When changing architecture, update ARCHITECTURE.md
+- After implementing major features, update the relevant doc above (not a new standalone file)
+- When discovering a new Windows dependency or cross-platform gap, update `docs/platform-support.md`
+- When changing architecture or making a durable decision, update `docs/rendering-abstractions.md`/`docs/decisions.md`
 - Before code review, verify docs match implementation
 - Link to specific files and line numbers in docs
+- Durable facts (architecture, gaps, decisions) belong in `docs/`; session-by-session narrative belongs in a `tasks/*.md` file's own history — or nowhere, once the milestone is done and its facts have moved to `docs/`
 
 **Usage:**
-- Developers read `docs/ARCHITECTURE.md` first
+- Developers read `docs/README.md` first, then `docs/rendering-abstractions.md`
 - Agents reference docs before proposing changes
 - Code reviews check docs for accuracy
 - New team members use docs as onboarding
+
+## Task documents (`tasks/`)
+
+Each `tasks/*.md` file tracks one migration/investigation. Keep them lean:
+- Once a milestone is fully done, its "what we tried/reverted/found" narrative should be deleted, not accumulated — replace it with a one-line status in a milestone table, and move any durable fact (an architecture decision, a permanent gap, a resolved gotcha) into `docs/`.
+- Keep only what's needed to *resume* work: exact blockers, file/line references, what's been tried and ruled out — for items that are still open.
+- If a whole document becomes fully superseded (its proposed work is done and nothing durable remains outside what's now in `docs/`), delete it or shrink it to a one-line pointer, rather than leaving it to be rediscovered and re-read by a future session.
+
+## Conventions established during the Chart/Gauge GDI+ migration
+
+These apply to any similar incremental type-abstraction or interface-introduction effort:
+
+- **Dual-overload strategy:** don't retype an existing method/field in place if it still has real concrete callers. Add a new, separately-named interface-typed sibling instead (e.g. `GetHatchBrushResource` next to `GetHatchBrush`), and migrate real callers to it one at a time. This is what keeps a large migration incremental and revert-safe.
+- **Bridge-at-the-sink:** when a concrete resource can't reasonably be retyped at its source (a public model property, a self-contained legacy geometry helper), wrap/reconstruct it into the interface type only at the point it's consumed, rather than forcing the source to change.
+- **The "large atomic pass" trap:** shared concrete fields/arrays on a helper class often look individually convertible per-getter, but are all consumed together by one call downstream — converting one getter without the whole class, its producers, and its consumer in one pass just adds unreachable dead code. Identify these and do them as one deliberate pass, not sliced.
+- **Verification gate:** every increment must have `dotnet build` (0 errors) + full test suite passing + zero baseline diffs before being considered done. For previously-uncovered render paths, generate a "before" baseline via `git stash push --keep-index` on just the engine files being converted, render through the pre-conversion code, pop the stash, and confirm byte-for-byte match.
+- Don't force an abstraction whose semantics can't be verified end-to-end — document a genuine gap honestly rather than risk a subtly wrong port.
 
 ---
 
@@ -504,13 +511,11 @@ Success is measured by:
 
 Before starting work, review these files in order:
 
-1. **ANALYSIS_DELIVERABLES.md** - Master index of all analysis
-2. **ANALYSIS_STATUS.md** - Completion status and next steps
-3. **TODO.md** - Current tasks and progress
-4. **tasks/rendering-comparison-analysis.md** - Excel vs PDF scope
-5. **tasks/excel-render-callstack-analysis.md** - Excel details
-6. **tasks/pdf-render-callstack-analysis.md** - PDF details
-7. **tasks/chart-image-abstraction-analysis.md** - Shared challenge
+1. **TODO.md** - Current tasks, progress, and documentation index
+2. **docs/rendering-abstractions.md** - Rendering architecture (Excel/PDF renderer factory + Chart/Gauge Ports & Adapters)
+3. **docs/decisions.md** / **docs/platform-support.md** - Why things are built this way, and current known gaps
+4. **tasks/chart-gdi-type-abstraction.md** / **tasks/gauge-gdi-type-abstraction.md** - active Chart/Gauge migration progress
+5. **tasks/pdf-render-callstack-analysis.md** - PDF migration roadmap (not started)
 
 These contain:
 - Complete call stack analysis
