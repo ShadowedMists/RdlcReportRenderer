@@ -944,7 +944,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Height += size.Height / 8f;
 				size.Width += size.Width / (float)labelText.Length;
 				empty = PointChart.GetLabelPosition(graph, new PointF(x, y), size, stringFormat, adjustForDrawing: true);
-				graph.DrawPointLabelStringRel(area.Common, labelText, point.Font, new SolidBrush(point.FontColor), new PointF(x, y), stringFormat, point.FontAngle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
+				IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedFormat.Alignment = stringFormat.Alignment;
+				bridgedFormat.LineAlignment = stringFormat.LineAlignment;
+				graph.DrawPointLabelStringRel(area.Common, labelText, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), new PointF(x, y), bridgedFormat, point.FontAngle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
 			}
 			else if (pieLabelStyle == PieLabelStyle.Outside)
 			{
@@ -1038,7 +1042,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						backPosition.X = position.Right - sizeF.Width - num10 / 2f;
 					}
-					graph.DrawPointLabelStringRel(area.Common, labelText, point.Font, new SolidBrush(point.FontColor), position, stringFormat2, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
+					IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+					ITextFormat bridgedFormat2 = graph.ResourceFactory.CreateTextFormat();
+					bridgedFormat2.Alignment = stringFormat2.Alignment;
+					bridgedFormat2.LineAlignment = stringFormat2.LineAlignment;
+					graph.DrawPointLabelStringRel(area.Common, labelText, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, bridgedFormat2, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
 				}
 				else
 				{
@@ -2659,7 +2667,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				backPosition.X = empty.Right - sizeF.Width - num / 2f;
 			}
-			graph.DrawPointLabelStringRel(graph.common, labelText, point.Font, new SolidBrush(point.FontColor), empty, stringFormat, 0, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, point.series, point, pointIndex);
+			IChartFont bridgedFont3 = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+			ITextFormat bridgedFormat3 = graph.ResourceFactory.CreateTextFormat();
+			bridgedFormat3.Alignment = stringFormat.Alignment;
+			bridgedFormat3.LineAlignment = stringFormat.LineAlignment;
+			bridgedFormat3.FormatFlags = stringFormat.FormatFlags;
+			bridgedFormat3.Trimming = stringFormat.Trimming;
+			graph.DrawPointLabelStringRel(graph.common, labelText, bridgedFont3, graph.ResourceFactory.CreateSolidBrush(point.FontColor), empty, bridgedFormat3, 0, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, point.series, point, pointIndex);
 		}
 
 		private void Draw3DInsideLabels(ChartGraphics graph, PointF[] points, DataPoint point, int pointIndex)
