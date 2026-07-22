@@ -1013,7 +1013,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				borderType = common.BorderTypeRegistry.GetBorderType(borderSkin.SkinStyle.ToString());
 				if (borderType != null)
 				{
-					borderType.Resolution = chartGraph.Graphics.DpiX;
+					borderType.Resolution = chartGraph.GetDpiX();
 					flag = (borderType.GetTitlePositionInBorder() != RectangleF.Empty);
 					titlePosition = chartGraph.GetRelativeRectangle(borderType.GetTitlePositionInBorder());
 					titlePosition.Width = absolute.Width - titlePosition.Width;

@@ -699,7 +699,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			float num = 96f;
 			if (common != null)
 			{
-				num = common.graph.Graphics.DpiX;
+				num = common.graph.GetDpiX();
 			}
 			int num2 = (int)Math.Round(2f * num / 96f);
 			if (markerBorderWidth > num2)

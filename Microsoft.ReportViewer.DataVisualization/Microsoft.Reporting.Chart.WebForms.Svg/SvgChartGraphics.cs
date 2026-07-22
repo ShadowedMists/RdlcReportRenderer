@@ -66,6 +66,32 @@ namespace Microsoft.Reporting.Chart.WebForms.Svg
 			}
 		}
 
+		public CompositingQuality CompositingQuality
+		{
+			get
+			{
+				return graphics.CompositingQuality;
+			}
+			set
+			{
+				graphics.CompositingQuality = value;
+			}
+		}
+
+		public InterpolationMode InterpolationMode
+		{
+			get
+			{
+				return graphics.InterpolationMode;
+			}
+			set
+			{
+				graphics.InterpolationMode = value;
+			}
+		}
+
+		public float GetDpiX() => graphics.DpiX;
+
 		public TextRenderingHint TextRenderingHint
 		{
 			get

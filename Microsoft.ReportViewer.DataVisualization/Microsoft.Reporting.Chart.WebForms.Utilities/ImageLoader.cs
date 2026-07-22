@@ -146,14 +146,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 			}
 		}
 
-		internal bool GetAdjustedImageSize(string name, Graphics graphics, ref SizeF size)
+		internal bool GetAdjustedImageSize(string name, ref SizeF size)
 		{
 			Image image = LoadImage(name);
 			if (image == null)
 			{
 				return false;
 			}
-			GetAdjustedImageSize(image, graphics, ref size);
+			GetAdjustedImageSize(image, ref size);
 			return true;
 		}
 
@@ -161,8 +161,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 		/// Assumes a fixed 96 DPI baseline (chart-gdi-type-abstraction.md Milestone B2, decision 2026-07-18):
 		/// GDI+'s original DPI-mismatch rescaling only mattered for print/high-DPI targets, and required
 		/// resolution metadata (Image.HorizontalResolution/VerticalResolution) that has no SkiaSharp equivalent.
+		/// No longer takes a Graphics parameter (Milestone D2): it was unused once the 96 DPI baseline
+		/// landed, and every caller had to reach through a GDI+-typed ChartGraphics.Graphics just to
+		/// supply an argument nothing in this method reads.
 		/// </summary>
-		internal static void GetAdjustedImageSize(Image image, Graphics graphics, ref SizeF size)
+		internal static void GetAdjustedImageSize(Image image, ref SizeF size)
 		{
 			size.Width = image.Width;
 			size.Height = image.Height;

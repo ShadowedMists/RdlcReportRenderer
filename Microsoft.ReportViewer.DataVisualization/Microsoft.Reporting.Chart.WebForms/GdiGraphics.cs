@@ -76,6 +76,32 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		public CompositingQuality CompositingQuality
+		{
+			get
+			{
+				return graphics.CompositingQuality;
+			}
+			set
+			{
+				graphics.CompositingQuality = value;
+			}
+		}
+
+		public InterpolationMode InterpolationMode
+		{
+			get
+			{
+				return graphics.InterpolationMode;
+			}
+			set
+			{
+				graphics.InterpolationMode = value;
+			}
+		}
+
+		public float GetDpiX() => graphics.DpiX;
+
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2)
 		{
 			graphics.DrawLine(pen, pt1, pt2);
