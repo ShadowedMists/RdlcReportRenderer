@@ -352,14 +352,15 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal void RenderDynamicShadows(GaugeGraphics g)
 		{
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 			{
 				foreach (Knob knob in Knobs)
 				{
 					GraphicsPath shadowPath = knob.GetShadowPath(g);
 					if (shadowPath != null)
 					{
-						graphicsPath.AddPath(shadowPath, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(shadowPath);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				foreach (CircularPointer pointer in Pointers)
@@ -367,11 +368,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					GraphicsPath shadowPath2 = pointer.GetShadowPath(g);
 					if (shadowPath2 != null)
 					{
-						graphicsPath.AddPath(shadowPath2, connect: false);
+						using IGraphicsPath wrapped2 = g.ResourceFactory.WrapPath(shadowPath2);
+						graphicsPath.AddPath(wrapped2, connect: false);
 					}
 				}
 				graphicsPath.FillMode = FillMode.Winding;
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.GetShadowBrushResource())
 				{
 					g.FillPath(brush, graphicsPath);
 				}
@@ -380,14 +382,15 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal void RenderStaticShadows(GaugeGraphics g)
 		{
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 			{
 				foreach (CircularRange range in Ranges)
 				{
 					GraphicsPath path = range.GetPath(g, getShadowPath: true);
 					if (path != null)
 					{
-						graphicsPath.AddPath(path, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(path);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				foreach (CircularScale scale in Scales)
@@ -395,11 +398,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					GraphicsPath shadowPath = scale.GetShadowPath(g);
 					if (shadowPath != null)
 					{
-						graphicsPath.AddPath(shadowPath, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(shadowPath);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				graphicsPath.FillMode = FillMode.Winding;
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.GetShadowBrushResource())
 				{
 					g.FillPath(brush, graphicsPath);
 				}

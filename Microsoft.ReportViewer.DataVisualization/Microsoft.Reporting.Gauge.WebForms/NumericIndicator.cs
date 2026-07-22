@@ -1312,7 +1312,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		private void DrawSeparator(GaugeGraphics g, Brush brush, float digitsCount, float rectPosition, RectangleF gaugeRect, float separatorWidth)
+		private void DrawSeparator(GaugeGraphics g, IBrush brush, float digitsCount, float rectPosition, RectangleF gaugeRect, float separatorWidth)
 		{
 			float x = gaugeRect.X + gaugeRect.Width / digitsCount * rectPosition;
 			RectangleF rect = new RectangleF(x, gaugeRect.Y, 0f, gaugeRect.Height);
@@ -1405,7 +1405,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			Brush fontBrush = GetFontBrush(g, GetRangeColor(digitColor, decimalColor: false));
 			Brush fontBrush2 = GetFontBrush(g, GetRangeColor(decimalColor, decimalColor: true));
-			Brush fontBrush3 = GetFontBrush(g, separatorColor);
+			IBrush fontBrush3 = GetFontBrushResource(g, separatorColor);
 			float num5 = num2;
 			try
 			{
@@ -1536,7 +1536,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					rect.Inflate(BorderWidth, BorderWidth);
 				}
 				rect.Offset(ShadowOffset, ShadowOffset);
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.GetShadowBrushResource())
 				{
 					g.FillRectangle(brush, rect);
 				}
@@ -1552,7 +1552,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				return;
 			}
-			using (Pen pen = new Pen(BorderColor, BorderWidth))
+			using (IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth))
 			{
 				absoluteRectangle.Inflate(BorderWidth / 2, BorderWidth / 2);
 				if (BorderStyle != 0)

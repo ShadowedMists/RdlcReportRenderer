@@ -6,6 +6,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -1377,14 +1378,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			float num2 = (!primary) ? (g.GetAbsoluteDimension(CapWidth) / (float)num) : (relative / (float)num);
 			Rectangle rectangle = new Rectangle(0, 0, (int)((float)image.Width * num2), (int)((float)image.Height * num2));
-			ImageAttributes imageAttributes = new ImageAttributes();
+			IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 			if (primary && ImageTransColor != Color.Empty)
 			{
-				imageAttributes.SetColorKey(ImageTransColor, ImageTransColor, ColorAdjustType.Default);
+				imageAttributes.SetTransparentColor(ImageTransColor);
 			}
 			if (!primary && CapImageTransColor != Color.Empty)
 			{
-				imageAttributes.SetColorKey(CapImageTransColor, CapImageTransColor, ColorAdjustType.Default);
+				imageAttributes.SetTransparentColor(CapImageTransColor);
 			}
 			Matrix transform = g.Transform;
 			Matrix matrix = g.Transform.Clone();
@@ -1402,39 +1403,33 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (drawShadow)
 			{
-				ColorMatrix colorMatrix = new ColorMatrix();
-				colorMatrix.Matrix00 = 0f;
-				colorMatrix.Matrix11 = 0f;
-				colorMatrix.Matrix22 = 0f;
-				colorMatrix.Matrix33 = Common.GaugeCore.ShadowIntensity / 100f;
-				imageAttributes.SetColorMatrix(colorMatrix);
+				imageAttributes.SetChannelScale(0f, 0f, 0f, Common.GaugeCore.ShadowIntensity / 100f);
 				matrix.Translate(base.ShadowOffset, base.ShadowOffset, MatrixOrder.Append);
 			}
 			else
 			{
-				ColorMatrix colorMatrix2 = new ColorMatrix();
+				float red = 1f;
+				float green = 1f;
+				float blue = 1f;
 				if (primary && !ImageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(ImageHueColor);
-					colorMatrix2.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix2.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix2.Matrix22 = (float)(int)color.B / 255f;
+					red = (float)(int)color.R / 255f;
+					green = (float)(int)color.G / 255f;
+					blue = (float)(int)color.B / 255f;
 				}
 				else if (!primary && !CapImageHueColor.IsEmpty)
 				{
 					Color color2 = g.TransformHueColor(CapImageHueColor);
-					colorMatrix2.Matrix00 = (float)(int)color2.R / 255f;
-					colorMatrix2.Matrix11 = (float)(int)color2.G / 255f;
-					colorMatrix2.Matrix22 = (float)(int)color2.B / 255f;
+					red = (float)(int)color2.R / 255f;
+					green = (float)(int)color2.G / 255f;
+					blue = (float)(int)color2.B / 255f;
 				}
-				if (primary)
-				{
-					colorMatrix2.Matrix33 = 1f - ImageTransparency / 100f;
-				}
-				imageAttributes.SetColorMatrix(colorMatrix2);
+				float alpha = primary ? (1f - ImageTransparency / 100f) : 1f;
+				imageAttributes.SetChannelScale(red, green, blue, alpha);
 			}
 			g.Transform = matrix;
-			g.DrawImage(image, rectangle, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+			g.DrawImage(g.ResourceFactory.WrapImage(image), rectangle, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 			g.Transform = transform;
 			if (!drawShadow)
 			{

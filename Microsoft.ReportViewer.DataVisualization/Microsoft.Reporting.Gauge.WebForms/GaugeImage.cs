@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -417,27 +418,20 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				empty.X = (int)(absolutePoint.X - (float)(empty.Size.Width / 2));
 				empty.Y = (int)(absolutePoint.Y - (float)(empty.Size.Height / 2));
 			}
-			ImageAttributes imageAttributes = new ImageAttributes();
+			IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 			if (ImageTransColor != Color.Empty)
 			{
-				imageAttributes.SetColorKey(ImageTransColor, ImageTransColor, ColorAdjustType.Default);
+				imageAttributes.SetTransparentColor(ImageTransColor);
 			}
 			float num = (100f - Transparency) / 100f;
 			float num2 = Common.GaugeCore.ShadowIntensity / 100f;
 			if (drawShadow)
 			{
-				ColorMatrix colorMatrix = new ColorMatrix();
-				colorMatrix.Matrix00 = 0f;
-				colorMatrix.Matrix11 = 0f;
-				colorMatrix.Matrix22 = 0f;
-				colorMatrix.Matrix33 = num2 * num;
-				imageAttributes.SetColorMatrix(colorMatrix);
+				imageAttributes.SetChannelScale(0f, 0f, 0f, num2 * num);
 			}
 			else if (Transparency > 0f)
 			{
-				ColorMatrix colorMatrix2 = new ColorMatrix();
-				colorMatrix2.Matrix33 = num;
-				imageAttributes.SetColorMatrix(colorMatrix2);
+				imageAttributes.SetChannelScale(1f, 1f, 1f, num);
 			}
 			if (Angle != 0f)
 			{
@@ -456,7 +450,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				g.Transform = matrix;
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 				g.Transform = transform;
 			}
@@ -469,7 +463,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				ImageSmoothingState imageSmoothingState2 = new ImageSmoothingState(g);
 				imageSmoothingState2.Set();
-				g.DrawImage(image, empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState2.Restore();
 			}
 			if (drawShadow)

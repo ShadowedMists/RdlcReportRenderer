@@ -125,6 +125,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new SolidBrush(GetShadowColor());
 		}
 
+		/// <summary>Interface-typed sibling of <see cref="GetShadowBrush"/> (dual-overload, additive).</summary>
+		internal IBrush GetShadowBrushResource()
+		{
+			return ResourceFactory.CreateSolidBrush(GetShadowColor());
+		}
+
 		internal Color GetShadowColor()
 		{
 			return Color.FromArgb((int)(255f * common.GaugeCore.ShadowIntensity / 100f), Color.Black);
