@@ -161,7 +161,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Pen pen = new Pen(color);
 			graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
 			pen.Dispose();
-			Paint(graphics, paintTopLevelElementOnly: false);
+			Paint(renderSurface, paintTopLevelElementOnly: false);
 			graphics.Dispose();
 			return bitmap;
 		}
@@ -171,11 +171,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 		/// instead of <see cref="GetImage"/>'s Bitmap-returning contract + a separate <c>Image.Save</c>
 		/// call. <see cref="Chart.Save(Stream, ChartImageFormat)"/> only ever encodes-and-discards the
 		/// result, so it never needed a live <see cref="Bitmap"/> in the first place — this removes that
-		/// unnecessary GDI+-typed round trip from the encode step. Painting itself still requires the
-		/// <see cref="GdiRenderSurface"/> downcast below (unavoidable until <c>Paint(Graphics, ...)</c>
-		/// itself stops being GDI+-typed — see chart-gdi-type-abstraction.md's Milestone B1b/B2 notes);
-		/// once that lands, a Skia-backed <see cref="IRenderSurface"/> only needs to implement
-		/// <see cref="IRenderSurface.Encode"/> to work here, no changes to this method required.
+		/// unnecessary GDI+-typed round trip from the encode step. The background-rectangle fill below
+		/// still needs its own <see cref="GdiRenderSurface"/> downcast (a raw pre-paint GDI+ call, not part
+		/// of the <c>Paint</c> chain — see chart-gdi-type-abstraction.md's D2 notes for that residual item);
+		/// <c>Paint</c> itself (Milestone D2) now takes the abstract <see cref="IRenderSurface"/> directly.
 		/// </summary>
 		internal void SaveImage(Stream stream, ChartImageFormat format, float resolution)
 		{
@@ -210,7 +209,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				Pen pen = new Pen(color);
 				graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
 				pen.Dispose();
-				Paint(graphics, paintTopLevelElementOnly: false);
+				Paint(renderSurface, paintTopLevelElementOnly: false);
 				graphics.Dispose();
 				renderSurface.Encode(stream, format);
 			}
@@ -222,8 +221,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			base.SoftShadows = false;
 			using (IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(base.Width, base.Height, 96f))
 			{
-				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
-				Paint(gdiRenderSurface.NativeGraphics, paintTopLevelElementOnly: false, RenderingType.Svg, svgTextWriter, null, documentTitle, resizable, preserveAspectRatio);
+				Paint(renderSurface, paintTopLevelElementOnly: false, RenderingType.Svg, svgTextWriter, null, documentTitle, resizable, preserveAspectRatio);
 			}
 			base.SoftShadows = softShadows;
 		}

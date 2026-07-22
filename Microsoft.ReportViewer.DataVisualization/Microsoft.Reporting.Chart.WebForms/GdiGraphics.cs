@@ -102,6 +102,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		public float GetDpiX() => graphics.DpiX;
 
+		public void BindSurface(IRenderSurface surface) => graphics = ((GdiRenderSurface)surface).NativeGraphics;
+
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2)
 		{
 			graphics.DrawLine(pen, pt1, pt2);
