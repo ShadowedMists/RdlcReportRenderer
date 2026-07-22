@@ -54,6 +54,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public Color[] LinearColors => NativeBrush.LinearColors;
 
+		public void SetRotationTransform(float angle, PointF center)
+		{
+			using Matrix matrix = new Matrix();
+			matrix.RotateAt(angle, center);
+			NativeBrush.Transform = matrix;
+		}
+
+		public void RotateTransform(float angle, MatrixOrder order) => NativeBrush.RotateTransform(angle, order);
+
+		public void TranslateTransform(float dx, float dy, MatrixOrder order) => NativeBrush.TranslateTransform(dx, dy, order);
+
 		public void Dispose() => NativeBrush.Dispose();
 	}
 
@@ -133,6 +144,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			get => new PointF(NativeBrush.FocusScales.X, NativeBrush.FocusScales.Y);
 			set => NativeBrush.FocusScales = value;
 		}
+
+		public void SetRotationTransform(float angle, PointF center)
+		{
+			using Matrix matrix = new Matrix();
+			matrix.RotateAt(angle, center);
+			NativeBrush.Transform = matrix;
+		}
+
+		public void RotateTransform(float angle, MatrixOrder order) => NativeBrush.RotateTransform(angle, order);
+
+		public void TranslateTransform(float dx, float dy, MatrixOrder order) => NativeBrush.TranslateTransform(dx, dy, order);
 
 		public void Dispose() => NativeBrush.Dispose();
 	}

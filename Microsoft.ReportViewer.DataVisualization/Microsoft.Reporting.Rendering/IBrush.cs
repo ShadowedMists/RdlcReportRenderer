@@ -28,6 +28,21 @@ namespace Microsoft.Reporting.Rendering
 
 		/// <summary>The 2-element [start, end] colour pair (GDI+'s <c>LinearColors</c>) — read back by <c>GetSector3DBrush</c>.</summary>
 		Color[] LinearColors { get; }
+
+		/// <summary>
+		/// Replace the brush's transform with a rotation of <paramref name="angle"/> degrees around
+		/// <paramref name="center"/> — GDI+'s <c>Matrix.RotateAt(angle, center)</c> assigned to
+		/// <c>Brush.Transform</c> (found in the Gauge engine's marker/frame gradient-brush code, which
+		/// builds this exact matrix and assigns it wholesale rather than composing with an existing
+		/// transform; see tasks/gauge-gdi-type-abstraction.md Milestone B2).
+		/// </summary>
+		void SetRotationTransform(float angle, PointF center);
+
+		/// <summary>Compose a rotation into the brush's existing transform — GDI+'s <c>RotateTransform(angle, order)</c>.</summary>
+		void RotateTransform(float angle, MatrixOrder order);
+
+		/// <summary>Compose a translation into the brush's existing transform — GDI+'s <c>TranslateTransform(dx, dy, order)</c>.</summary>
+		void TranslateTransform(float dx, float dy, MatrixOrder order);
 	}
 
 	/// <summary>Image-tiled fill. Abstracts <c>TextureBrush</c>.</summary>
@@ -60,5 +75,14 @@ namespace Microsoft.Reporting.Rendering
 		PointF CenterPoint { get; set; }
 
 		PointF FocusScales { get; set; }
+
+		/// <summary>See <see cref="ILinearGradientBrush.SetRotationTransform"/> — identical role, GDI+'s <c>PathGradientBrush</c> implements the same <c>ITransform</c> shape.</summary>
+		void SetRotationTransform(float angle, PointF center);
+
+		/// <summary>See <see cref="ILinearGradientBrush.RotateTransform"/>.</summary>
+		void RotateTransform(float angle, MatrixOrder order);
+
+		/// <summary>See <see cref="ILinearGradientBrush.TranslateTransform"/>.</summary>
+		void TranslateTransform(float dx, float dy, MatrixOrder order);
 	}
 }

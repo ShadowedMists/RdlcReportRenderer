@@ -389,6 +389,69 @@ which stayed, why `IClipRegion` stayed put). Net result:
     no equivalent on `ILinearGradientBrush` today (the same gap already noted for `GetMarkerBrush`'s
     `RotateTransform`/`TranslateTransform` calls). Neither converts this pass.
 
+  - **Brush-transform gap closed (2026-07-21), user-directed ("Let's resume building out the remaining
+    Gauge work").** Added `SetRotationTransform(float angle, PointF center)`, `RotateTransform(float angle,
+    MatrixOrder order)`, and `TranslateTransform(float dx, float dy, MatrixOrder order)` to the **shared**
+    `ILinearGradientBrush`/`IPathGradientBrush` interfaces (`Microsoft.Reporting.Rendering/IBrush.cs`).
+    `SetRotationTransform` is a literal 1:1 port of the exact GDI+ call sequence both real call sites use
+    (`new Matrix(); matrix.RotateAt(angle, center); brush.Transform = matrix;`) — deliberately not
+    generalized to a `System.Numerics.Matrix3x2`-typed settable `Transform` property, to avoid
+    reintroducing matrix-composition-order risk into behavior that's currently zero-risk-by-construction
+    (same GDI+ method, same arguments, just behind an interface call). Implemented in all real
+    implementers: Gauge's and Chart's `GdiLinearGradientBrush`/`GdiPathGradientBrush` (identical
+    passthrough bodies); Chart's `SkiaLinearGradientBrush` spike stub throws `NotImplementedException`
+    (matching its file's existing pattern for methods, as opposed to the auto-properties it already has);
+    `IPathGradientBrush` has no Skia implementer to update (`SkiaResourceFactory.CreatePathGradientBrush`
+    already throws directly, no concrete class exists).
+
+  - **`BackFrame.GetBrushResource` added (2026-07-21)** — re-reading `GetBrush`'s actual signature (not
+    just the earlier note) found it takes `RectangleF rect` directly, **not** a caller-supplied
+    `GraphicsPath` — the "concrete-`GraphicsPath` coupling" in the earlier B2 entry was a misattribution;
+    `GetBrush`'s only geometry is a `GraphicsPath` built and consumed entirely locally (the path-gradient
+    branch), exactly the same self-contained shape already established for
+    `GetGradientBrushResource`/`GetPieGradientBrushResource`. With the transform gap now closed, this
+    converts cleanly. Added as a dual-overload sibling (`IBrush GetBrushResource(...)`), built from
+    `GetHatchBrushResource`/`GetGradientBrushResource`/`ResourceFactory.CreateSolidBrush`/
+    `ResourceFactory.CreatePathGradientBrush`. Still purely additive: `GetBrush`'s only real callers
+    (inside `BackFrame.RenderFrame`) feed the result into `FillPath(Brush, GraphicsPath, ...)` alongside
+    paths from `GetFramePath` (9 other callers, concrete, not touched this pass) — unreachable until that
+    converts too, same "build the port before any caller migrates" shape as `DrawPathAbs(IGraphicsPath, ...)`.
+
+  - **`GetMarkerBrush` investigated again with the transform gap closed — still blocked, for a genuinely
+    new reason found this pass.** Unlike `GetBrush`, `GetMarkerBrush(GraphicsPath path, ...)` takes a
+    caller-supplied concrete `GraphicsPath` and calls `path.GetBounds(matrix)` — GDI+'s
+    transformed-bounds overload (bounds of the path after applying a rotation matrix, used by its
+    Circle/DiagonalLeft/DiagonalRight branches) — and `IGraphicsPath` has no `GetBounds(Matrix3x2)`
+    equivalent, only the parameterless `GetBounds()`. Deliberately did not add one this pass: unlike
+    `SetRotationTransform` (a literal passthrough of an existing call), a `GetBounds(Matrix3x2)` addition
+    would need matrix-type conversion (`System.Numerics.Matrix3x2` ↔ GDI+ `Matrix`) verified correct
+    end-to-end, and `GetMarkerBrush` is *also* still blocked by the same shared-concrete-field pattern as
+    `GetCircularRangeBrush`/`GetLinearRangeBrush` (`markerStyleAttrib.brush`/`knobStyleAttrib.brushes[]`,
+    consumed by `FillPath(Brush, GraphicsPath)` against concrete path fields) — so closing the
+    `GetBounds` gap alone wouldn't make this method reachable either. Left concrete; the `GetBounds(Matrix)`
+    gap is now documented for whoever eventually tackles this method.
+
+  - **`DigitalSegment.cs` investigated (next file in the planned conversion order) — found to be pure
+    geometry with no `Brush`/`Pen` usage at all** (only `GraphicsPath`/`Matrix` construction, building
+    7-/14-segment LED digit shapes), but still not convertible standalone: it's a `static` utility class
+    (no `GaugeGraphics` instance, hence no `ResourceFactory` to reach), and its only consumer
+    (`NumericIndicator.DrawSymbol`'s `Digital7Segment`/`Digital14Segment` branches) feeds every returned
+    `GraphicsPath` straight into `g.FillPath(brush, path)` with a concrete `Brush` — no mixed
+    `FillPath(Brush, IGraphicsPath)` overload exists. Converting `DigitalSegment`/`SegmentsCache` to
+    `IGraphicsPath` would mean threading a factory parameter through ~15 static methods for zero reachable
+    benefit until `DrawSymbol`'s own brush chain also converts — the same "large atomic pass, don't attempt
+    a partial slice" trap already documented for the hatch/gradient/texture cluster. **Did find one genuine,
+    self-contained win along the way**: `NumericIndicator.GetFontBrush` (feeds the `Digital7Segment`/
+    `Digital14Segment` "dim/off LED" branches) has no shared field or path dependency at all — added
+    `GetFontBrushResource : IBrush` as a private dual-overload sibling. Still additive/unreachable for the
+    same `DigitalSegment`-output reason above. `DigitalSegment.cs`/`SegmentsCache.cs` left fully concrete —
+    correctly identified as blocked, not attempted speculatively.
+
+  Verified: build 0 errors, full suite 55/55 (54 `VisualRegressionTests` + 1 `Chart.Rdl.Tests`), zero
+  baseline diffs — all new surface this round is either unreachable additive infrastructure
+  (`GetBrushResource`/`GetFontBrushResource`) or implementer-only changes to already-adapter-tested
+  interfaces (the transform methods), no real call site changed behavior.
+
 ### Milestone E0 equivalent — Visual regression harness
 
 - [x] **Build gauge test coverage from scratch** (2026-07-21): added

@@ -41,6 +41,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public ColorBlend InterpolationColors { get; set; }
 		public WrapMode WrapMode { get; set; }
 		public Color[] LinearColors { get; set; } = Array.Empty<Color>();
+		public void SetRotationTransform(float angle, PointF center) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		public void RotateTransform(float angle, MatrixOrder order) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		public void TranslateTransform(float dx, float dy, MatrixOrder order) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 		public void Dispose() { }
 	}
 
