@@ -6,6 +6,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -1201,6 +1202,147 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			};
 		}
 
+		/// <summary>
+		/// Additive <see cref="IBrush"/>-returning sibling of <see cref="GetBrush"/>, structured identically
+		/// (hatch → <see cref="GaugeGraphics.GetHatchBrushResource"/>, diagonal gradients →
+		/// <see cref="GaugeGraphics.GetGradientBrushResource"/> + <see cref="ILinearGradientBrush.SetRotationTransform"/>,
+		/// <c>Center</c> → path-gradient via <see cref="Rendering.IGaugeDrawingResourceFactory.CreatePathGradientBrush"/>,
+		/// the <c>Angle</c> rotation branch → the <see cref="ILinearGradientBrush.TranslateTransform"/>/
+		/// <see cref="ILinearGradientBrush.RotateTransform"/> trio already added for the brush-transform gap).
+		/// Still unreachable: its real caller (<see cref="Render"/>) feeds the result into
+		/// <c>GaugeGraphics.FillPath(Brush, GraphicsPath)</c> alongside a concrete <c>GraphicsPath</c> local —
+		/// no mixed overload exists. See tasks/gauge-gdi-type-abstraction.md Milestone B2.
+		/// </summary>
+		internal IBrush GetBrushResource(GaugeGraphics g, State currentState, RectangleF rect)
+		{
+			if (!IsCircular())
+			{
+				rect = GetScaledAbsoluteRectangle(g, currentState.ScaleFactor, new RectangleF(0f, 0f, 100f, 100f));
+			}
+			rect.Inflate(1f, 1f);
+			IBrush brush;
+			Color color;
+			Color color2;
+			GradientType gradientType;
+			GaugeHatchStyle gaugeHatchStyle;
+			if (currentState != null)
+			{
+				color = currentState.FillColor;
+				color2 = currentState.FillGradientEndColor;
+				gradientType = currentState.FillGradientType;
+				gaugeHatchStyle = currentState.FillHatchStyle;
+			}
+			else
+			{
+				color = FillColor;
+				color2 = FillGradientEndColor;
+				gradientType = FillGradientType;
+				gaugeHatchStyle = FillHatchStyle;
+			}
+			if (IndicatorStyle == StateIndicatorStyle.Text)
+			{
+				gaugeHatchStyle = GaugeHatchStyle.None;
+				gradientType = GradientType.None;
+			}
+			if (gaugeHatchStyle != 0)
+			{
+				return g.GetHatchBrushResource(gaugeHatchStyle, color, color2);
+			}
+			if (gradientType != 0)
+			{
+				if (IsCircular() && gradientType == GradientType.DiagonalLeft)
+				{
+					ILinearGradientBrush linearGradientBrush2 = (ILinearGradientBrush)g.GetGradientBrushResource(rect, color, color2, GradientType.LeftRight);
+					linearGradientBrush2.SetRotationTransform(45f, new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
+					brush = linearGradientBrush2;
+				}
+				else if (IsCircular() && gradientType == GradientType.DiagonalRight)
+				{
+					ILinearGradientBrush linearGradientBrush = (ILinearGradientBrush)g.GetGradientBrushResource(rect, color, color2, GradientType.TopBottom);
+					linearGradientBrush.SetRotationTransform(135f, new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
+					brush = linearGradientBrush;
+				}
+				else if (gradientType == GradientType.Center)
+				{
+					using IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
+					if (IsCircular())
+					{
+						graphicsPath.AddArc(rect.X - 1f, rect.Y - 1f, rect.Width + 2f, rect.Height + 2f, 0f, 360f);
+					}
+					else
+					{
+						graphicsPath.AddRectangle(rect);
+					}
+					IPathGradientBrush pathGradientBrush = g.ResourceFactory.CreatePathGradientBrush(graphicsPath);
+					pathGradientBrush.CenterColor = color;
+					pathGradientBrush.CenterPoint = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+					pathGradientBrush.SurroundColors = new Color[1] { color2 };
+					brush = pathGradientBrush;
+				}
+				else
+				{
+					brush = g.GetGradientBrushResource(rect, color, color2, gradientType);
+				}
+				if (!IsCircular() && Angle != 0f)
+				{
+					PointF pointF = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+					if (brush is ILinearGradientBrush linearGradientBrush3)
+					{
+						linearGradientBrush3.TranslateTransform(0f - pointF.X, 0f - pointF.Y, MatrixOrder.Append);
+						linearGradientBrush3.RotateTransform(Angle, MatrixOrder.Append);
+						linearGradientBrush3.TranslateTransform(pointF.X, pointF.Y, MatrixOrder.Append);
+					}
+					else if (brush is IPathGradientBrush pathGradientBrush2)
+					{
+						pathGradientBrush2.TranslateTransform(0f - pointF.X, 0f - pointF.Y, MatrixOrder.Append);
+						pathGradientBrush2.RotateTransform(Angle, MatrixOrder.Append);
+						pathGradientBrush2.TranslateTransform(pointF.X, pointF.Y, MatrixOrder.Append);
+					}
+				}
+			}
+			else
+			{
+				brush = g.ResourceFactory.CreateSolidBrush(color);
+			}
+			return brush;
+		}
+
+		/// <summary>
+		/// Additive <see cref="IPen"/>-returning sibling of <see cref="GetPen"/>. Still unreachable: its real
+		/// caller (<see cref="Render"/>) feeds the result into <c>GaugeGraphics.DrawPath(Pen, GraphicsPath)</c>
+		/// alongside a concrete <c>GraphicsPath</c> local — no mixed overload exists.
+		/// </summary>
+		internal IPen GetPenResource(GaugeGraphics g, State currentState)
+		{
+			Color color;
+			int num;
+			GaugeDashStyle gaugeDashStyle;
+			if (currentState != null)
+			{
+				if (currentState.BorderWidth <= 0 && currentState.BorderStyle != 0)
+				{
+					return null;
+				}
+				color = currentState.BorderColor;
+				num = currentState.BorderWidth;
+				gaugeDashStyle = currentState.BorderStyle;
+			}
+			else
+			{
+				if (BorderWidth <= 0 && BorderStyle != 0)
+				{
+					return null;
+				}
+				color = BorderColor;
+				num = BorderWidth;
+				gaugeDashStyle = BorderStyle;
+			}
+			IPen pen = g.ResourceFactory.CreatePen(color, num);
+			pen.DashStyle = g.GetPenStyle(gaugeDashStyle);
+			pen.Alignment = PenAlignment.Center;
+			return pen;
+		}
+
 		private RectangleF GetSquareScaledAbsoluteRectangle(GaugeGraphics g, float scaleFactor, RectangleF rect)
 		{
 			RectangleF scaledAbsoluteRectangle = GetScaledAbsoluteRectangle(g, scaleFactor, rect);
@@ -1254,27 +1396,20 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				empty.X = (int)(absolutePoint.X - (float)(empty.Size.Width / 2));
 				empty.Y = (int)(absolutePoint.Y - (float)(empty.Size.Height / 2));
 			}
-			ImageAttributes imageAttributes = new ImageAttributes();
+			IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 			if (ImageTransColor != Color.Empty)
 			{
-				imageAttributes.SetColorKey(imageTransColor, imageTransColor, ColorAdjustType.Default);
+				imageAttributes.SetTransparentColor(imageTransColor);
 			}
 			float num = (100f - ImageTransparency) / 100f;
 			float num2 = Common.GaugeCore.ShadowIntensity / 100f;
 			if (drawShadow)
 			{
-				ColorMatrix colorMatrix = new ColorMatrix();
-				colorMatrix.Matrix00 = 0f;
-				colorMatrix.Matrix11 = 0f;
-				colorMatrix.Matrix22 = 0f;
-				colorMatrix.Matrix33 = num2 * num;
-				imageAttributes.SetColorMatrix(colorMatrix);
+				imageAttributes.SetChannelScale(0f, 0f, 0f, num2 * num);
 			}
 			else if (ImageTransparency > 0f)
 			{
-				ColorMatrix colorMatrix2 = new ColorMatrix();
-				colorMatrix2.Matrix33 = num;
-				imageAttributes.SetColorMatrix(colorMatrix2);
+				imageAttributes.SetChannelScale(1f, 1f, 1f, num);
 			}
 			if (Angle != 0f)
 			{
@@ -1293,16 +1428,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				else if (!imageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(imageHueColor);
-					ColorMatrix colorMatrix3 = new ColorMatrix();
-					colorMatrix3.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix3.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix3.Matrix22 = (float)(int)color.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix3);
+					imageAttributes.SetChannelScale((float)(int)color.R / 255f, (float)(int)color.G / 255f, (float)(int)color.B / 255f, 1f);
 				}
 				g.Transform = matrix;
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 				g.Transform = transform;
 			}
@@ -1316,15 +1447,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				else if (!imageHueColor.IsEmpty)
 				{
 					Color color2 = g.TransformHueColor(imageHueColor);
-					ColorMatrix colorMatrix4 = new ColorMatrix();
-					colorMatrix4.Matrix00 = (float)(int)color2.R / 255f;
-					colorMatrix4.Matrix11 = (float)(int)color2.G / 255f;
-					colorMatrix4.Matrix22 = (float)(int)color2.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix4);
+					imageAttributes.SetChannelScale((float)(int)color2.R / 255f, (float)(int)color2.G / 255f, (float)(int)color2.B / 255f, 1f);
 				}
 				ImageSmoothingState imageSmoothingState2 = new ImageSmoothingState(g);
 				imageSmoothingState2.Set();
-				g.DrawImage(image, empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState2.Restore();
 			}
 			if (drawShadow)

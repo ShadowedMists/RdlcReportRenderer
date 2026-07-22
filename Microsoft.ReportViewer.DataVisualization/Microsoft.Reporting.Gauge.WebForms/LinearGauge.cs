@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -163,25 +164,21 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			if (base.TopImage != "")
 			{
-				ImageAttributes imageAttributes = new ImageAttributes();
+				IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 				if (base.TopImageTransColor != Color.Empty)
 				{
-					imageAttributes.SetColorKey(base.TopImageTransColor, base.TopImageTransColor, ColorAdjustType.Default);
+					imageAttributes.SetTransparentColor(base.TopImageTransColor);
 				}
 				Image image = Common.ImageLoader.LoadImage(base.TopImage);
 				Rectangle destRect = Rectangle.Round(g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f)));
 				if (!base.TopImageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(base.TopImageHueColor);
-					ColorMatrix colorMatrix = new ColorMatrix();
-					colorMatrix.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix.Matrix22 = (float)(int)color.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix);
+					imageAttributes.SetChannelScale((float)(int)color.R / 255f, (float)(int)color.G / 255f, (float)(int)color.B / 255f, 1f);
 				}
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 			}
 		}
