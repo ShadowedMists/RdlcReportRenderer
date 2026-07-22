@@ -737,9 +737,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			using (IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(Width, Height, 96f))
 			{
-				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
-				chartGraph.Graphics = gdiRenderSurface.NativeGraphics;
-				Paint(chartGraph.Graphics, paintTopLevelElementOnly: false);
+				Paint(renderSurface, paintTopLevelElementOnly: false);
 			}
 			isSelectionMode = false;
 			common.HotRegionsList.ProcessChartMode |= ProcessMode.HotRegions;
@@ -755,6 +753,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Select(x, y, ChartElementType.Nothing, ignoreTransparent: false, out series, out point, out ChartElementType _, out object _);
 		}
 
+		public void Paint(IRenderSurface renderSurface, bool paintTopLevelElementOnly)
+		{
+			Paint(renderSurface, paintTopLevelElementOnly, RenderingType.Gdi, null, null, string.Empty, resizable: false, preserveAspectRatio: false);
+		}
+
+		/// <summary>
+		/// Graphics-typed sibling of <see cref="Paint(IRenderSurface, bool)"/> (Milestone D2 dual-overload):
+		/// kept permanently for <see cref="ChartImage.SaveIntoMetafile"/>, the one caller that must supply a
+		/// raw Metafile-backed <see cref="Graphics"/> — EMF has no <see cref="IRenderSurface"/> equivalent
+		/// (Windows/EMF-only by design, see D1 notes in chart-gdi-type-abstraction.md).
+		/// </summary>
 		public void Paint(Graphics graph, bool paintTopLevelElementOnly)
 		{
 			Paint(graph, paintTopLevelElementOnly, RenderingType.Gdi, null, null, string.Empty, resizable: false, preserveAspectRatio: false);
@@ -782,7 +791,24 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return textRenderingHint;
 		}
 
+		public void Paint(IRenderSurface renderSurface, bool paintTopLevelElementOnly, RenderingType renderingType, XmlTextWriter svgTextWriter, Stream flashStream, string documentTitle, bool resizable, bool preserveAspectRatio)
+		{
+			PaintCore(paintTopLevelElementOnly, renderingType, svgTextWriter, flashStream, documentTitle, resizable, preserveAspectRatio, () => chartGraph.BindSurface(renderSurface));
+		}
+
+		/// <summary>Graphics-typed sibling — see <see cref="Paint(Graphics, bool)"/>.</summary>
 		public void Paint(Graphics graph, bool paintTopLevelElementOnly, RenderingType renderingType, XmlTextWriter svgTextWriter, Stream flashStream, string documentTitle, bool resizable, bool preserveAspectRatio)
+		{
+			PaintCore(paintTopLevelElementOnly, renderingType, svgTextWriter, flashStream, documentTitle, resizable, preserveAspectRatio, () => chartGraph.Graphics = graph);
+		}
+
+		/// <summary>
+		/// Shared body behind both <c>Paint</c> overloads (Milestone D2). <paramref name="bindGraph"/> must
+		/// run at exactly this point — after the SVG <c>Open(...)</c> call above (which, for SVG rendering,
+		/// replaces <c>chartGraph</c>'s active <see cref="IChartRenderingEngine"/> with a fresh
+		/// <c>SvgChartGraphics</c>) and before anything else touches <c>chartGraph</c>'s drawing surface.
+		/// </summary>
+		private void PaintCore(bool paintTopLevelElementOnly, RenderingType renderingType, XmlTextWriter svgTextWriter, Stream flashStream, string documentTitle, bool resizable, bool preserveAspectRatio, Action bindGraph)
 		{
 			backgroundRestored = false;
 			annotationSmartLabels.Reset(common, null);
@@ -804,7 +830,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				chartGraph.SetTitle(documentTitle);
 				chartGraph.Open(svgTextWriter, new Size(width, height), new SvgOpenParameters(IsToolTipsEnabled(), resizable, preserveAspectRatio));
 			}
-			chartGraph.Graphics = graph;
+			bindGraph();
 			common.graph = chartGraph;
 			chartGraph.AntiAliasing = antiAliasing;
 			chartGraph.softShadows = softShadows;
@@ -856,7 +882,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						{
 							using IRenderSurface renderSurface = renderSurfaceFactory.CreateRasterSurface(Width, Height, 96f);
 							GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
-							gdiRenderSurface.NativeGraphics.SmoothingMode = chartGraph.Graphics.SmoothingMode;
+							gdiRenderSurface.NativeGraphics.SmoothingMode = chartGraph.SmoothingMode;
 							ChartGraphics chartGraphics = new ChartGraphics(common);
 							chartGraphics.Graphics = gdiRenderSurface.NativeGraphics;
 							chartGraphics.Draw3DBorderAbs(borderSkin, chartBorderPosition, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle);

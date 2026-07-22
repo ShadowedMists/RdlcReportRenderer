@@ -46,6 +46,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		/// <summary>
+		/// Binds this engine to the given draw target (Milestone D2), replacing the pattern of downcasting
+		/// an <see cref="IRenderSurface"/> to <c>GdiRenderSurface</c> at the *call site* just to reach
+		/// <c>.NativeGraphics</c> and assign it to <see cref="Graphics"/>. The downcast still happens, but
+		/// now inside the backend adapter itself (which is allowed to know its own concrete surface type),
+		/// so callers (<c>ChartPicture.Paint</c>/<c>ChartImage.GetImage</c>/<c>SaveImage</c>/<c>GetSvgImage</c>)
+		/// only ever handle the abstract <see cref="IRenderSurface"/>.
+		/// </summary>
+		void BindSurface(IRenderSurface surface);
+
+		/// <summary>
 		/// Backend-agnostic DPI accessor (Milestone D2), replacing direct <c>.Graphics.DpiX</c> reads —
 		/// kept float-typed like <see cref="SmoothingMode"/>/<see cref="Rendering.Gdi"/>'s enums rather than
 		/// wrapped in a new interface, since it's a single scalar with an obvious per-backend source

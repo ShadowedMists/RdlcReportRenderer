@@ -92,6 +92,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Svg
 
 		public float GetDpiX() => graphics.DpiX;
 
+		public void BindSurface(IRenderSurface surface) => graphics = ((GdiRenderSurface)surface).NativeGraphics;
+
 		public TextRenderingHint TextRenderingHint
 		{
 			get

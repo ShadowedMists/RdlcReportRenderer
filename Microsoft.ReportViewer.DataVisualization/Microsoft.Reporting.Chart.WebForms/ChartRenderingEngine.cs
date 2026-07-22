@@ -134,6 +134,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		public float GetDpiX() => RenderingObject.GetDpiX();
 
+		public void BindSurface(IRenderSurface surface) => RenderingObject.BindSurface(surface);
+
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2)
 		{
 			RenderingObject.DrawLine(pen, pt1, pt2);
