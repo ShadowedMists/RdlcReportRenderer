@@ -6,6 +6,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -609,104 +610,91 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 		}
 
-		internal Brush GetNeedleFillBrush(GaugeGraphics g, bool primary, GraphicsPath path, PointF pointOrigin, float angle)
+		internal IBrush GetNeedleFillBrush(GaugeGraphics g, bool primary, IGraphicsPath path, PointF pointOrigin, float angle)
 		{
-			Brush brush = null;
+			IBrush brush;
 			if (primary)
 			{
 				if (FillHatchStyle != 0)
 				{
-					brush = GaugeGraphics.GetHatchBrush(FillHatchStyle, FillColor, FillGradientEndColor);
+					return g.GetHatchBrushResource(FillHatchStyle, FillColor, FillGradientEndColor);
 				}
-				else if (FillGradientType != 0)
+				if (FillGradientType != 0)
 				{
-					brush = g.GetGradientBrush(path.GetBounds(), FillColor, FillGradientEndColor, FillGradientType);
-					if (brush is LinearGradientBrush)
+					brush = g.GetGradientBrushResource(path.GetBounds(), FillColor, FillGradientEndColor, FillGradientType);
+					if (brush is ILinearGradientBrush linearGradientBrush)
 					{
-						((LinearGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-						((LinearGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+						linearGradientBrush.RotateTransform(angle, MatrixOrder.Append);
+						linearGradientBrush.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 					}
-					else if (brush is PathGradientBrush)
+					else if (brush is IPathGradientBrush pathGradientBrush)
 					{
-						((PathGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-						((PathGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+						pathGradientBrush.RotateTransform(angle, MatrixOrder.Append);
+						pathGradientBrush.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 					}
 				}
 				else
 				{
-					brush = new SolidBrush(FillColor);
+					brush = g.ResourceFactory.CreateSolidBrush(FillColor);
 				}
+				return brush;
 			}
-			else if (CapFillHatchStyle != 0)
+			if (CapFillHatchStyle != 0)
 			{
-				brush = GaugeGraphics.GetHatchBrush(CapFillHatchStyle, CapFillColor, CapFillGradientEndColor);
+				return g.GetHatchBrushResource(CapFillHatchStyle, CapFillColor, CapFillGradientEndColor);
 			}
-			else if (CapFillGradientType != 0)
+			if (CapFillGradientType != 0)
 			{
 				RectangleF bounds = path.GetBounds();
 				if (CapFillGradientType == GradientType.DiagonalLeft)
 				{
-					brush = g.GetGradientBrush(bounds, CapFillColor, CapFillGradientEndColor, GradientType.LeftRight);
-					using (Matrix matrix = new Matrix())
-					{
-						matrix.RotateAt(45f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
-						((LinearGradientBrush)brush).Transform = matrix;
-					}
+					ILinearGradientBrush linearGradientBrush2 = (ILinearGradientBrush)g.GetGradientBrushResource(bounds, CapFillColor, CapFillGradientEndColor, GradientType.LeftRight);
+					linearGradientBrush2.SetRotationTransform(45f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
+					brush = linearGradientBrush2;
 				}
 				else if (CapFillGradientType == GradientType.DiagonalRight)
 				{
-					brush = g.GetGradientBrush(bounds, CapFillColor, CapFillGradientEndColor, GradientType.TopBottom);
-					using (Matrix matrix2 = new Matrix())
-					{
-						matrix2.RotateAt(135f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
-						((LinearGradientBrush)brush).Transform = matrix2;
-					}
+					ILinearGradientBrush linearGradientBrush3 = (ILinearGradientBrush)g.GetGradientBrushResource(bounds, CapFillColor, CapFillGradientEndColor, GradientType.TopBottom);
+					linearGradientBrush3.SetRotationTransform(135f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
+					brush = linearGradientBrush3;
 				}
 				else if (CapFillGradientType == GradientType.Center)
 				{
 					bounds.Inflate(1f, 1f);
-					using (GraphicsPath graphicsPath = new GraphicsPath())
-					{
-						graphicsPath.AddArc(bounds, 0f, 360f);
-						PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
-						pathGradientBrush.CenterColor = CapFillColor;
-						pathGradientBrush.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
-						pathGradientBrush.SurroundColors = new Color[1]
-						{
-							CapFillGradientEndColor
-						};
-						brush = pathGradientBrush;
-					}
+					using IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
+					graphicsPath.AddArc(bounds.X, bounds.Y, bounds.Width, bounds.Height, 0f, 360f);
+					IPathGradientBrush pathGradientBrush2 = g.ResourceFactory.CreatePathGradientBrush(graphicsPath);
+					pathGradientBrush2.CenterColor = CapFillColor;
+					pathGradientBrush2.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+					pathGradientBrush2.SurroundColors = new Color[1] { CapFillGradientEndColor };
+					brush = pathGradientBrush2;
 				}
 				else
 				{
-					brush = g.GetGradientBrush(path.GetBounds(), CapFillColor, CapFillGradientEndColor, CapFillGradientType);
+					brush = g.GetGradientBrushResource(path.GetBounds(), CapFillColor, CapFillGradientEndColor, CapFillGradientType);
 				}
-				if (brush is LinearGradientBrush)
+				if (brush is ILinearGradientBrush linearGradientBrush4)
 				{
-					((LinearGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((LinearGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+					linearGradientBrush4.RotateTransform(angle, MatrixOrder.Append);
+					linearGradientBrush4.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 				}
-				else if (brush is PathGradientBrush)
+				else if (brush is IPathGradientBrush pathGradientBrush3)
 				{
-					((PathGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((PathGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+					pathGradientBrush3.RotateTransform(angle, MatrixOrder.Append);
+					pathGradientBrush3.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 				}
+				return brush;
 			}
-			else
-			{
-				brush = new SolidBrush(CapFillColor);
-			}
-			return brush;
+			return g.ResourceFactory.CreateSolidBrush(CapFillColor);
 		}
 
 		internal NeedleStyleAttrib GetNeedleStyleAttrib(GaugeGraphics g, PointF pointOrigin, float angle)
 		{
 			NeedleStyleAttrib needleStyleAttrib = new NeedleStyleAttrib();
-			needleStyleAttrib.primaryPath = new GraphicsPath();
+			needleStyleAttrib.primaryPath = g.ResourceFactory.CreatePath();
 			if (CapVisible && CapWidth > 0f)
 			{
-				needleStyleAttrib.secondaryPath = new GraphicsPath();
+				needleStyleAttrib.secondaryPath = g.ResourceFactory.CreatePath();
 			}
 			if (needleStyleAttrib.primaryPath == null && needleStyleAttrib.secondaryPath == null)
 			{
@@ -899,27 +887,34 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				needleStyleAttrib.secondaryBrush = GetNeedleFillBrush(g, primary: false, needleStyleAttrib.secondaryPath, pointOrigin, 0f);
 				if (CapReflection)
 				{
-					needleStyleAttrib.reflectionPaths = new GraphicsPath[2];
-					needleStyleAttrib.reflectionBrushes = new Brush[2];
-					g.GetCircularEdgeReflection(needleStyleAttrib.secondaryPath.GetBounds(), 135f, 200, pointOrigin, out needleStyleAttrib.reflectionPaths[0], out needleStyleAttrib.reflectionBrushes[0]);
-					g.GetCircularEdgeReflection(needleStyleAttrib.secondaryPath.GetBounds(), 315f, 128, pointOrigin, out needleStyleAttrib.reflectionPaths[1], out needleStyleAttrib.reflectionBrushes[1]);
+					needleStyleAttrib.reflectionPaths = new IGraphicsPath[2];
+					needleStyleAttrib.reflectionBrushes = new IBrush[2];
+					g.GetCircularEdgeReflectionResource(needleStyleAttrib.secondaryPath.GetBounds(), 135f, 200, pointOrigin, out needleStyleAttrib.reflectionPaths[0], out needleStyleAttrib.reflectionBrushes[0]);
+					g.GetCircularEdgeReflectionResource(needleStyleAttrib.secondaryPath.GetBounds(), 315f, 128, pointOrigin, out needleStyleAttrib.reflectionPaths[1], out needleStyleAttrib.reflectionBrushes[1]);
 				}
 			}
 			using (Matrix matrix = new Matrix())
 			{
 				matrix.Rotate(angle, MatrixOrder.Append);
 				matrix.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+				Matrix3x2 matrix3x2 = ToMatrix3x2(matrix);
 				if (needleStyleAttrib.primaryPath != null)
 				{
-					needleStyleAttrib.primaryPath.Transform(matrix);
+					needleStyleAttrib.primaryPath.Transform(matrix3x2);
 				}
 				if (needleStyleAttrib.secondaryPath != null)
 				{
-					needleStyleAttrib.secondaryPath.Transform(matrix);
+					needleStyleAttrib.secondaryPath.Transform(matrix3x2);
 					return needleStyleAttrib;
 				}
 				return needleStyleAttrib;
 			}
+		}
+
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
 		}
 
 		internal MarkerStyleAttrib GetMarkerStyleAttrib(GaugeGraphics g)
@@ -936,8 +931,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			float relative = CalculateMarkerDistance();
 			relative = g.GetAbsoluteDimension(relative);
 			PointF point = new PointF(0f, relative);
-			markerStyleAttrib.path = g.CreateMarker(point, absoluteDimension2, absoluteDimension, MarkerStyle);
-			markerStyleAttrib.brush = g.GetMarkerBrush(markerStyleAttrib.path, MarkerStyle, absolutePoint, positionFromValue, FillColor, FillGradientType, FillGradientEndColor, FillHatchStyle);
+			markerStyleAttrib.path = g.ResourceFactory.WrapPath(g.CreateMarker(point, absoluteDimension2, absoluteDimension, MarkerStyle));
+			markerStyleAttrib.brush = g.GetMarkerBrushResource(markerStyleAttrib.path, MarkerStyle, absolutePoint, positionFromValue, FillColor, FillGradientType, FillGradientEndColor, FillHatchStyle);
 			using (Matrix matrix = new Matrix())
 			{
 				if (Placement == Placement.Inside)
@@ -946,7 +941,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				matrix.Rotate(positionFromValue, MatrixOrder.Append);
 				matrix.Translate(absolutePoint.X, absolutePoint.Y, MatrixOrder.Append);
-				markerStyleAttrib.path.Transform(matrix);
+				markerStyleAttrib.path.Transform(ToMatrix3x2(matrix));
 				return markerStyleAttrib;
 			}
 		}
@@ -983,11 +978,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			if (base.BarStyle == BarStyle.Style1)
 			{
 				RectangleF rectangleF = CalculateBarRectangle();
-				barStyleAttrib.primaryPath = g.GetCircularRangePath(rectangleF, positionFromValue + 90f, num, Width, Width, Placement);
-				if (barStyleAttrib.primaryPath == null)
+				GraphicsPath primaryPath = g.GetCircularRangePath(rectangleF, positionFromValue + 90f, num, Width, Width, Placement);
+				if (primaryPath == null)
 				{
 					return barStyleAttrib;
 				}
+				barStyleAttrib.primaryPath = g.ResourceFactory.WrapPath(primaryPath);
 				RectangleF rect = rectangleF;
 				if (Placement != 0)
 				{
@@ -1000,12 +996,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						rect.Inflate(Width / 2f, Width / 2f);
 					}
 				}
-				barStyleAttrib.primaryBrush = g.GetCircularRangeBrush(rect, positionFromValue + 90f, num, FillColor, FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor);
+				barStyleAttrib.primaryBrush = g.GetCircularRangeBrushResource(rect, positionFromValue + 90f, num, FillColor, FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor);
 				CircularRange[] colorRanges = GetColorRanges();
 				if (colorRanges != null)
 				{
-					barStyleAttrib.secondaryPaths = new GraphicsPath[colorRanges.Length];
-					barStyleAttrib.secondaryBrushes = new Brush[colorRanges.Length];
+					barStyleAttrib.secondaryPaths = new IGraphicsPath[colorRanges.Length];
+					barStyleAttrib.secondaryBrushes = new IBrush[colorRanges.Length];
 					int num2 = 0;
 					CircularRange[] array = colorRanges;
 					foreach (CircularRange circularRange in array)
@@ -1037,8 +1033,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						}
 						else
 						{
-							barStyleAttrib.secondaryPaths[num2] = g.GetCircularRangePath(rectangleF, positionFromValue2 + 90f, num5, Width, Width, Placement);
-							barStyleAttrib.secondaryBrushes[num2] = g.GetCircularRangeBrush(rectangleF, positionFromValue2 + 90f, num5, circularRange.InRangeBarPointerColor, FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor);
+							GraphicsPath secondaryPath = g.GetCircularRangePath(rectangleF, positionFromValue2 + 90f, num5, Width, Width, Placement);
+							barStyleAttrib.secondaryPaths[num2] = (secondaryPath != null) ? g.ResourceFactory.WrapPath(secondaryPath) : null;
+							barStyleAttrib.secondaryBrushes[num2] = g.GetCircularRangeBrushResource(rectangleF, positionFromValue2 + 90f, num5, circularRange.InRangeBarPointerColor, FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor);
 						}
 						num2++;
 					}
@@ -1170,7 +1167,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			float positionFromValue = GetScale().GetPositionFromValue(base.Position);
 			PointF absolutePoint = g.GetAbsolutePoint(GetScale().GetPivotPoint());
-			Pen pen = new Pen(base.BorderColor, base.BorderWidth);
+			IPen pen = g.ResourceFactory.CreatePen(base.BorderColor, base.BorderWidth);
 			pen.DashStyle = g.GetPenStyle(base.BorderStyle);
 			if (pen.DashStyle != 0)
 			{
@@ -1253,11 +1250,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (needleStyleAttrib.primaryPath != null && Image == string.Empty)
 					{
-						AddHotRegion((GraphicsPath)needleStyleAttrib.primaryPath.Clone(), primary: true);
+						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(needleStyleAttrib.primaryPath).Clone(), primary: true);
 					}
 					if (needleStyleAttrib.secondaryPath != null && CapImage == string.Empty)
 					{
-						AddHotRegion((GraphicsPath)needleStyleAttrib.secondaryPath.Clone(), primary: false);
+						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(needleStyleAttrib.secondaryPath).Clone(), primary: false);
 					}
 				}
 				finally
@@ -1277,8 +1274,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					if (barStyleAttrib.secondaryPaths != null)
 					{
 						int num = 0;
-						GraphicsPath[] secondaryPaths = barStyleAttrib.secondaryPaths;
-						foreach (GraphicsPath graphicsPath in secondaryPaths)
+						IGraphicsPath[] secondaryPaths = barStyleAttrib.secondaryPaths;
+						foreach (IGraphicsPath graphicsPath in secondaryPaths)
 						{
 							if (graphicsPath != null && barStyleAttrib.secondaryBrushes[num] != null)
 							{
@@ -1293,7 +1290,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (barStyleAttrib.primaryPath != null)
 					{
-						AddHotRegion((GraphicsPath)barStyleAttrib.primaryPath.Clone(), primary: true);
+						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(barStyleAttrib.primaryPath).Clone(), primary: true);
 					}
 				}
 				finally
@@ -1317,7 +1314,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (markerStyleAttrib.path != null)
 					{
-						AddHotRegion((GraphicsPath)markerStyleAttrib.path.Clone(), primary: true);
+						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(markerStyleAttrib.path).Clone(), primary: true);
 					}
 				}
 				finally
@@ -1455,11 +1452,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				NeedleStyleAttrib needleStyleAttrib = GetNeedleStyleAttrib(g, absolutePoint, positionFromValue);
 				if (needleStyleAttrib.primaryPath != null && (Image == string.Empty || !shadowPath))
 				{
-					graphicsPath.AddPath(needleStyleAttrib.primaryPath, connect: false);
+					graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(needleStyleAttrib.primaryPath), connect: false);
 				}
 				if (needleStyleAttrib.secondaryPath != null && CapVisible && Type == CircularPointerType.Needle && (CapImage == string.Empty || !shadowPath))
 				{
-					graphicsPath.AddPath(needleStyleAttrib.secondaryPath, connect: false);
+					graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(needleStyleAttrib.secondaryPath), connect: false);
 				}
 			}
 			else if (Type == CircularPointerType.Bar)
@@ -1472,7 +1469,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (barStyleAttrib.primaryPath != null)
 				{
-					graphicsPath.AddPath(barStyleAttrib.primaryPath, connect: false);
+					graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(barStyleAttrib.primaryPath), connect: false);
 				}
 			}
 			else if (Type == CircularPointerType.Marker)
@@ -1480,7 +1477,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				MarkerStyleAttrib markerStyleAttrib = GetMarkerStyleAttrib(g);
 				if (markerStyleAttrib.path != null)
 				{
-					graphicsPath.AddPath(markerStyleAttrib.path, connect: false);
+					graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(markerStyleAttrib.path), connect: false);
 				}
 			}
 			return graphicsPath;

@@ -561,6 +561,98 @@ which stayed, why `IClipRegion` stayed put). Net result:
   gauge exercises a `StateIndicator` image), `GetBrushResource`/`GetPenResource` are unreachable additive
   infrastructure only.
 
+### Milestone B3 — The atomic rewrite: shared attrib classes fully retyped
+
+- [x] **`KnobStyleAttrib`/`NeedleStyleAttrib`/`MarkerStyleAttrib`/`BarStyleAttrib` retyped to
+  `IGraphicsPath`/`IBrush`, real call sites converted end-to-end (2026-07-22), user-directed
+  ("Proceed with the atomic rewrite")**. This is the large, previously-deliberately-deferred pass:
+  every one of the four shared attrib helper classes (`Knob.cs`, `CircularPointer.cs`,
+  `LinearPointer.cs`) had concrete `Brush`/`Brush[]`/`GraphicsPath`/`GraphicsPath[]` fields populated
+  by a `GetXStyleAttrib` producer and consumed by `Render`'s `FillPath(Brush,GraphicsPath)`/
+  `DrawPath(Pen,GraphicsPath)` loop — the reason every additive `*Resource` sibling built in prior
+  sessions stayed unreachable. All four classes, their producers, and their consumers were converted
+  together in one pass, per file:
+
+  **New shared primitives added first** (closing every gap the earlier B2 investigation flagged as
+  blocking this specific pass):
+  - `IGraphicsPath.GetBounds(Matrix3x2 matrix)` — abstracts GDI+'s transformed-bounds overload,
+    unblocking `GetMarkerBrush`'s circle/diagonal-gradient branch. Implemented in both Gauge's and
+    Chart's `GdiGraphicsPath` (`NativePath.GetBounds(nativeMatrix)`, same conversion pattern as
+    `Transform(Matrix3x2)`) and Chart's `SkiaGraphicsPath` stub (throws).
+  - `IGraphicsPath.Flatten(float flatness)` — abstracts GDI+'s `Flatten(null, flatness)` tolerance
+    overload, unblocking `GetCircularRangeBrush`'s `StartToEnd` path-gradient branch (needed the
+    post-flatten `PointCount` for its per-vertex `SurroundColors`). Same three-implementer treatment.
+  - `IGaugeDrawingResourceFactory.UnwrapPath(IGraphicsPath) : GraphicsPath` — the reverse of the
+    existing `WrapPath` bridge. Needed because `HotRegionList.SetHotRegion`/`AddHotRegion` and
+    `GaugeGraphics.DrawRadialSelection` are systemic, concrete-only GDI+ hit-testing infrastructure
+    (mutates paths in place via a live `Matrix`, used by every gauge element, explicitly out of scope
+    for this pass — see the D1-equivalent-shaped note below) — every `Render`/`GetPointerPath` call
+    site that feeds an attrib's now-interface-typed path into one of these needed to unwrap back to
+    the concrete path first. This is the same "wrap-bridge for legacy concrete-only code" pattern as
+    `WrapPath`/`WrapImage`, just in the other direction.
+  - `GaugeGraphics.GetMarkerBrushResource`, `GetCircularRangeBrushResource`,
+    `GetLinearRangeBrushResource`, `GetCircularEdgeReflectionResource` — additive `IBrush`/
+    `IGraphicsPath`-returning siblings of the four remaining concrete brush/reflection producers,
+    built the same way as every earlier `*Resource` sibling (hatch → `GetHatchBrushResource`,
+    gradient → `GetGradientBrushResource` + `SetRotationTransform`, texture → `GetTextureBrushResource`
+    already existed, pie/path-gradient → `GetPieGradientBrushResource` already existed). Every
+    diagonal-rotation matrix (`GetMarkerBrushResource`'s transformed-bounds case,
+    `GetCircularEdgeReflectionResource`'s final rotate+translate) is a literal 1:1 port: the same
+    native `Matrix`/`RotateAt`/`Rotate`/`Translate` sequence is built exactly as before, then its
+    element values are carried into a `Matrix3x2` — no re-derivation of rotation direction/order,
+    same discipline as `SetRotationTransform`'s original port. Once these three brush/reflection
+    getters became fully reachable (their only remaining callers being the attrib producers below),
+    their formerly-concrete originals (`GetMarkerBrush`, `GetCircularEdgeReflection`) had zero
+    remaining callers anywhere in the solution — removed as dead code, same as `Knob.GetSpecialCapBrush`
+    earlier. (`GetCircularRangeBrush`/`GetLinearRangeBrush` still have real concrete callers in
+    `CircularRange.cs`/`LinearRange.cs` — untouched, out of scope for this pass.)
+
+  **`Knob.cs`**: `KnobStyleAttrib.paths`/`brushes` → `IGraphicsPath[]`/`IBrush[]`. `GetKnobStyleAttrib`
+  rewritten to build every path via `ResourceFactory.CreatePath()`/`WrapPath` and every brush via the
+  interface-typed getters (`GetFillBrushResource` — itself flipped from an unreachable additive sibling
+  to the sole/real producer, its formerly-concrete `GetFillBrush` twin removed as dead code — plus
+  `GetShadowBrushResource`, `GetMarkerBrushResource`, `GetCircularEdgeReflectionResource`). `Render`'s
+  `FillPath(brush,path)`/`DrawPath(pen,path)` loop now resolves to the fully-interface overloads
+  automatically since both sides are interface-typed; only the local `pen` needed retyping to `IPen`.
+  `AddHotRegion`'s clone (`GraphicsPath.Clone()`) now goes through `UnwrapPath` first.
+
+  **`CircularPointer.cs`**: `GetNeedleFillBrush` converted in place (not dual-overload — retyped
+  `GraphicsPath path` → `IGraphicsPath`, `Brush` return → `IBrush`, body switched to the interface
+  primitives). `NeedleStyleAttrib`/`MarkerStyleAttrib`/`BarStyleAttrib` retyped; `GetNeedleStyleAttrib`
+  builds `primaryPath`/`secondaryPath` directly via `ResourceFactory.CreatePath()` (its `AddLine`/
+  `AddLines`/`AddArc`/`CloseFigure` calls map 1:1 onto `IGraphicsPath`, no rewrite needed — the dozen
+  `NeedleStyle` geometry branches were untouched). `GetMarkerStyleAttrib`/`GetBarStyleAttrib` wrap
+  `CreateMarker`/`GetCircularRangePath`'s concrete results and call the new `*Resource` brush getters.
+  `Render`/`GetPointerPath` updated: `pen` → `IPen`, every `AddPath`/`AddHotRegion`/`DrawPath` site
+  touching an attrib path now goes through `UnwrapPath` (with `.Clone()` preserved where the original
+  cloned before handing off to `AddHotRegion`).
+
+  **`LinearPointer.cs`**: same treatment for `BarStyleAttrib` (shared with `CircularPointer.cs` — both
+  files' producers now feed the identical retyped class), `GetThermometerStyleAttrib`, and
+  `MarkerStyleAttrib`. `GetMarkerStyleAttrib`'s marker-rotation `Matrix.Rotate`/`Translate` calls use
+  the same literal-port `ToMatrix3x2` helper (private, duplicated per-file — small and mechanical,
+  matching the existing precedent of per-file `DrawImage`-shaped duplication rather than a shared
+  utility class). `Render`/`GetPointerPath` updated identically to `CircularPointer.cs` — note this
+  file's original `AddHotRegion` calls never cloned (unlike `CircularPointer.cs`'s), so its `UnwrapPath`
+  call sites correctly don't add a `.Clone()` either, preserving the exact original ownership/lifetime
+  behavior.
+
+  **What stayed deliberately out of scope** (confirmed, not touched): `HotRegionList.SetHotRegion`/
+  `AddHotRegion` and `GaugeGraphics.DrawRadialSelection` remain fully concrete — bridged via
+  `UnwrapPath` rather than converted, since they mutate paths in place via a live GDI+ `Matrix` and are
+  shared hit-testing infrastructure used by every gauge element solution-wide, not just this pass's
+  three files. Converting them is a distinct, larger, D1-equivalent-shaped milestone of its own.
+
+  Verified: build 0 errors after every file and after the final dead-code cleanup, full suite 55/55
+  (54 `VisualRegressionTests` + 1 `Chart.Rdl.Tests`), **zero baseline diffs** — the rewrite reproduces
+  the pre-existing rendered output byte-for-byte. `CircularPointer`'s default `Needle` type (used by
+  both sample gauges, `pointer.Type` never explicitly set) means `NeedleStyleAttrib`'s primary-path/
+  brush path is genuinely pixel-verified by this pass, not just build-verified — the strongest
+  confirmation any single increment in this whole migration has had. `Knob`/`Bar`/`Marker`/
+  `Thermometer` types and `Knob.cs` itself are not exercised by any existing sample gauge, so those
+  remain behavior-identical-by-construction verified (same reasoning as every earlier increment before
+  its own dedicated pixel test existed) — a good candidate for a future E0-equivalent harness addition.
+
 ### Milestone E0 equivalent — Visual regression harness
 
 - [x] **Build gauge test coverage from scratch** (2026-07-21): added

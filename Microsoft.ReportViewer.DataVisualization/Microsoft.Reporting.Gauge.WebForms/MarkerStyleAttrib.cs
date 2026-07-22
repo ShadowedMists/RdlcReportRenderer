@@ -1,13 +1,12 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class MarkerStyleAttrib
 	{
-		public GraphicsPath path;
+		public IGraphicsPath path;
 
-		public Brush brush;
+		public IBrush brush;
 
 		public MarkerStyleAttrib()
 		{

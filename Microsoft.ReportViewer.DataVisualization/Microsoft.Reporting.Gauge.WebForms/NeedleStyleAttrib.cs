@@ -1,21 +1,20 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class NeedleStyleAttrib
 	{
-		public GraphicsPath primaryPath;
+		public IGraphicsPath primaryPath;
 
-		public GraphicsPath secondaryPath;
+		public IGraphicsPath secondaryPath;
 
-		public Brush primaryBrush;
+		public IBrush primaryBrush;
 
-		public Brush secondaryBrush;
+		public IBrush secondaryBrush;
 
-		public GraphicsPath[] reflectionPaths;
+		public IGraphicsPath[] reflectionPaths;
 
-		public Brush[] reflectionBrushes;
+		public IBrush[] reflectionBrushes;
 
 		public NeedleStyleAttrib()
 		{
@@ -51,7 +50,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (reflectionPaths != null)
 			{
-				GraphicsPath[] array = reflectionPaths;
+				IGraphicsPath[] array = reflectionPaths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -60,7 +59,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (reflectionBrushes != null)
 			{
-				Brush[] array2 = reflectionBrushes;
+				IBrush[] array2 = reflectionBrushes;
 				for (int i = 0; i < array2.Length; i++)
 				{
 					array2[i]?.Dispose();

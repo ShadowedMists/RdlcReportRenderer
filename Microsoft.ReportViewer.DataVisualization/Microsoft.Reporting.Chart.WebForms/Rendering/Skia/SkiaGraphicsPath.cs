@@ -126,6 +126,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Flatten() => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public void Flatten(float flatness) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		/// <summary>
 		/// Real implementation (not spike-scoped) — GDI+'s <c>GraphicsPath.Widen(Pen)</c> converts
 		/// a stroked path into the filled outline geometry of that stroke. <see cref="SKPaint.GetFillPath"/>
@@ -162,6 +164,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			var b = NativePath.Bounds;
 			return new RectangleF(b.Left, b.Top, b.Width, b.Height);
 		}
+
+		public RectangleF GetBounds(Matrix3x2 matrix) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public bool IsVisible(PointF point) => NativePath.Contains(point.X, point.Y);
 

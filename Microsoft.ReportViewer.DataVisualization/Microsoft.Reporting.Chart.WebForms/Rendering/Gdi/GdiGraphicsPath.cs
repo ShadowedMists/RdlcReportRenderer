@@ -86,6 +86,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void Flatten() => NativePath.Flatten();
 
+		public void Flatten(float flatness) => NativePath.Flatten(null, flatness);
+
 		public void Widen(IPen pen) => NativePath.Widen(((GdiPen)pen).NativePen);
 
 		public void Reverse() => NativePath.Reverse();
@@ -99,6 +101,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 		}
 
 		public RectangleF GetBounds() => NativePath.GetBounds();
+
+		public RectangleF GetBounds(Matrix3x2 matrix)
+		{
+			using var nativeMatrix = new Matrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.M31, matrix.M32);
+			return NativePath.GetBounds(nativeMatrix);
+		}
 
 		public bool IsVisible(PointF point) => NativePath.IsVisible(point);
 
