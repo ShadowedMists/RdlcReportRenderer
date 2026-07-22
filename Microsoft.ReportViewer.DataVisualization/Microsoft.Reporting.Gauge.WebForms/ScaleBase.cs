@@ -8,6 +8,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Windows.Forms;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -905,39 +906,30 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				float num = image.Height;
 				float num2 = absoluteDimension / num;
 				Rectangle destRect = new Rectangle(0, 0, (int)((float)image.Width * num2), (int)((float)image.Height * num2));
-				ImageAttributes imageAttributes = new ImageAttributes();
+				IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 				if (tickMark.ImageTransColor != Color.Empty)
 				{
-					imageAttributes.SetColorKey(tickMark.ImageTransColor, tickMark.ImageTransColor, ColorAdjustType.Default);
+					imageAttributes.SetTransparentColor(tickMark.ImageTransColor);
 				}
 				Matrix transform = g.Transform;
 				Matrix matrix2 = g.Transform.Clone();
 				matrix2.Multiply(matrix, MatrixOrder.Prepend);
 				if (drawShadow)
 				{
-					ColorMatrix colorMatrix = new ColorMatrix();
-					colorMatrix.Matrix00 = 0f;
-					colorMatrix.Matrix11 = 0f;
-					colorMatrix.Matrix22 = 0f;
-					colorMatrix.Matrix33 = Common.GaugeCore.ShadowIntensity / 100f;
-					imageAttributes.SetColorMatrix(colorMatrix);
+					imageAttributes.SetChannelScale(0f, 0f, 0f, Common.GaugeCore.ShadowIntensity / 100f);
 					matrix2.Translate(ShadowOffset, ShadowOffset, MatrixOrder.Append);
 				}
 				else if (!tickMark.ImageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(tickMark.ImageHueColor);
-					ColorMatrix colorMatrix2 = new ColorMatrix();
-					colorMatrix2.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix2.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix2.Matrix22 = (float)(int)color.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix2);
+					imageAttributes.SetChannelScale((float)(int)color.R / 255f, (float)(int)color.G / 255f, (float)(int)color.B / 255f, 1f);
 				}
 				destRect.X = (int)(centerPoint.X - (float)(destRect.Width / 2));
 				destRect.Y = (int)(centerPoint.Y - (float)(destRect.Height / 2));
 				g.Transform = matrix2;
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 				g.Transform = transform;
 			}

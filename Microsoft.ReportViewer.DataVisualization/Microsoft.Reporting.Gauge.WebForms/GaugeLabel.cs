@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -808,6 +809,68 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				DashStyle = g.GetPenStyle(BorderStyle),
 				Alignment = PenAlignment.Center
 			};
+		}
+
+		/// <summary>
+		/// Additive <see cref="IBrush"/>-returning sibling of <see cref="GetBackBrush"/>, structured
+		/// identically to <see cref="BackFrame.GetBrushResource"/>. Still unreachable: its real caller
+		/// (<see cref="IRenderable.RenderDynamicElements"/>) feeds the result into
+		/// <c>GaugeGraphics.FillPath(Brush, GraphicsPath)</c> alongside a concrete <c>GraphicsPath</c> local.
+		/// </summary>
+		internal IBrush GetBackBrushResource(GaugeGraphics g)
+		{
+			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
+			IBrush brush;
+			Color color = BackColor;
+			Color color2 = BackGradientEndColor;
+			GradientType gradientType = BackGradientType;
+			GaugeHatchStyle gaugeHatchStyle = BackHatchStyle;
+			if (gaugeHatchStyle != 0)
+			{
+				brush = g.GetHatchBrushResource(gaugeHatchStyle, color, color2);
+			}
+			else if (gradientType != 0)
+			{
+				brush = g.GetGradientBrushResource(absoluteRectangle, color, color2, gradientType);
+				if (Angle != 0f)
+				{
+					PointF pointF = new PointF(absoluteRectangle.X + absoluteRectangle.Width / 2f, absoluteRectangle.Y + absoluteRectangle.Height / 2f);
+					if (brush is ILinearGradientBrush linearGradientBrush)
+					{
+						linearGradientBrush.TranslateTransform(0f - pointF.X, 0f - pointF.Y, MatrixOrder.Append);
+						linearGradientBrush.RotateTransform(Angle, MatrixOrder.Append);
+						linearGradientBrush.TranslateTransform(pointF.X, pointF.Y, MatrixOrder.Append);
+					}
+					else if (brush is IPathGradientBrush pathGradientBrush)
+					{
+						pathGradientBrush.TranslateTransform(0f - pointF.X, 0f - pointF.Y, MatrixOrder.Append);
+						pathGradientBrush.RotateTransform(Angle, MatrixOrder.Append);
+						pathGradientBrush.TranslateTransform(pointF.X, pointF.Y, MatrixOrder.Append);
+					}
+				}
+			}
+			else
+			{
+				brush = g.ResourceFactory.CreateSolidBrush(color);
+			}
+			return brush;
+		}
+
+		/// <summary>
+		/// Additive <see cref="IPen"/>-returning sibling of <see cref="GetPen"/>. Still unreachable: its real
+		/// caller feeds the result into <c>GaugeGraphics.DrawPath(Pen, GraphicsPath)</c> alongside a concrete
+		/// <c>GraphicsPath</c> local.
+		/// </summary>
+		internal IPen GetPenResource(GaugeGraphics g)
+		{
+			if (BorderWidth <= 0 || BorderStyle == GaugeDashStyle.NotSet)
+			{
+				return null;
+			}
+			IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth);
+			pen.DashStyle = g.GetPenStyle(BorderStyle);
+			pen.Alignment = PenAlignment.Center;
+			return pen;
 		}
 
 		void IRenderable.RenderStaticElements(GaugeGraphics g)

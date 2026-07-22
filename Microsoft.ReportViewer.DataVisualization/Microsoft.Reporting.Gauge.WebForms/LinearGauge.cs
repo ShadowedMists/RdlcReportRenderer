@@ -318,18 +318,19 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal void RenderDynamicShadows(GaugeGraphics g)
 		{
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 			{
 				foreach (LinearPointer pointer in Pointers)
 				{
 					GraphicsPath shadowPath = pointer.GetShadowPath(g);
 					if (shadowPath != null)
 					{
-						graphicsPath.AddPath(shadowPath, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(shadowPath);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				graphicsPath.FillMode = FillMode.Winding;
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.GetShadowBrushResource())
 				{
 					g.FillPath(brush, graphicsPath);
 				}
@@ -338,14 +339,15 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal void RenderStaticShadows(GaugeGraphics g)
 		{
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 			{
 				foreach (LinearRange range in Ranges)
 				{
 					GraphicsPath path = range.GetPath(g, getShadowPath: true);
 					if (path != null)
 					{
-						graphicsPath.AddPath(path, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(path);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				foreach (LinearScale scale in Scales)
@@ -353,11 +355,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					GraphicsPath shadowPath = scale.GetShadowPath();
 					if (shadowPath != null)
 					{
-						graphicsPath.AddPath(shadowPath, connect: false);
+						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(shadowPath);
+						graphicsPath.AddPath(wrapped, connect: false);
 					}
 				}
 				graphicsPath.FillMode = FillMode.Winding;
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.GetShadowBrushResource())
 				{
 					g.FillPath(brush, graphicsPath);
 				}
