@@ -76,6 +76,10 @@ namespace Microsoft.Reporting.Rendering
 
 		PointF FocusScales { get; set; }
 
+		Blend Blend { get; set; }
+
+		ColorBlend InterpolationColors { get; set; }
+
 		/// <summary>See <see cref="ILinearGradientBrush.SetRotationTransform"/> — identical role, GDI+'s <c>PathGradientBrush</c> implements the same <c>ITransform</c> shape.</summary>
 		void SetRotationTransform(float angle, PointF center);
 

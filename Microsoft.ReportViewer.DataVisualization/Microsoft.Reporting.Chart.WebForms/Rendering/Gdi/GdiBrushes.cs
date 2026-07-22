@@ -145,6 +145,18 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativeBrush.FocusScales = value;
 		}
 
+		public Blend Blend
+		{
+			get => NativeBrush.Blend;
+			set => NativeBrush.Blend = value;
+		}
+
+		public ColorBlend InterpolationColors
+		{
+			get => NativeBrush.InterpolationColors;
+			set => NativeBrush.InterpolationColors = value;
+		}
+
 		public void SetRotationTransform(float angle, PointF center)
 		{
 			using Matrix matrix = new Matrix();
