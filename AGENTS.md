@@ -343,9 +343,8 @@ Write code that is:
 
 # Git & Commit Guidelines
 
-**CRITICAL:** Do not make any commits to the repository unless explicitly instructed.
+**CRITICAL:** Commit work in relevant batches, grouping like behavior. Code should build and tests pass.
 
-- All work should be left in the working copy for review
 - Document changes in `TODO.md` as you progress
 - Create internal documentation in the `docs` folder
 - Ensure `docs` folder reflects current codebase state
@@ -481,7 +480,7 @@ Implementation follows the current project goals:
 6. Implement changes incrementally
 7. Update `docs/` folder to reflect changes
 8. Mark tasks complete in `TODO.md`
-9. Leave work in working copy (no commits)
+9. Commit work in relevant batches where code builds and tests pass
 
 ---
 
@@ -531,5 +530,4 @@ These contain:
 - Prefer incremental implementation over large rewrites
 - Always explain trade-offs and risks
 - Design for cross-platform maintainability
-- Leave all code in working copy (no commits unless explicitly instructed)
 - Track progress continuously in `TODO.md`
