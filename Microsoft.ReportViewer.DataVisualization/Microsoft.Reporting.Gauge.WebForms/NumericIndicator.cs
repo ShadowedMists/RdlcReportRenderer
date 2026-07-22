@@ -1105,6 +1105,34 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return g.GetGradientBrush(absoluteRectangle, color2, color3, backGradientType);
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetFontBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy per tasks/gauge-gdi-type-abstraction.md). Self-contained — no shared field, no
+		/// concrete-path dependency — so it converts cleanly. Still purely additive/unreachable for now:
+		/// its real callers all feed the result into <c>FillPath(Brush, GraphicsPath)</c> alongside a
+		/// <see cref="GraphicsPath"/> from <c>DigitalSegment.GetOrientedSegments</c>/<c>GetSymbol7</c>/
+		/// <c>GetSymbol14</c>, which stay concrete (see <c>DigitalSegment.cs</c> investigation notes).
+		/// </summary>
+		private IBrush GetFontBrushResource(GaugeGraphics g, Color color)
+		{
+			if (BackGradientType != GradientType.HorizontalCenter || IndicatorStyle != NumericIndicatorStyle.Mechanical)
+			{
+				return g.ResourceFactory.CreateSolidBrush(color);
+			}
+			HSV hSV = ColorHandler.ColorToHSV(backGradientEndColor);
+			HSV hSV2 = ColorHandler.ColorToHSV(backColor);
+			HSV hsv = ColorHandler.ColorToHSV(color);
+			HSV hsv2 = ColorHandler.ColorToHSV(color);
+			hsv.value = Math.Min(Math.Max(hsv.value - (hSV.value - hSV2.value), 0), 255);
+			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
+			absoluteRectangle.Inflate(2f, 2f);
+			Color color2 = ColorHandler.HSVtoColor(hsv);
+			Color color3 = ColorHandler.HSVtoColor(hsv2);
+			color2 = Color.FromArgb(color.A, color2.R, color2.G, color2.B);
+			color3 = Color.FromArgb(color.A, color3.R, color3.G, color3.B);
+			return g.GetGradientBrushResource(absoluteRectangle, color2, color3, backGradientType);
+		}
+
 		private double GetNumber()
 		{
 			return numberPosition * Multiplier;

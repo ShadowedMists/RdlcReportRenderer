@@ -1010,6 +1010,68 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return brush;
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetBrush"/> (Milestone B2 equivalent, dual-overload
+		/// strategy per tasks/gauge-gdi-type-abstraction.md). Unlike <see cref="GaugeGraphics.GetMarkerBrush"/>,
+		/// this method's only geometry (the path-gradient branch's local <c>GraphicsPath</c>) is built
+		/// entirely from the <paramref name="rect"/>/<paramref name="frameWidth"/> parameters — no
+		/// caller-supplied path, no <c>GetBounds(Matrix)</c> dependency — so it converts cleanly now that
+		/// <see cref="ILinearGradientBrush.SetRotationTransform"/> closes the last blocker (the
+		/// `RotateAt`-then-assign pattern its diagonal-gradient branches use). Still purely additive: its
+		/// only real callers (<see cref="RenderFrame"/>) feed the result into
+		/// <c>FillPath(Brush, GraphicsPath, ...)</c> alongside paths from <see cref="GetFramePath"/>, which
+		/// stays concrete (9 other callers, not touched this pass) — so this sibling is unreachable until
+		/// that converts too, matching the "build the port before any caller migrates" pattern.
+		/// </summary>
+		internal IBrush GetBrushResource(GaugeGraphics g, RectangleF rect, GaugeHatchStyle hatchStyle, GradientType gradientType, Color fillColor, Color gradientEndColor, bool frame, float frameWidth)
+		{
+			if (hatchStyle != 0)
+			{
+				return g.GetHatchBrushResource(hatchStyle, fillColor, gradientEndColor);
+			}
+			if (gradientType != 0)
+			{
+				if (FrameShape == BackFrameShape.Circular && gradientType == GradientType.DiagonalLeft)
+				{
+					ILinearGradientBrush linearBrush = (ILinearGradientBrush)g.GetGradientBrushResource(rect, fillColor, gradientEndColor, GradientType.LeftRight);
+					linearBrush.SetRotationTransform(45f, new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
+					return linearBrush;
+				}
+				if (FrameShape == BackFrameShape.Circular && gradientType == GradientType.DiagonalRight)
+				{
+					ILinearGradientBrush linearBrush = (ILinearGradientBrush)g.GetGradientBrushResource(rect, fillColor, gradientEndColor, GradientType.TopBottom);
+					linearBrush.SetRotationTransform(135f, new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f));
+					return linearBrush;
+				}
+				if (gradientType == GradientType.Center)
+				{
+					IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
+					if (FrameShape == BackFrameShape.Circular)
+					{
+						graphicsPath.AddArc(rect.X, rect.Y, rect.Width, rect.Height, 0f, 360f);
+					}
+					else
+					{
+						graphicsPath.AddRectangle(rect);
+					}
+					IPathGradientBrush pathGradientBrush = g.ResourceFactory.CreatePathGradientBrush(graphicsPath);
+					pathGradientBrush.CenterColor = fillColor;
+					pathGradientBrush.CenterPoint = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+					pathGradientBrush.SurroundColors = new Color[1]
+					{
+						gradientEndColor
+					};
+					if (frame)
+					{
+						pathGradientBrush.FocusScales = new PointF((rect.Width - frameWidth * 2f) / rect.Width, (rect.Height - frameWidth * 2f) / rect.Height);
+					}
+					return pathGradientBrush;
+				}
+				return g.GetGradientBrushResource(rect, fillColor, gradientEndColor, gradientType);
+			}
+			return g.ResourceFactory.CreateSolidBrush(fillColor);
+		}
+
 		internal RectangleF GetFrameRectangle(GaugeGraphics g)
 		{
 			RectangleF result;
