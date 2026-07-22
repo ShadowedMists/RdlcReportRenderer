@@ -452,6 +452,115 @@ which stayed, why `IClipRegion` stayed put). Net result:
   (`GetBrushResource`/`GetFontBrushResource`) or implementer-only changes to already-adapter-tested
   interfaces (the transform methods), no real call site changed behavior.
 
+- [x] **`Knob.cs` — image path converted in place, one more additive brush sibling** (2026-07-21,
+  user-directed "proceed with the next task for Knob"): `Knob.cs` is the next file in the file-by-file
+  order. Its image handling (`DrawImage`, called only from `Render`/`GetShadowPath`, both internal to
+  this file — no external callers, so this converted **in place** rather than as a dual-overload,
+  matching `BackFrame.DrawFrameImage`'s precedent) maps directly onto the primitives already built for
+  that method: `ImageAttributes` → `IImageDrawOptions` via `g.ResourceFactory.CreateImageDrawOptions()`,
+  `SetColorKey` → `SetTransparentColor` (both the primary-image and cap-image trans-color branches), and
+  the final `DrawImage(Image, ...)` → `DrawImage(g.ResourceFactory.WrapImage(image), ...)`. The
+  drop-shadow branch's `ColorMatrix` (zeroing R/G/B, scaling alpha by `ShadowIntensity/100`) turned out
+  to be a plain diagonal scale — exactly what `SetChannelScale` already models — so it converted to
+  `imageAttributes.SetChannelScale(0f, 0f, 0f, Common.GaugeCore.ShadowIntensity / 100f)` with no new gap.
+  Same for the hue-recolor branches (`ImageHueColor`/`CapImageHueColor`), which mirror `BackFrame`'s hue
+  branch exactly. `g.Transform`/`Matrix` manipulation (pivot rotation, shadow offset) stays untouched —
+  out of scope, same as `BackFrame.DrawFrameImage`.
+
+  `GetFillBrush` (feeds `GetKnobStyleAttrib`'s `knobStyleAttrib.brushes[0]`/`[2]`, the knob body and cap
+  fills) is self-contained geometry-wise (only calls `path.GetBounds()`, the parameterless overload
+  `IGraphicsPath` already has) and its gradient branches use exactly the `RotateTransform`/
+  `TranslateTransform`/`SetRotationTransform` trio added to `ILinearGradientBrush`/`IPathGradientBrush`
+  in the prior increment — added `GetFillBrushResource : IBrush` as a private additive dual-overload
+  sibling, structured identically to `BackFrame.GetBrushResource` (hatch → `GetHatchBrushResource`,
+  diagonal gradients → `GetGradientBrushResource` + `SetRotationTransform`, `Center` → path-gradient via
+  `ResourceFactory.CreatePathGradientBrush(ResourceFactory.WrapPath(...))`, default → plain
+  `GetGradientBrushResource`, no gradient → `CreateSolidBrush`). Still unreachable: the real caller
+  (`GetKnobStyleAttrib`) stores the result into `KnobStyleAttrib.brushes[]`, a concrete `Brush[]` array
+  paired with `KnobStyleAttrib.paths[]` (concrete `GraphicsPath[]`), consumed by
+  `GaugeGraphics.FillPath(Brush, GraphicsPath)` in `Render`. This is the identical shared-field shape
+  already documented for `BarStyleAttrib`/`MarkerStyleAttrib` — confirmed here for `KnobStyleAttrib` too.
+  Converting the real call site would mean retyping `KnobStyleAttrib` itself (both arrays) plus every
+  producer (`GetKnobPath`, `GetFillBrush`, `g.CreateMarker`, `g.GetMarkerBrush`,
+  `g.GetCircularEdgeReflection`) and `Render`'s consumption loop — a materially larger atomic pass, not
+  attempted piecemeal, consistent with the standing rule for this shape.
+
+  Also found `GetSpecialCapBrush` (returns a concrete `PathGradientBrush`) has **zero callers anywhere
+  in the codebase** — genuinely dead code, not merely blocked. Left untouched: converting or even adding
+  a sibling for unreachable-and-uncalled code would add surface with no way to verify it (no caller to
+  exercise it, dead-code paths aren't something a visual regression test can reach), which is exactly
+  the "don't invent test coverage" trap. Worth a note for a future dead-code cleanup pass, not this one.
+
+  Verified: build 0 errors, full suite 55/55 (54 `VisualRegressionTests` + 1 `Chart.Rdl.Tests`), zero
+  baseline diffs — `DrawImage`'s in-place conversion is exercised by existing rendering (no dedicated
+  `Knob`-with-image sample exists yet; the change is byte-for-byte equivalent to the pre-conversion
+  GDI+ calls, same reasoning `BackFrame.DrawFrameImage` relied on before its own pixel test was added),
+  `GetFillBrushResource` is unreachable additive infrastructure only.
+
+- [x] **Removed `Knob.GetSpecialCapBrush` dead code (2026-07-21), user-directed ("Remove GetSpecialCapBrush and build to verify").** Confirmed zero callers anywhere in the codebase (grepped the whole solution) — deleted rather than left as noted dead code, since a method nobody calls doesn't belong in the file regardless of its GDI+-conversion status. Verified: build 0 errors.
+
+- [x] **`GaugeCore.cs` — three image-draw sites converted, plus one pen/path and one brush site** (2026-07-21,
+  user-directed "proceed with the GaugeCore and continue with the remaining TODOs in this milestone"). Grepped
+  `GaugeCore.cs` for all concrete-GDI+ surface and found the same `RenderTopImage` method duplicated
+  verbatim in three places — `GaugeCore.cs`, `CircularGauge.cs`, and `LinearGauge.cs` (not overrides of a
+  shared base, three independent copies with the same body, each called only from its own class's render
+  loop). All three converted in place using the now-established `DrawFrameImage`/`Knob.DrawImage` pattern:
+  `ImageAttributes` → `IImageDrawOptions` via `CreateImageDrawOptions()`, `SetColorKey` → `SetTransparentColor`,
+  the hue-recolor `ColorMatrix` → `SetChannelScale(r, g, b, 1f)`, `DrawImage(Image,...)` →
+  `DrawImage(WrapImage(image),...)`. No new gaps found — this is the third and fourth confirmation that
+  `SetChannelScale`'s shape covers every hue-recolor call site discovered so far.
+
+  `GaugeCore.RenderBorder` (self-contained: builds a local `Pen`/`GraphicsPath` for a plain rectangle
+  outline, no shared field) converted in place to `IPen`/`IGraphicsPath` via
+  `ResourceFactory.CreatePen`/`ResourceFactory.CreatePath()` + `DrawPath(IPen, IGraphicsPath)` — no gap,
+  `AddRectangle(RectangleF)` already exists on `IGraphicsPath`. `GaugeCore.RenderStaticElements`'s background
+  fill (`new SolidBrush(GaugeContainer.BackColor)` → `FillRectangle`) converted in place to
+  `ResourceFactory.CreateSolidBrush` + `FillRectangle(IBrush, RectangleF)` — also self-contained, no shared
+  field.
+
+  Investigated `GaugeCore.Paint`/`PrintPaint`/`SaveTo`/`GetGraphics` and confirmed the already-documented
+  D1-equivalent blocker (see §4 Notes) is real and unchanged: these methods operate directly on a raw
+  `System.Drawing.Graphics` (either the caller-supplied one or `BufferBitmap.Graphics`) — there is no
+  `GaugeGraphics`/`IGaugeRenderingEngine` wrapper in scope at these call sites at all, so there's no
+  interface surface to convert onto without first abstracting `BufferBitmap` itself (Chart's own
+  `IRenderSurface`/`GdiRenderSurface` Milestone D1 is the precedent for what that would take). Not
+  attempted — genuinely out of scope for an incremental pass, same conclusion as previously documented,
+  now confirmed by direct inspection rather than inference.
+
+  Verified: build 0 errors, full suite 55/55 (54 `VisualRegressionTests` + 1 `Chart.Rdl.Tests`), zero
+  baseline diffs. All four converted sites are exercised by every existing render (top image is rendered
+  unconditionally when set; border and background fill render on every gauge), so this is
+  behavior-identical-by-construction the same way `DrawFrameImage` was before its own pixel test — no
+  existing sample gauge happens to set `TopImage`, so the new `WrapImage`/`SetChannelScale` branch there
+  specifically isn't pixel-exercised yet, only build/byte-for-byte verified.
+
+- [x] **`StateIndicator.cs` — image path in place, two more additive siblings** (2026-07-22,
+  user-directed "proceed" following the `GaugeCore.cs` increment). `StateIndicator.DrawImage` (called
+  only from this file's own `Render`, no external callers) converted **in place**, same as
+  `Knob.DrawImage`/`GaugeCore.RenderTopImage`: `ImageAttributes` → `IImageDrawOptions`, `SetColorKey` →
+  `SetTransparentColor`, `DrawImage(Image,...)` → `DrawImage(WrapImage(image),...)`. Two of its
+  `ColorMatrix` branches were new shapes not seen before but both still fit `SetChannelScale` cleanly:
+  the plain-transparency branch (`Matrix33 = num`, everything else left at the identity default) →
+  `SetChannelScale(1f, 1f, 1f, num)`; the shadow branch (zero R/G/B, alpha scaled by
+  `ShadowIntensity/100 * transparency`) → `SetChannelScale(0f, 0f, 0f, num2 * num)` — the same shape
+  `Knob.DrawImage`'s shadow branch used. The two hue-recolor branches match `BackFrame`'s exactly.
+
+  `GetBrush` (feeds `Render`'s LED/text fill) and `GetPen` (feeds the LED border stroke) are both
+  self-contained — `GetBrush`'s only geometry is a local `GraphicsPath` for the `Center` gradient branch,
+  and its `Angle` rotation branch uses `TranslateTransform`/`RotateTransform`/`TranslateTransform` (three
+  separate calls around the pivot) rather than `SetRotationTransform`'s single `RotateAt`— both already
+  exist on `ILinearGradientBrush`/`IPathGradientBrush` from the transform gap-fill, so no new interface
+  surface was needed. Added `GetBrushResource : IBrush` and `GetPenResource : IPen` as additive
+  dual-overload siblings, structured identically to `BackFrame.GetBrushResource`/`Knob.GetFillBrushResource`.
+  Both still unreachable: the real caller (`Render`) feeds their results into
+  `GaugeGraphics.FillPath(Brush, GraphicsPath)`/`DrawPath(Pen, GraphicsPath)` alongside a concrete
+  `GraphicsPath` local — no mixed overload exists, not attempted piecemeal.
+
+  Verified: build 0 errors, full suite 55/55 (54 `VisualRegressionTests` + 1 `Chart.Rdl.Tests`), zero
+  baseline diffs. `DrawImage`'s conversion is behavior-identical-by-construction (no existing sample
+  gauge exercises a `StateIndicator` image), `GetBrushResource`/`GetPenResource` are unreachable additive
+  infrastructure only.
+
 ### Milestone E0 equivalent — Visual regression harness
 
 - [x] **Build gauge test coverage from scratch** (2026-07-21): added

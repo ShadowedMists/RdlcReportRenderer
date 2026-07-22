@@ -13,6 +13,7 @@ using System.IO;
 using System.Reflection;
 using System.Timers;
 using System.Windows.Forms;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -1690,25 +1691,21 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			if (TopImage != "")
 			{
-				ImageAttributes imageAttributes = new ImageAttributes();
+				IImageDrawOptions imageAttributes = g.ResourceFactory.CreateImageDrawOptions();
 				if (TopImageTransColor != Color.Empty)
 				{
-					imageAttributes.SetColorKey(TopImageTransColor, TopImageTransColor, ColorAdjustType.Default);
+					imageAttributes.SetTransparentColor(TopImageTransColor);
 				}
 				Image image = Common.ImageLoader.LoadImage(TopImage);
 				Rectangle destRect = new Rectangle(0, 0, GetWidth(), GetHeight());
 				if (!TopImageHueColor.IsEmpty)
 				{
 					Color color = g.TransformHueColor(TopImageHueColor);
-					ColorMatrix colorMatrix = new ColorMatrix();
-					colorMatrix.Matrix00 = (float)(int)color.R / 255f;
-					colorMatrix.Matrix11 = (float)(int)color.G / 255f;
-					colorMatrix.Matrix22 = (float)(int)color.B / 255f;
-					imageAttributes.SetColorMatrix(colorMatrix);
+					imageAttributes.SetChannelScale((float)(int)color.R / 255f, (float)(int)color.G / 255f, (float)(int)color.B / 255f, 1f);
 				}
 				ImageSmoothingState imageSmoothingState = new ImageSmoothingState(g);
 				imageSmoothingState.Set();
-				g.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
+				g.DrawImage(g.ResourceFactory.WrapImage(image), destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 				imageSmoothingState.Restore();
 			}
 		}
@@ -1717,7 +1714,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			if (renderContent != RenderContent.Dynamic)
 			{
-				using (Brush brush = new SolidBrush(GaugeContainer.BackColor))
+				using (IBrush brush = g.ResourceFactory.CreateSolidBrush(GaugeContainer.BackColor))
 				{
 					g.FillRectangle(brush, new Rectangle(new Point(-1, -1), new Size(GetWidth() + 2, GetHeight() + 2)));
 				}
@@ -1735,11 +1732,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				return;
 			}
-			using (Pen pen = new Pen(BorderColor, BorderWidth))
+			using (IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth))
 			{
 				pen.DashStyle = g.GetPenStyle(BorderStyle);
 				pen.Alignment = PenAlignment.Inset;
-				using (GraphicsPath graphicsPath = new GraphicsPath())
+				using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 				{
 					if (g.Graphics.PageScale > 1f)
 					{
