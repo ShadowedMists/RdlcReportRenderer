@@ -13,33 +13,13 @@ Replace the current ad-hoc rendering and resource adaptation seams with a broade
 
 ## Proposed tasks
 
-1. Inventory the remaining direct rendering and resource-loading entry points.
-   - Identify places that still depend on platform-specific drawing or image logic.
-   - Group them by responsibility so they can be migrated incrementally.
-
-2. Define the cross-platform abstraction contracts.
-   - Create interfaces for image/resource access, drawing operations, and output writing where they are currently implicit.
-   - Keep interfaces narrow and focused on the behavior each caller needs.
-
-3. Implement platform-specific adapters.
-   - Add a neutral implementation for the current cross-platform path.
-   - Preserve the existing Windows-backed behavior behind adapter implementations where necessary.
-
-4. Replace the first set of direct usages.
-   - Migrate the HTML rendering path and other low-risk seams first.
-   - Ensure the adapter is used consistently rather than only in isolated call sites.
-
-5. Add behavioral tests for the abstraction layer.
-   - Cover resource normalization, renderer selection, and platform-specific fallback behavior.
-   - Avoid relying on visual output for verification.
-
-6. Narrow warning suppressions.
-   - Remove project-wide suppression once the migrated seams are warning-free.
-   - Keep suppressions limited to clearly identified legacy paths.
-
-7. Document the abstraction model.
-   - Update the architecture, decisions, and extension guide documents with the new patterns.
-   - Record migration progress and remaining gaps.
+1. Inventory remaining direct rendering/resource-loading entry points and group by responsibility.
+2. Define narrow cross-platform abstraction contracts (image/resource access, drawing, output writing) where still implicit.
+3. Implement platform-specific adapters, preserving existing Windows-backed behavior.
+4. Migrate the first set of direct usages (HTML rendering path and other low-risk seams first).
+5. Add behavioral tests for the abstraction layer (resource normalization, renderer selection, fallback) — avoid relying on visual output.
+6. Narrow warning suppressions to only clearly identified legacy paths as each seam migrates.
+7. Keep `docs/` (architecture, decisions, extension guide) updated as patterns land — see `docs/rendering-abstractions.md` for the Chart/Gauge Ports & Adapters work already following this same shape.
 
 ## Related README compatibility gaps
 
