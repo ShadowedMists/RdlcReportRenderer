@@ -63,6 +63,14 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 		IGraphicsPath WrapPath(GraphicsPath path);
 
 		/// <summary>
+		/// Reverse of <see cref="WrapPath"/> — unwraps an interface-typed path back to its native
+		/// <see cref="GraphicsPath"/>, for bridging into still-concrete-only consumers (e.g.
+		/// <c>HotRegionList.SetHotRegion</c>, which mutates paths in place via a live GDI+ <c>Matrix</c> and
+		/// is out of scope for this pass — see tasks/gauge-gdi-type-abstraction.md Milestone B3).
+		/// </summary>
+		GraphicsPath UnwrapPath(IGraphicsPath path);
+
+		/// <summary>
 		/// Wrap an already-loaded native image as an <see cref="IChartImage"/> — a bridge for
 		/// <c>common.ImageLoader</c>'s legacy loading pipeline, which remains GDI+-only/concrete
 		/// (found during the GetTextureBrush prerequisite; see tasks/gauge-gdi-type-abstraction.md

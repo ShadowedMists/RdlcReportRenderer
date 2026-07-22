@@ -63,6 +63,9 @@ namespace Microsoft.Reporting.Rendering
 
 		void Flatten();
 
+		/// <summary>Abstracts <c>GraphicsPath.Flatten(null, flatness)</c> — flattens with an explicit tolerance instead of the default.</summary>
+		void Flatten(float flatness);
+
 		void Widen(IPen pen);
 
 		void Reverse();
@@ -72,6 +75,9 @@ namespace Microsoft.Reporting.Rendering
 		void Transform(Matrix3x2 matrix);
 
 		RectangleF GetBounds();
+
+		/// <summary>Abstracts <c>GraphicsPath.GetBounds(Matrix)</c> — the path's bounding box after applying <paramref name="matrix"/>, without mutating the path itself.</summary>
+		RectangleF GetBounds(Matrix3x2 matrix);
 
 		bool IsVisible(PointF point);
 

@@ -6,6 +6,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -854,6 +855,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return false;
 		}
 
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+		}
+
 		internal KnobStyleAttrib GetKnobStyleAttrib(GaugeGraphics g, PointF pointOrigin, float angle)
 		{
 			KnobStyleAttrib knobStyleAttrib = new KnobStyleAttrib();
@@ -863,11 +870,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			float absoluteDimension = g.GetAbsoluteDimension(Width);
 			float num = CapWidth / 100f * absoluteDimension;
-			knobStyleAttrib.paths = new GraphicsPath[6];
-			knobStyleAttrib.brushes = new Brush[6];
+			knobStyleAttrib.paths = new IGraphicsPath[6];
+			knobStyleAttrib.brushes = new IBrush[6];
 			if (Image == "")
 			{
-				knobStyleAttrib.paths[0] = GetKnobPath(g, absoluteDimension, absoluteDimension * 0.5f);
+				GraphicsPath knobPath = GetKnobPath(g, absoluteDimension, absoluteDimension * 0.5f);
+				knobStyleAttrib.paths[0] = (knobPath != null) ? g.ResourceFactory.WrapPath(knobPath) : null;
 			}
 			else
 			{
@@ -877,16 +885,18 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				if (CapShadowOffset != 0f)
 				{
-					knobStyleAttrib.paths[1] = new GraphicsPath();
-					knobStyleAttrib.paths[1].AddEllipse(0f - num + CapShadowOffset, 0f - num + CapShadowOffset, num * 2f, num * 2f);
+					IGraphicsPath path = g.ResourceFactory.CreatePath();
+					path.AddEllipse(0f - num + CapShadowOffset, 0f - num + CapShadowOffset, num * 2f, num * 2f);
 					using (Matrix matrix = new Matrix())
 					{
 						matrix.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
-						knobStyleAttrib.paths[1].Transform(matrix);
+						path.Transform(ToMatrix3x2(matrix));
 					}
+					knobStyleAttrib.paths[1] = path;
 				}
-				knobStyleAttrib.paths[2] = new GraphicsPath();
-				knobStyleAttrib.paths[2].AddEllipse(0f - num, 0f - num, num * 2f, num * 2f);
+				IGraphicsPath path2 = g.ResourceFactory.CreatePath();
+				path2.AddEllipse(0f - num, 0f - num, num * 2f, num * 2f);
+				knobStyleAttrib.paths[2] = path2;
 			}
 			else
 			{
@@ -900,7 +910,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			float num2 = MarkerWidth / 100f * absoluteDimension * 2f;
 			float markerHeight = MarkerLength / 100f * absoluteDimension * 2f;
 			PointF point = new PointF(0f, y);
-			knobStyleAttrib.paths[3] = g.CreateMarker(point, num2, markerHeight, MarkerStyle);
+			IGraphicsPath path3 = g.ResourceFactory.WrapPath(g.CreateMarker(point, num2, markerHeight, MarkerStyle));
 			using (Matrix matrix2 = new Matrix())
 			{
 				matrix2.RotateAt(180f, point, MatrixOrder.Append);
@@ -909,12 +919,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					matrix2.Rotate(angle, MatrixOrder.Append);
 					matrix2.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 				}
-				knobStyleAttrib.paths[3].Transform(matrix2);
+				path3.Transform(ToMatrix3x2(matrix2));
 			}
+			knobStyleAttrib.paths[3] = path3;
 			if (Image == "" && knobStyleAttrib.paths[0] != null)
 			{
 				float angle2 = RotateGradient ? angle : 0f;
-				knobStyleAttrib.brushes[0] = GetFillBrush(g, knobStyleAttrib.paths[0], pointOrigin, angle2, FillColor, FillGradientType, FillGradientEndColor, FillHatchStyle);
+				knobStyleAttrib.brushes[0] = GetFillBrushResource(g, knobStyleAttrib.paths[0], pointOrigin, angle2, FillColor, FillGradientType, FillGradientEndColor, FillHatchStyle);
 			}
 			else
 			{
@@ -924,10 +935,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				if (CapShadowOffset != 0f)
 				{
-					knobStyleAttrib.brushes[1] = g.GetShadowBrush();
+					knobStyleAttrib.brushes[1] = g.GetShadowBrushResource();
 				}
 				float angle3 = CapRotateGradient ? angle : 0f;
-				knobStyleAttrib.brushes[2] = GetFillBrush(g, knobStyleAttrib.paths[2], pointOrigin, angle3, CapFillColor, CapFillGradientType, CapFillGradientEndColor, CapFillHatchStyle);
+				knobStyleAttrib.brushes[2] = GetFillBrushResource(g, knobStyleAttrib.paths[2], pointOrigin, angle3, CapFillColor, CapFillGradientType, CapFillGradientEndColor, CapFillHatchStyle);
 			}
 			else
 			{
@@ -943,11 +954,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				pointOrigin2 = new PointF(0f, 0f);
 			}
-			knobStyleAttrib.brushes[3] = g.GetMarkerBrush(knobStyleAttrib.paths[3], MarkerStyle, pointOrigin2, angle4, MarkerFillColor, MarkerFillGradientType, MarkerFillGradientEndColor, MarkerFillHatchStyle);
+			knobStyleAttrib.brushes[3] = g.GetMarkerBrushResource(knobStyleAttrib.paths[3], MarkerStyle, pointOrigin2, angle4, MarkerFillColor, MarkerFillGradientType, MarkerFillGradientEndColor, MarkerFillHatchStyle);
 			if (CapVisible && CapReflection && CapImage == "")
 			{
-				g.GetCircularEdgeReflection(knobStyleAttrib.paths[2].GetBounds(), 135f, 200, pointOrigin, out knobStyleAttrib.paths[4], out knobStyleAttrib.brushes[4]);
-				g.GetCircularEdgeReflection(knobStyleAttrib.paths[2].GetBounds(), 315f, 128, pointOrigin, out knobStyleAttrib.paths[5], out knobStyleAttrib.brushes[5]);
+				g.GetCircularEdgeReflectionResource(knobStyleAttrib.paths[2].GetBounds(), 135f, 200, pointOrigin, out knobStyleAttrib.paths[4], out knobStyleAttrib.brushes[4]);
+				g.GetCircularEdgeReflectionResource(knobStyleAttrib.paths[2].GetBounds(), 315f, 128, pointOrigin, out knobStyleAttrib.paths[5], out knobStyleAttrib.brushes[5]);
 			}
 			else
 			{
@@ -960,22 +971,18 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				matrix3.Rotate(angle, MatrixOrder.Append);
 				matrix3.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+				Matrix3x2 matrix3x2 = ToMatrix3x2(matrix3);
 				if (knobStyleAttrib.paths[0] != null)
 				{
-					knobStyleAttrib.paths[0].Transform(matrix3);
+					knobStyleAttrib.paths[0].Transform(matrix3x2);
 				}
 				if (knobStyleAttrib.paths[2] != null)
 				{
-					knobStyleAttrib.paths[2].Transform(matrix3);
+					knobStyleAttrib.paths[2].Transform(matrix3x2);
 				}
-				if (knobStyleAttrib.paths[3] != null)
+				if (knobStyleAttrib.paths[3] != null && MarkerRotateGradient)
 				{
-					if (MarkerRotateGradient)
-					{
-						knobStyleAttrib.paths[3].Transform(matrix3);
-						return knobStyleAttrib;
-					}
-					return knobStyleAttrib;
+					knobStyleAttrib.paths[3].Transform(matrix3x2);
 				}
 				return knobStyleAttrib;
 			}
@@ -1031,89 +1038,16 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return graphicsPath;
 		}
 
-		private Brush GetFillBrush(GaugeGraphics g, GraphicsPath path, PointF pointOrigin, float angle, Color fillColor, GradientType fillGradientType, Color fillGradientEndColor, GaugeHatchStyle fillHatchStyle)
-		{
-			Brush brush = null;
-			if (fillHatchStyle != 0)
-			{
-				brush = GaugeGraphics.GetHatchBrush(fillHatchStyle, fillColor, fillGradientEndColor);
-			}
-			else if (fillGradientType != 0)
-			{
-				RectangleF bounds = path.GetBounds();
-				switch (fillGradientType)
-				{
-				case GradientType.DiagonalLeft:
-				{
-					brush = g.GetGradientBrush(bounds, fillColor, fillGradientEndColor, GradientType.LeftRight);
-					using (Matrix matrix2 = new Matrix())
-					{
-						matrix2.RotateAt(45f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
-						((LinearGradientBrush)brush).Transform = matrix2;
-					}
-					break;
-				}
-				case GradientType.DiagonalRight:
-				{
-					brush = g.GetGradientBrush(bounds, fillColor, fillGradientEndColor, GradientType.TopBottom);
-					using (Matrix matrix = new Matrix())
-					{
-						matrix.RotateAt(135f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
-						((LinearGradientBrush)brush).Transform = matrix;
-					}
-					break;
-				}
-				case GradientType.Center:
-				{
-					bounds.Inflate(1f, 1f);
-					using (GraphicsPath graphicsPath = new GraphicsPath())
-					{
-						graphicsPath.AddArc(bounds, 0f, 360f);
-						PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
-						pathGradientBrush.CenterColor = fillColor;
-						pathGradientBrush.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
-						pathGradientBrush.SurroundColors = new Color[1]
-						{
-							fillGradientEndColor
-						};
-						brush = pathGradientBrush;
-					}
-					break;
-				}
-				default:
-					brush = g.GetGradientBrush(path.GetBounds(), fillColor, fillGradientEndColor, fillGradientType);
-					break;
-				}
-				if (brush is LinearGradientBrush)
-				{
-					((LinearGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((LinearGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
-				}
-				else if (brush is PathGradientBrush)
-				{
-					((PathGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((PathGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
-				}
-			}
-			else
-			{
-				brush = new SolidBrush(fillColor);
-			}
-			return brush;
-		}
-
 		/// <summary>
-		/// Additive <see cref="IBrush"/>-returning sibling of <see cref="GetFillBrush"/>, unblocked by
-		/// the brush-transform gap-fill (<see cref="ILinearGradientBrush.RotateTransform"/>/
-		/// <see cref="ILinearGradientBrush.TranslateTransform"/>/<see cref="ILinearGradientBrush.SetRotationTransform"/>
-		/// and the <c>IPathGradientBrush</c> equivalents). Still unreachable: its real caller
-		/// (<see cref="GetKnobStyleAttrib"/>) stores the result into <c>KnobStyleAttrib.brushes[]</c>,
-		/// a concrete <see cref="Brush"/> array consumed by <c>GaugeGraphics.FillPath(Brush, GraphicsPath)</c>
-		/// alongside <c>KnobStyleAttrib.paths[]</c> (concrete <see cref="GraphicsPath"/>) — converting the
-		/// real call site requires retyping the whole attrib/render pipeline, not attempted this pass.
-		/// See tasks/gauge-gdi-type-abstraction.md Milestone B2.
+		/// Interface-typed replacement for the formerly-concrete <c>GetFillBrush</c> (removed — this is now
+		/// the sole/real producer, dead code eliminated same as <c>GetSpecialCapBrush</c> earlier). Unblocked
+		/// by the brush-transform gap-fill
+		/// (<see cref="ILinearGradientBrush.RotateTransform"/>/<see cref="ILinearGradientBrush.TranslateTransform"/>/
+		/// <see cref="ILinearGradientBrush.SetRotationTransform"/> and the <c>IPathGradientBrush</c> equivalents).
+		/// Now the real producer for <c>KnobStyleAttrib.brushes[]</c> (<see cref="IBrush"/> array) after the
+		/// atomic retyping pass — see tasks/gauge-gdi-type-abstraction.md Milestone B2/B3.
 		/// </summary>
-		private IBrush GetFillBrushResource(GaugeGraphics g, GraphicsPath path, PointF pointOrigin, float angle, Color fillColor, GradientType fillGradientType, Color fillGradientEndColor, GaugeHatchStyle fillHatchStyle)
+		private IBrush GetFillBrushResource(GaugeGraphics g, IGraphicsPath path, PointF pointOrigin, float angle, Color fillColor, GradientType fillGradientType, Color fillGradientEndColor, GaugeHatchStyle fillHatchStyle)
 		{
 			IBrush brush;
 			if (fillHatchStyle != 0)
@@ -1196,7 +1130,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			float positionFromValue = GetScale().GetPositionFromValue(base.Position);
 			PointF absolutePoint = g.GetAbsolutePoint(GetScale().GetPivotPoint());
-			Pen pen = new Pen(base.BorderColor, base.BorderWidth);
+			IPen pen = g.ResourceFactory.CreatePen(base.BorderColor, base.BorderWidth);
 			pen.DashStyle = g.GetPenStyle(base.BorderStyle);
 			if (pen.DashStyle != 0)
 			{
@@ -1220,7 +1154,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (knobStyleAttrib.paths[0] != null)
 					{
-						AddHotRegion((GraphicsPath)knobStyleAttrib.paths[0].Clone(), primary: true);
+						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(knobStyleAttrib.paths[0]).Clone(), primary: true);
 					}
 				}
 			}
@@ -1327,7 +1261,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			KnobStyleAttrib knobStyleAttrib = GetKnobStyleAttrib(g, absolutePoint, positionFromValue);
 			if (knobStyleAttrib.paths != null && knobStyleAttrib.paths[0] != null)
 			{
-				graphicsPath.AddPath(knobStyleAttrib.paths[0], connect: false);
+				graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(knobStyleAttrib.paths[0]), connect: false);
 			}
 			return graphicsPath;
 		}

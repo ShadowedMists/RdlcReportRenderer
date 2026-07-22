@@ -1,13 +1,12 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class KnobStyleAttrib
 	{
-		public GraphicsPath[] paths;
+		public IGraphicsPath[] paths;
 
-		public Brush[] brushes;
+		public IBrush[] brushes;
 
 		public KnobStyleAttrib()
 		{
@@ -19,7 +18,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			if (paths != null)
 			{
-				GraphicsPath[] array = paths;
+				IGraphicsPath[] array = paths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -28,7 +27,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (brushes != null)
 			{
-				Brush[] array2 = brushes;
+				IBrush[] array2 = brushes;
 				for (int i = 0; i < array2.Length; i++)
 				{
 					array2[i]?.Dispose();

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 using Microsoft.Reporting.Gauge.WebForms.Rendering;
 
@@ -315,72 +316,83 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal Brush GetMarkerBrush(GraphicsPath path, MarkerStyle markerStyle, PointF pointOrigin, float angle, Color fillColor, GradientType fillGradientType, Color fillGradientEndColor, GaugeHatchStyle fillHatchStyle)
+		/// <summary>
+		/// Interface-typed replacement for the formerly-concrete <c>GetMarkerBrush</c> (removed — dead code
+		/// eliminated once <see cref="Knob"/>/<see cref="CircularPointer"/>/<see cref="LinearPointer"/>'s
+		/// marker-attrib producers all switched to this sibling during the atomic retyping pass). Unblocked by
+		/// <see cref="IGraphicsPath.GetBounds(Matrix3x2)"/>, added specifically to close this gap (GDI+'s
+		/// transformed-bounds overload had no equivalent before). The transformed-bounds matrix is built via
+		/// the exact same native <see cref="Matrix"/>/<c>RotateAt</c> call as the original, then its element
+		/// values are carried into a <see cref="Matrix3x2"/> for the interface call — a literal 1:1 port with
+		/// no re-derivation of rotation direction/order, mirroring how <see cref="ILinearGradientBrush.SetRotationTransform"/> was ported.
+		/// </summary>
+		internal IBrush GetMarkerBrushResource(IGraphicsPath path, MarkerStyle markerStyle, PointF pointOrigin, float angle, Color fillColor, GradientType fillGradientType, Color fillGradientEndColor, GaugeHatchStyle fillHatchStyle)
 		{
-			Brush brush = null;
+			IBrush brush;
 			if (fillHatchStyle != 0)
 			{
-				brush = GetHatchBrush(fillHatchStyle, fillColor, fillGradientEndColor);
+				return GetHatchBrushResource(fillHatchStyle, fillColor, fillGradientEndColor);
 			}
-			else if (fillGradientType != 0)
+			if (fillGradientType != 0)
 			{
 				RectangleF bounds = path.GetBounds();
 				if (markerStyle == MarkerStyle.Circle && fillGradientType == GradientType.DiagonalLeft)
 				{
-					Matrix matrix = new Matrix();
-					matrix.RotateAt(45f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
+					PointF center = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+					using Matrix nativeMatrix = new Matrix();
+					nativeMatrix.RotateAt(45f, center);
 					if (bounds.Width != bounds.Height)
 					{
-						bounds = path.GetBounds(matrix);
+						float[] elements = nativeMatrix.Elements;
+						bounds = path.GetBounds(new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]));
 					}
-					brush = GetGradientBrush(bounds, fillColor, fillGradientEndColor, GradientType.LeftRight);
-					((LinearGradientBrush)brush).Transform = matrix;
+					ILinearGradientBrush linearGradientBrush = (ILinearGradientBrush)GetGradientBrushResource(bounds, fillColor, fillGradientEndColor, GradientType.LeftRight);
+					linearGradientBrush.SetRotationTransform(45f, center);
+					brush = linearGradientBrush;
 				}
 				else if (markerStyle == MarkerStyle.Circle && fillGradientType == GradientType.DiagonalRight)
 				{
-					Matrix matrix2 = new Matrix();
-					matrix2.RotateAt(135f, new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f));
+					PointF center2 = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+					using Matrix nativeMatrix2 = new Matrix();
+					nativeMatrix2.RotateAt(135f, center2);
 					if (bounds.Width != bounds.Height)
 					{
-						bounds = path.GetBounds(matrix2);
+						float[] elements2 = nativeMatrix2.Elements;
+						bounds = path.GetBounds(new Matrix3x2(elements2[0], elements2[1], elements2[2], elements2[3], elements2[4], elements2[5]));
 					}
-					brush = GetGradientBrush(bounds, fillColor, fillGradientEndColor, GradientType.TopBottom);
-					((LinearGradientBrush)brush).Transform = matrix2;
+					ILinearGradientBrush linearGradientBrush2 = (ILinearGradientBrush)GetGradientBrushResource(bounds, fillColor, fillGradientEndColor, GradientType.TopBottom);
+					linearGradientBrush2.SetRotationTransform(135f, center2);
+					brush = linearGradientBrush2;
 				}
 				else if (markerStyle == MarkerStyle.Circle && fillGradientType == GradientType.Center)
 				{
 					bounds.Inflate(1f, 1f);
-					using (GraphicsPath graphicsPath = new GraphicsPath())
-					{
-						graphicsPath.AddArc(bounds, 0f, 360f);
-						PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
-						pathGradientBrush.CenterColor = fillColor;
-						pathGradientBrush.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
-						pathGradientBrush.SurroundColors = new Color[1]
-						{
-							fillGradientEndColor
-						};
-						brush = pathGradientBrush;
-					}
+					using IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
+					graphicsPath.AddArc(bounds.X, bounds.Y, bounds.Width, bounds.Height, 0f, 360f);
+					IPathGradientBrush pathGradientBrush = ResourceFactory.CreatePathGradientBrush(graphicsPath);
+					pathGradientBrush.CenterColor = fillColor;
+					pathGradientBrush.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+					pathGradientBrush.SurroundColors = new Color[1] { fillGradientEndColor };
+					brush = pathGradientBrush;
 				}
 				else
 				{
-					brush = GetGradientBrush(path.GetBounds(), fillColor, fillGradientEndColor, fillGradientType);
+					brush = GetGradientBrushResource(path.GetBounds(), fillColor, fillGradientEndColor, fillGradientType);
 				}
-				if (brush is LinearGradientBrush)
+				if (brush is ILinearGradientBrush linearGradientBrush3)
 				{
-					((LinearGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((LinearGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+					linearGradientBrush3.RotateTransform(angle, MatrixOrder.Append);
+					linearGradientBrush3.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 				}
-				else if (brush is PathGradientBrush)
+				else if (brush is IPathGradientBrush pathGradientBrush2)
 				{
-					((PathGradientBrush)brush).RotateTransform(angle, MatrixOrder.Append);
-					((PathGradientBrush)brush).TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+					pathGradientBrush2.RotateTransform(angle, MatrixOrder.Append);
+					pathGradientBrush2.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
 				}
 			}
 			else
 			{
-				brush = new SolidBrush(fillColor);
+				brush = ResourceFactory.CreateSolidBrush(fillColor);
 			}
 			return brush;
 		}
@@ -1027,6 +1039,53 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new SolidBrush(backColor);
 		}
 
+		/// <summary>
+		/// Interface-typed sibling of <see cref="GetCircularRangeBrush"/> (dual-overload, additive). The
+		/// <c>StartToEnd</c> branch's per-vertex <c>SurroundColors</c> array needed the path's post-flatten
+		/// point count, unblocked by <see cref="IGraphicsPath.Flatten(float)"/> (added to close this gap —
+		/// GDI+'s tolerance overload had no equivalent before).
+		/// </summary>
+		internal IBrush GetCircularRangeBrushResource(RectangleF rect, float startAngle, float sweepAngle, Color backColor, GaugeHatchStyle backHatchStyle, string backImage, GaugeImageWrapMode backImageMode, Color backImageTranspColor, GaugeImageAlign backImageAlign, RangeGradientType backGradientType, Color backGradientEndColor)
+		{
+			RectangleF absoluteRectangle = GetAbsoluteRectangle(rect);
+			if (backHatchStyle != 0)
+			{
+				return GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (!backGradientEndColor.IsEmpty)
+			{
+				switch (backGradientType)
+				{
+				case RangeGradientType.Center:
+					return GetPieGradientBrushResource(absoluteRectangle, backColor, backGradientEndColor);
+				case RangeGradientType.StartToEnd:
+				{
+					using IGraphicsPath graphicsPath2 = ResourceFactory.CreatePath();
+					graphicsPath2.AddPie(absoluteRectangle.X - 1f, absoluteRectangle.Y - 1f, absoluteRectangle.Width + 2f, absoluteRectangle.Height + 2f, startAngle - 1f, sweepAngle + 1f);
+					graphicsPath2.Flatten(0.3f);
+					IPathGradientBrush pathGradientBrush = ResourceFactory.CreatePathGradientBrush(graphicsPath2);
+					pathGradientBrush.SurroundColors = GetSurroundColors(backColor, backGradientEndColor, graphicsPath2.PointCount);
+					pathGradientBrush.CenterColor = GetSurroundColors(backColor, backGradientEndColor, 3)[1];
+					pathGradientBrush.CenterPoint = new PointF(absoluteRectangle.X + absoluteRectangle.Width / 2f, absoluteRectangle.Y + absoluteRectangle.Height / 2f);
+					return pathGradientBrush;
+				}
+				default:
+				{
+					using IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
+					graphicsPath.AddPie(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height, startAngle, sweepAngle);
+					return GetGradientBrushResource(graphicsPath.GetBounds(), backColor, backGradientEndColor, (GradientType)Enum.Parse(typeof(GradientType), backGradientType.ToString()));
+				}
+				case RangeGradientType.None:
+					break;
+				}
+			}
+			if (backImage.Length > 0 && backImageMode != GaugeImageWrapMode.Unscaled && backImageMode != GaugeImageWrapMode.Scaled)
+			{
+				return GetTextureBrushResource(backImage, backImageTranspColor, backImageMode);
+			}
+			return ResourceFactory.CreateSolidBrush(backColor);
+		}
+
 		internal GraphicsPath GetCircularRangePath(RectangleF rect, float startAngle, float sweepAngle, float startRadius, float endRadius, Placement placement)
 		{
 			if (rect.Width == 0f || rect.Height == 0f)
@@ -1253,6 +1312,46 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new SolidBrush(backColor);
 		}
 
+		/// <summary>Interface-typed sibling of <see cref="GetLinearRangeBrush"/> (dual-overload, additive). Fully self-contained — no gap.</summary>
+		internal IBrush GetLinearRangeBrushResource(RectangleF absRect, Color backColor, GaugeHatchStyle backHatchStyle, RangeGradientType backGradientType, Color backGradientEndColor, GaugeOrientation orientation, bool reversedScale, double startValue, double endValue)
+		{
+			if (backHatchStyle != 0)
+			{
+				return GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			if (backGradientType != 0)
+			{
+				if (backGradientType == RangeGradientType.StartToEnd)
+				{
+					if (orientation == GaugeOrientation.Horizontal)
+					{
+						backGradientType = RangeGradientType.LeftRight;
+					}
+					else
+					{
+						backGradientType = RangeGradientType.TopBottom;
+						Color color = backColor;
+						backColor = backGradientEndColor;
+						backGradientEndColor = color;
+					}
+					if (startValue > endValue)
+					{
+						Color color2 = backColor;
+						backColor = backGradientEndColor;
+						backGradientEndColor = color2;
+					}
+					if (reversedScale)
+					{
+						Color color3 = backColor;
+						backColor = backGradientEndColor;
+						backGradientEndColor = color3;
+					}
+				}
+				return GetGradientBrushResource(absRect, backColor, backGradientEndColor, (GradientType)Enum.Parse(typeof(GradientType), backGradientType.ToString()));
+			}
+			return ResourceFactory.CreateSolidBrush(backColor);
+		}
+
 		internal GraphicsPath GetThermometerPath(float startPosition, float endPosition, float barWidth, float scalePosition, GaugeOrientation orientation, float distanceFromScale, Placement placement, bool reversedScale, float scaleBarWidth, float bulbOffset, float bulbSize, ThermometerStyle thermometerStyle)
 		{
 			PointF[] array = new PointF[4];
@@ -1365,50 +1464,49 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return graphicsPath;
 		}
 
-		internal void GetCircularEdgeReflection(RectangleF bounds, float angle, int alpha, PointF pointOrigin, out GraphicsPath pathResult, out Brush brushResult)
+		/// <summary>
+		/// Interface-typed replacement for the formerly-concrete <c>GetCircularEdgeReflection</c> (removed —
+		/// dead code eliminated once <c>Knob</c>/<c>CircularPointer</c>'s reflection producers switched to
+		/// this sibling during the atomic retyping pass).
+		/// The path's final rotate+translate is a literal 1:1 port: the exact same native
+		/// <see cref="Matrix"/>/<c>Rotate</c>/<c>Translate</c> sequence is built, then its element values are
+		/// carried into a <see cref="Matrix3x2"/> for <see cref="IGraphicsPath.Transform(Matrix3x2)"/> — no
+		/// re-derivation of rotation direction/order, same approach as <see cref="GetMarkerBrushResource"/>.
+		/// </summary>
+		internal void GetCircularEdgeReflectionResource(RectangleF bounds, float angle, int alpha, PointF pointOrigin, out IGraphicsPath pathResult, out IBrush brushResult)
 		{
 			pathResult = null;
 			brushResult = null;
-			if (!((double)bounds.Width < 0.0001) && !((double)bounds.Height < 0.0001))
+			if ((double)bounds.Width < 0.0001 || (double)bounds.Height < 0.0001)
 			{
-				float num = 0.05f;
-				float num2 = 0.05f;
-				RectangleF rectangleF = bounds;
-				rectangleF.Inflate((0f - bounds.Width) * num, (0f - bounds.Height) * num);
-				RectangleF rect = rectangleF;
-				rectangleF.Inflate((0f - rectangleF.Width) * num2, rectangleF.Height * num2);
-				pathResult = new GraphicsPath();
-				pathResult.AddArc(rectangleF, angle, 90f);
-				pathResult.AddArc(rect, angle + 90f, -90f);
-				LinearGradientBrush linearGradientBrush = new LinearGradientBrush(bounds, Color.Transparent, Color.FromArgb(alpha, Color.White), 0f);
-				Blend blend = new Blend();
-				blend.Positions = new float[5]
-				{
-					0f,
-					0.1f,
-					0.5f,
-					0.9f,
-					1f
-				};
-				blend.Factors = new float[5]
-				{
-					0f,
-					0f,
-					1f,
-					0f,
-					0f
-				};
-				linearGradientBrush.Blend = blend;
-				linearGradientBrush.RotateTransform(135f, MatrixOrder.Append);
-				linearGradientBrush.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
-				brushResult = linearGradientBrush;
-				using (Matrix matrix = new Matrix())
-				{
-					matrix.Rotate(45f, MatrixOrder.Append);
-					matrix.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
-					pathResult.Transform(matrix);
-				}
+				return;
 			}
+			float num = 0.05f;
+			float num2 = 0.05f;
+			RectangleF rectangleF = bounds;
+			rectangleF.Inflate((0f - bounds.Width) * num, (0f - bounds.Height) * num);
+			RectangleF rect = rectangleF;
+			rectangleF.Inflate((0f - rectangleF.Width) * num2, rectangleF.Height * num2);
+			IGraphicsPath path = ResourceFactory.CreatePath();
+			path.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, angle, 90f);
+			path.AddArc(rect.X, rect.Y, rect.Width, rect.Height, angle + 90f, -90f);
+			ILinearGradientBrush linearGradientBrush = ResourceFactory.CreateLinearGradientBrush(bounds, Color.Transparent, Color.FromArgb(alpha, Color.White), 0f);
+			linearGradientBrush.Blend = new Blend
+			{
+				Positions = new float[5] { 0f, 0.1f, 0.5f, 0.9f, 1f },
+				Factors = new float[5] { 0f, 0f, 1f, 0f, 0f }
+			};
+			linearGradientBrush.RotateTransform(135f, MatrixOrder.Append);
+			linearGradientBrush.TranslateTransform(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+			brushResult = linearGradientBrush;
+			using (Matrix matrix = new Matrix())
+			{
+				matrix.Rotate(45f, MatrixOrder.Append);
+				matrix.Translate(pointOrigin.X, pointOrigin.Y, MatrixOrder.Append);
+				float[] elements = matrix.Elements;
+				path.Transform(new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]));
+			}
+			pathResult = path;
 		}
 
 		internal void SetPictureSize(float width, float height)

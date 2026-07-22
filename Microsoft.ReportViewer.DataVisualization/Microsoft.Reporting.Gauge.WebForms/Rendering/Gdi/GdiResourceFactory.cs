@@ -65,6 +65,8 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 
 		public IGraphicsPath WrapPath(GraphicsPath path) => new GdiGraphicsPath(path);
 
+		public GraphicsPath UnwrapPath(IGraphicsPath path) => ((GdiGraphicsPath)path).NativePath;
+
 		public IChartImage WrapImage(Image image) => new GdiChartImage(image);
 
 		public IImageDrawOptions CreateImageDrawOptions() => new GdiImageDrawOptions();

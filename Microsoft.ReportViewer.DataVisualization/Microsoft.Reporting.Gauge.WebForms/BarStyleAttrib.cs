@@ -1,21 +1,20 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class BarStyleAttrib
 	{
-		public GraphicsPath primaryPath;
+		public IGraphicsPath primaryPath;
 
-		public Brush primaryBrush;
+		public IBrush primaryBrush;
 
-		public GraphicsPath[] secondaryPaths;
+		public IGraphicsPath[] secondaryPaths;
 
-		public Brush[] secondaryBrushes;
+		public IBrush[] secondaryBrushes;
 
-		public GraphicsPath totalPath;
+		public IGraphicsPath totalPath;
 
-		public Brush totalBrush;
+		public IBrush totalBrush;
 
 		public BarStyleAttrib()
 		{
@@ -41,7 +40,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (secondaryPaths != null)
 			{
-				GraphicsPath[] array = secondaryPaths;
+				IGraphicsPath[] array = secondaryPaths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -50,7 +49,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (secondaryBrushes != null)
 			{
-				Brush[] array2 = secondaryBrushes;
+				IBrush[] array2 = secondaryBrushes;
 				for (int i = 0; i < array2.Length; i++)
 				{
 					array2[i]?.Dispose();
