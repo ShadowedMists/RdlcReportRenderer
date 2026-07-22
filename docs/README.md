@@ -1,9 +1,10 @@
 # Developer documentation
 
-This folder contains internal documentation for the cross-platform rendering work in ReportViewerCore. The documents are intended for maintainers and contributors who need to understand the current abstraction layer and the rationale behind the new renderer implementations.
+This folder contains documentation for ReportViewerCore. Most of it is internal — for maintainers and contributors who need to understand the current abstraction layer and the rationale behind the renderer implementations. [usage-guide.md](usage-guide.md) is the exception: it's written for integrators consuming the library, not contributors to it.
 
 ## Documents
 
+- [usage-guide.md](usage-guide.md) — **start here if you're integrating this library into your own app.** How to load a report and render it to HTML, Excel, or PDF, with sample code.
 - [rendering-abstractions.md](rendering-abstractions.md) — explains the renderer interfaces, platform-specific implementations, design patterns, and integration points
 - [architecture-map.md](architecture-map.md) — outlines the current end-to-end render flow from report processing to output generation
 - [platform-support.md](platform-support.md) — summarizes current Windows, Linux, and macOS support and the remaining gaps

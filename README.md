@@ -7,31 +7,11 @@ For version history and recent fixes, see [changelog](CHANGELOG.md).
 With WinForms inclusion in .NET Core 3.1 and .NET 5 as a replacement for .NET Framework, it became feasible to port existing business desktop applications to .NET Core SDK to benefit from new C# and JIT features. Microsoft team stated on multiple occasions (https://github.com/dotnet/aspnetcore/issues/1528, https://github.com/dotnet/aspnetcore/issues/12666, https://github.com/dotnet/aspnetcore/issues/22304, https://github.com/dotnet/docs/issues/9607) that there are no plans to have official Reporting Services / ReportViewer package for .NET Core, which is a showstopper for applications using this technology for printing and reporting. The goal of this project is to provide transitional solution for such applications, until existing reports are reimplemented using more modern technology.
 
 # How to use
-You should be able to replace references to Report Viewer in your WinForms project with ones provided in this repo and use `Microsoft.Reporting.WinForms.ReportViewer` as usual. See project `ReportViewerCore.Sample.WinForms` for a simplified example using local report processing and `ReportViewerCore.Sample.WinFormsServer` for remote processing using Reporting Services server.
+You should be able to replace references to Report Viewer in your WinForms project with ones provided in this repo and use `Microsoft.Reporting.WinForms.ReportViewer` as usual. For ASP.NET Core applications, add a reference to `Microsoft.Reporting.NETCore`, which is based on the WinForms version with stripped UI, and load/render the report programmatically.
 
-For ASP.NET Core applications, add reference to `Microsoft.Reporting.NETCore`, which is based on WinForms version with stripped UI, and load/render report programmatically. See project `ReportViewerCore.Console` for an example or use following code as a starting point:
+There is no interactive, web-based report viewer provided in this project, but there are `HTML4.0` and `HTML5` rendering formats available. `HTML5` format has been modified to also work without JavaScript.
 
-    Stream reportDefinition; // your RDLC from file or resource
-    IEnumerable dataSource; // your datasource for the report
-    
-    LocalReport report = new LocalReport();
-    report.LoadReportDefinition(reportDefinition);
-    report.DataSources.Add(new ReportDataSource("source", dataSource));
-    report.SetParameters(new[] { new ReportParameter("Parameter1", "Parameter value") });
-    byte[] pdf = report.Render("PDF");
-
-For consuming Reporting Services (server-side) reports, use:
-
-    ServerReport report = new ServerReport();
-    report.ReportServerCredentials.NetworkCredentials = new NetworkCredential("login", "password", "DOMAIN");
-    report.ReportServerUrl = new Uri("http://localhost/ReportServer");
-    report.ReportPath = "/Invoice";
-    report.SetParameters(new[] { new ReportParameter("Date", DateTime.Now.Date.ToString()) });
-    byte[] pdf = report.Render("PDF");
-
-or see project `ReportViewerCore.WinFormsServer` for more complete example.
-
-There is no interactive, web-based report viewer provided in this project, but there are `HTML4.0` and `HTML5` rendering formats available. `HTML5` format has been modified to also work without JavaScript. See `ReportViewerCore.Sample.AspNetCore` project for a simple demo.
+**For step-by-step instructions and sample code covering local reports, report-server reports, and rendering to HTML/Excel/PDF, see [docs/usage-guide.md](docs/usage-guide.md).**
 
 # Designing new reports
 
@@ -97,7 +77,7 @@ If your application crashes with `unsupported flags 00000020` somewhere inside `
  * Spatial SQL types. Those require `Microsoft.SqlServer.Types` package, which is available only in .NET Framework. Reports using SqlGeography won't load.
  * Expression sandboxing and code security. Do not load and run reports from untrusted sources.
  * Interactive web report preview. It is closely tied to WebForms and ASP.NET architecture and porting it to ASP.NET Core would involve rewriting significant portions of the codebase.
- * WinForms control designer. To use ReportViewer in your WinForms project, add the control programmatically, as in `ReportViewerCore.Sample.WinForms\ReportViewerForm.cs`.
+ * WinForms control designer. To use ReportViewer in your WinForms project, add the control programmatically — see [docs/usage-guide.md](docs/usage-guide.md#6-interactive-preview-in-winforms-reportviewer-control).
  * Single .exe deployment. Roslyn needs to be able to reference .NET and ReportViewer assemblies at runtime. When compiled to a single file, those are unavailable and any non-trivial report won't compile.
  * Map control. Not really tested, but included in project anyway.
  * As of .NET 6, Microsoft [deprecated](https://aka.ms/systemdrawingnonwindows) `System.Drawing` on non-windows platforms and removed it completely in .NET 7. This breaks reports using images on those platforms. Using a workaround mentioned above in `Linux rendering workaround` might help in those cases.
