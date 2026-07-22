@@ -408,15 +408,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				return new RectangleF(float.NaN, float.NaN, contentSize.Width, contentSize.Height);
 			}
-			Graphics graphics = null;
-			Image image = null;
+			IRenderSurface renderSurface = null;
 			ChartGraphics chartGraphics = null;
 			if (GetGraphics() == null && chart != null && chart.chartPicture != null && chart.chartPicture.common != null)
 			{
-				image = new Bitmap(chart.chartPicture.Width, chart.chartPicture.Height);
-				graphics = Graphics.FromImage(image);
+				renderSurface = chart.chartPicture.renderSurfaceFactory.CreateRasterSurface(chart.chartPicture.Width, chart.chartPicture.Height, 96f);
 				chartGraphics = new ChartGraphics(chart.chartPicture.common);
-				chartGraphics.Graphics = graphics;
+				chartGraphics.BindSurface(renderSurface);
 				chartGraphics.SetPictureSize(chart.chartPicture.Width, chart.chartPicture.Height);
 				chart.chartPicture.common.graph = chartGraphics;
 			}
@@ -452,8 +450,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (chartGraphics != null)
 			{
 				chartGraphics.Dispose();
-				graphics.Dispose();
-				image.Dispose();
+				renderSurface.Dispose();
 				chart.chartPicture.common.graph = null;
 			}
 			return result;
