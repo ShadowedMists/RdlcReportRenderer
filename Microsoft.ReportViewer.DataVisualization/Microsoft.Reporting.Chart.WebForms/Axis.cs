@@ -3083,7 +3083,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						if (customLabel3.Image.Length > 0)
 						{
 							SizeF size = default(SizeF);
-							if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel3.Image, chartGraph.Graphics, ref size))
+							if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel3.Image, ref size))
 							{
 								SizeF relativeSize = chartGraph.GetRelativeSize(size);
 								sizeF.Width += relativeSize.Width;
@@ -3195,7 +3195,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (customLabel4.Image.Length > 0)
 				{
 					SizeF size2 = default(SizeF);
-					if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel4.Image, chartGraph.Graphics, ref size2))
+					if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel4.Image, ref size2))
 					{
 						SizeF relativeSize3 = chartGraph.GetRelativeSize(size2);
 						if ((stringFormat.FormatFlags & StringFormatFlags.DirectionVertical) == StringFormatFlags.DirectionVertical)
@@ -3366,7 +3366,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (customLabel.Image.Length > 0)
 				{
 					SizeF size = default(SizeF);
-					if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel.Image, chartGraph.Graphics, ref size))
+					if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel.Image, ref size))
 					{
 						SizeF relativeSize = chartGraph.GetRelativeSize(size);
 						if ((stringFormat.FormatFlags & StringFormatFlags.DirectionVertical) == StringFormatFlags.DirectionVertical)
@@ -3523,7 +3523,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						if (customLabel.Image.Length > 0)
 						{
 							SizeF size = default(SizeF);
-							if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel.Image, chartGraph.Graphics, ref size))
+							if (base.Common.ImageLoader.GetAdjustedImageSize(customLabel.Image, ref size))
 							{
 								SizeF relativeSize = chartGraph.GetRelativeSize(size);
 								sizeF.Width += relativeSize.Width;

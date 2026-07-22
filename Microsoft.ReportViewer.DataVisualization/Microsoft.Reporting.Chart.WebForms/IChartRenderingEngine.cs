@@ -45,6 +45,28 @@ namespace Microsoft.Reporting.Chart.WebForms
 			get;
 		}
 
+		/// <summary>
+		/// Backend-agnostic DPI accessor (Milestone D2), replacing direct <c>.Graphics.DpiX</c> reads —
+		/// kept float-typed like <see cref="SmoothingMode"/>/<see cref="Rendering.Gdi"/>'s enums rather than
+		/// wrapped in a new interface, since it's a single scalar with an obvious per-backend source
+		/// (the live <c>Graphics</c> on Gdi/Svg; the raster surface's creation DPI on Skia).
+		/// </summary>
+		float GetDpiX();
+
+		/// <summary>Backend-agnostic equivalents of <c>.Graphics.CompositingQuality</c>/<c>.InterpolationMode</c> (Milestone D2) —
+		/// kept GDI+-enum-typed by design, same as <see cref="SmoothingMode"/> above.</summary>
+		CompositingQuality CompositingQuality
+		{
+			get;
+			set;
+		}
+
+		InterpolationMode InterpolationMode
+		{
+			get;
+			set;
+		}
+
 		void DrawLine(Pen pen, PointF pt1, PointF pt2);
 
 		void DrawLine(Pen pen, float x1, float y1, float x2, float y2);

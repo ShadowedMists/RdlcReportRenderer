@@ -435,7 +435,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			SizeF size = new SizeF(markerSize, markerSize);
 			if (markerImage.Length > 0)
 			{
-				common.ImageLoader.GetAdjustedImageSize(markerImage, graph.Graphics, ref size);
+				common.ImageLoader.GetAdjustedImageSize(markerImage, ref size);
 			}
 			return size;
 		}

@@ -485,7 +485,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (ImageSize.IsEmpty && Image.Length > 0)
 				{
 					SizeF size = default(SizeF);
-					if (GetLegend().Common.ImageLoader.GetAdjustedImageSize(Image, graph.Graphics, ref size))
+					if (GetLegend().Common.ImageLoader.GetAdjustedImageSize(Image, ref size))
 					{
 						result.Width = (int)size.Width;
 						result.Height = (int)size.Height;
@@ -796,7 +796,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Rectangle empty = Rectangle.Empty;
 			Image image = GetLegend().Common.ImageLoader.LoadImage(Image);
 			SizeF size = default(SizeF);
-			ImageLoader.GetAdjustedImageSize(image, chartGraph.Graphics, ref size);
+			ImageLoader.GetAdjustedImageSize(image, ref size);
 			empty.Width = (int)size.Width;
 			empty.Height = (int)size.Height;
 			Rectangle rectangle = cellPosition;
@@ -858,15 +858,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				imageAttributes.SetColorKey(ImageTransparentColor, ImageTransparentColor, ColorAdjustType.Default);
 			}
 			SmoothingMode smoothingMode = chartGraph.SmoothingMode;
-			CompositingQuality compositingQuality = chartGraph.Graphics.CompositingQuality;
-			InterpolationMode interpolationMode = chartGraph.Graphics.InterpolationMode;
+			CompositingQuality compositingQuality = chartGraph.CompositingQuality;
+			InterpolationMode interpolationMode = chartGraph.InterpolationMode;
 			chartGraph.SmoothingMode = SmoothingMode.AntiAlias;
-			chartGraph.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-			chartGraph.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+			chartGraph.CompositingQuality = CompositingQuality.HighQuality;
+			chartGraph.InterpolationMode = InterpolationMode.HighQualityBicubic;
 			chartGraph.DrawImage(image, empty, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
 			chartGraph.SmoothingMode = smoothingMode;
-			chartGraph.Graphics.CompositingQuality = compositingQuality;
-			chartGraph.Graphics.InterpolationMode = interpolationMode;
+			chartGraph.CompositingQuality = compositingQuality;
+			chartGraph.InterpolationMode = interpolationMode;
 		}
 
 		private void PaintCellSeriesSymbol(ChartGraphics chartGraph, int fontSizeReducedBy, Font legendAutoFont, SizeF singleWCharacterSize, PointF animationLocationAdjustment)
@@ -921,7 +921,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (image != null)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, chartGraph.Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					empty.Width = (int)size.Width;
 					empty.Height = (int)size.Height;
 					float num3 = 1f;
@@ -947,11 +947,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else
 			{
-				int num4 = (int)Math.Round(3f * chartGraph.Graphics.DpiX / 96f);
-				int num5 = (int)Math.Round(3f * chartGraph.Graphics.DpiX / 96f);
+				int num4 = (int)Math.Round(3f * chartGraph.GetDpiX() / 96f);
+				int num5 = (int)Math.Round(3f * chartGraph.GetDpiX() / 96f);
 				if (legendItem.Style == LegendImageStyle.Rectangle)
 				{
-					int num6 = (int)Math.Round(2f * chartGraph.Graphics.DpiX / 96f);
+					int num6 = (int)Math.Round(2f * chartGraph.GetDpiX() / 96f);
 					chartGraph.FillRectangleRelResource(chartGraph.GetRelativeRectangle(r), legendItem.Color, legendItem.BackHatchStyle, legendItem.Image, legendItem.backImageMode, legendItem.BackImageTransparentColor, legendItem.backImageAlign, legendItem.backGradientType, legendItem.backGradientEndColor, legendItem.borderColor, (legendItem.BorderWidth > num6) ? num6 : legendItem.BorderWidth, legendItem.BorderStyle, legendItem.ShadowColor, (legendItem.ShadowOffset > num4) ? num4 : legendItem.ShadowOffset, PenAlignment.Inset);
 				}
 				if (legendItem.Style == LegendImageStyle.Line)
@@ -995,7 +995,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						{
 							Image obj = GetLegend().Common.ImageLoader.LoadImage(legendItem.markerImage);
 							SizeF size2 = default(SizeF);
-							ImageLoader.GetAdjustedImageSize(obj, chartGraph.Graphics, ref size2);
+							ImageLoader.GetAdjustedImageSize(obj, ref size2);
 							empty2.Width = (int)size2.Width;
 							empty2.Height = (int)size2.Height;
 							float num9 = 1f;

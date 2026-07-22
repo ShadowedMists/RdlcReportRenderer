@@ -358,7 +358,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							if (graphics != null)
 							{
 								SizeF size = default(SizeF);
-								if (imageLoader.GetAdjustedImageSize(Image, graphics.Graphics, ref size))
+								if (imageLoader.GetAdjustedImageSize(Image, ref size))
 								{
 									SizeF relativeSize = graphics.GetRelativeSize(size);
 									return new RectangleF(float.NaN, float.NaN, relativeSize.Width, relativeSize.Height);

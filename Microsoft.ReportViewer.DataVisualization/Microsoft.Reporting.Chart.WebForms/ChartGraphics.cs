@@ -398,7 +398,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (imageScaleRect == RectangleF.Empty)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					imageScaleRect.Width = size.Width;
 					imageScaleRect.Height = size.Height;
 				}
@@ -1229,7 +1229,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			SizeF size = default(SizeF);
 			if (image.Length > 0)
 			{
-				ImageLoader.GetAdjustedImageSize(image2, Graphics, ref size);
+				ImageLoader.GetAdjustedImageSize(image2, ref size);
 				rectangleF2.Width -= image2.Size.Width;
 				rectangleF2.X += image2.Size.Width;
 				if (rectangleF2.Width < 1f)
@@ -1893,7 +1893,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF2.Width = Math.Min(rectangleF.Width, size.Width);
 					rectangleF2.Height = Math.Min(rectangleF.Height, size.Height);
 					if (rectangleF2.Width < rectangleF.Width)
@@ -2089,7 +2089,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF2.Width = Math.Min(rectangleF.Width, size.Width);
 					rectangleF2.Height = Math.Min(rectangleF.Height, size.Height);
 					if (rectangleF2.Width < rectangleF.Width)
@@ -2620,7 +2620,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF2.Width = size.Width;
 					rectangleF2.Height = size.Height;
 					if (rectangleF2.Width < rectangleF.Width)
@@ -2752,7 +2752,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF2.Width = size.Width;
 					rectangleF2.Height = size.Height;
 					if (rectangleF2.Width < rectangleF.Width)
@@ -2893,7 +2893,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF.Width = size.Width;
 					rectangleF.Height = size.Height;
 					if (rectangleF.Width < bounds2.Width)
@@ -3035,7 +3035,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (backImageMode == ChartImageWrapMode.Unscaled)
 				{
 					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, Graphics, ref size);
+					ImageLoader.GetAdjustedImageSize(image, ref size);
 					rectangleF.Width = size.Width;
 					rectangleF.Height = size.Height;
 					if (rectangleF.Width < bounds2.Width)
@@ -3229,7 +3229,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				IBorderType borderType = common.BorderTypeRegistry.GetBorderType(borderSkin.SkinStyle.ToString());
 				if (borderType != null)
 				{
-					borderType.Resolution = Graphics.DpiX;
+					borderType.Resolution = GetDpiX();
 					borderType.DrawBorder(this, borderSkin, absRect, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle);
 				}
 			}

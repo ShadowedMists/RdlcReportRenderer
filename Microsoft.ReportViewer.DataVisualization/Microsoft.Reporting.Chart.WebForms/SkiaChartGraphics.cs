@@ -167,6 +167,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 		public Region Clip { get => throw NotReachable(); set => throw NotReachable(); }
 		public Graphics Graphics { get => throw NotReachable(); set => throw NotReachable(); }
 		public bool IsClipEmpty => throw NotReachable();
+		public CompositingQuality CompositingQuality { get => throw NotReachable(); set => throw NotReachable(); }
+		public InterpolationMode InterpolationMode { get => throw NotReachable(); set => throw NotReachable(); }
+		public float GetDpiX() => throw NotReachable();
 
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2) => throw NotReachable();
 		public void DrawLine(Pen pen, float x1, float y1, float x2, float y2) => throw NotReachable();

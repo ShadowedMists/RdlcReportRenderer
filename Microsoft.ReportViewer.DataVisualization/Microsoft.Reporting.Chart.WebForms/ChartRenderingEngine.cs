@@ -108,6 +108,32 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		public CompositingQuality CompositingQuality
+		{
+			get
+			{
+				return RenderingObject.CompositingQuality;
+			}
+			set
+			{
+				RenderingObject.CompositingQuality = value;
+			}
+		}
+
+		public InterpolationMode InterpolationMode
+		{
+			get
+			{
+				return RenderingObject.InterpolationMode;
+			}
+			set
+			{
+				RenderingObject.InterpolationMode = value;
+			}
+		}
+
+		public float GetDpiX() => RenderingObject.GetDpiX();
+
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2)
 		{
 			RenderingObject.DrawLine(pen, pt1, pt2);

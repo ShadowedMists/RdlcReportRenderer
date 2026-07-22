@@ -217,7 +217,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						size.Height = point2.MarkerSize;
 						if (point2.MarkerImage.Length > 0)
 						{
-							common.ImageLoader.GetAdjustedImageSize(point2.MarkerImage, graph.Graphics, ref size);
+							common.ImageLoader.GetAdjustedImageSize(point2.MarkerImage, ref size);
 						}
 						PointF empty2 = PointF.Empty;
 						empty2.X = x;
@@ -489,7 +489,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Height = point.MarkerSize;
 				if (point.MarkerImage.Length > 0)
 				{
-					common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, graph.Graphics, ref size);
+					common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, ref size);
 				}
 				size = graph.GetRelativeSize(size);
 				labelSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
@@ -677,7 +677,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						size.Height = point2.MarkerSize;
 						if (point2.MarkerImage.Length > 0)
 						{
-							common.ImageLoader.GetAdjustedImageSize(point2.MarkerImage, graph.Graphics, ref size);
+							common.ImageLoader.GetAdjustedImageSize(point2.MarkerImage, ref size);
 						}
 						PointF empty2 = PointF.Empty;
 						empty2.X = x;
@@ -961,7 +961,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Height = point.MarkerSize;
 				if (point.MarkerImage.Length > 0 && common.graph != null)
 				{
-					common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, common.graph.Graphics, ref size);
+					common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, ref size);
 				}
 				if (area.Area3DStyle.Enable3D)
 				{

@@ -297,7 +297,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 					else
 					{
-						common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, graph.Graphics, ref size);
+						common.ImageLoader.GetAdjustedImageSize(point.MarkerImage, ref size);
 					}
 					size = graph.GetRelativeSize(size);
 					PointF empty = PointF.Empty;
@@ -861,7 +861,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				else
 				{
-					common.ImageLoader.GetAdjustedImageSize(dataPoint.MarkerImage, graph.Graphics, ref size);
+					common.ImageLoader.GetAdjustedImageSize(dataPoint.MarkerImage, ref size);
 				}
 				size = graph.GetRelativeSize(size);
 				PointF empty = PointF.Empty;
@@ -916,7 +916,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				else
 				{
-					common.ImageLoader.GetAdjustedImageSize(dataPoint.MarkerImage, graph.Graphics, ref size);
+					common.ImageLoader.GetAdjustedImageSize(dataPoint.MarkerImage, ref size);
 				}
 				size = graph.GetRelativeSize(size);
 			}
