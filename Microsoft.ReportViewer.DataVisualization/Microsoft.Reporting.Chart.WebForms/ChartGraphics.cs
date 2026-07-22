@@ -3261,10 +3261,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return result;
 		}
 
-		internal void DrawPieRel(RectangleF rect, float startAngle, float sweepAngle, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, bool shadow, double shadowOffset, bool doughnut, float doughnutRadius, bool explodedShadow, PieDrawingStyle pieDrawingStyle, out GraphicsPath controlGraphicsPath)
+		internal void DrawPieRel(RectangleF rect, float startAngle, float sweepAngle, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, bool shadow, double shadowOffset, bool doughnut, float doughnutRadius, bool explodedShadow, PieDrawingStyle pieDrawingStyle, out IGraphicsPath controlGraphicsPath)
 		{
 			controlGraphicsPath = null;
-			Pen pen = null;
 			RectangleF absoluteRectangle = GetAbsoluteRectangle(rect);
 			if ((double)doughnutRadius == 100.0)
 			{
@@ -3274,35 +3273,35 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				return;
 			}
-			Brush brush;
+			IBrush brush;
 			if (backHatchStyle != 0)
 			{
-				brush = GetHatchBrush(backHatchStyle, backColor, backGradientEndColor);
+				brush = GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
 			}
 			else if (backGradientEndColor.IsEmpty || backGradientType == GradientType.None)
 			{
-				brush = ((backImage.Length <= 0 || backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled) ? new SolidBrush(backColor) : GetTextureBrush(backImage, backImageTranspColor, backImageMode, backColor));
+				brush = ((backImage.Length <= 0 || backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled) ? resourceFactory.CreateSolidBrush(backColor) : GetTextureBrushResource(backImage, backImageTranspColor, backImageMode, backColor));
 			}
 			else if (backGradientType == GradientType.Center)
 			{
-				brush = GetPieGradientBrush(absoluteRectangle, backColor, backGradientEndColor);
+				brush = GetPieGradientBrushResource(absoluteRectangle, backColor, backGradientEndColor);
 			}
 			else
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 				graphicsPath.AddPie(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height, startAngle, sweepAngle);
-				brush = GetGradientBrush(graphicsPath.GetBounds(), backColor, backGradientEndColor, backGradientType);
+				brush = GetGradientBrushResource(graphicsPath.GetBounds(), backColor, backGradientEndColor, backGradientType);
 				graphicsPath?.Dispose();
 			}
-			pen = new Pen(borderColor, borderWidth);
+			IPen pen = resourceFactory.CreatePen(borderColor, borderWidth);
 			pen.DashStyle = GetPenStyle(borderStyle);
 			pen.LineJoin = LineJoin.Round;
 			if (doughnut)
 			{
-				GraphicsPath graphicsPath2 = null;
+				IGraphicsPath graphicsPath2 = null;
 				try
 				{
-					graphicsPath2 = new GraphicsPath();
+					graphicsPath2 = resourceFactory.CreatePath();
 					graphicsPath2.AddArc(absoluteRectangle.X + absoluteRectangle.Width * doughnutRadius / 200f - 1f, absoluteRectangle.Y + absoluteRectangle.Height * doughnutRadius / 200f - 1f, absoluteRectangle.Width - absoluteRectangle.Width * doughnutRadius / 100f + 2f, absoluteRectangle.Height - absoluteRectangle.Height * doughnutRadius / 100f + 2f, startAngle, sweepAngle);
 					graphicsPath2.AddArc(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height, startAngle + sweepAngle, 0f - sweepAngle);
 					graphicsPath2.CloseFigure();
@@ -3350,7 +3349,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void DrawPieRel(RectangleF rect, float startAngle, float sweepAngle, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, bool shadow, double shadowOffset, bool doughnut, float doughnutRadius, bool explodedShadow, PieDrawingStyle pieDrawingStyle)
 		{
-			GraphicsPath controlGraphicsPath = null;
+			IGraphicsPath controlGraphicsPath = null;
 			try
 			{
 				DrawPieRel(rect, startAngle, sweepAngle, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment, shadow, shadowOffset, doughnut, doughnutRadius, explodedShadow, pieDrawingStyle, out controlGraphicsPath);
@@ -3361,7 +3360,19 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		private void DrawPieGradientEffects(PieDrawingStyle pieDrawingStyle, RectangleF position, float startAngle, float sweepAngle, float doughnutRadius, GraphicsPath doughnutPath)
+		/// <summary>
+		/// Concrete-<see cref="GraphicsPath"/> sibling of the <c>out IGraphicsPath</c> overload, kept for
+		/// <c>SunburstChart.RenderSlice</c>, which threads the returned path into <c>CanLabelFitInSlice</c>
+		/// and hit-testing — out of scope for this increment (E1). Bridges at the sink: only meaningful on
+		/// the Gdi backend (see chart-gdi-type-abstraction.md E1 open items).
+		/// </summary>
+		internal void DrawPieRel(RectangleF rect, float startAngle, float sweepAngle, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, bool shadow, double shadowOffset, bool doughnut, float doughnutRadius, bool explodedShadow, PieDrawingStyle pieDrawingStyle, out GraphicsPath controlGraphicsPath)
+		{
+			DrawPieRel(rect, startAngle, sweepAngle, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment, shadow, shadowOffset, doughnut, doughnutRadius, explodedShadow, pieDrawingStyle, out IGraphicsPath interfacePath);
+			controlGraphicsPath = (interfacePath as GdiGraphicsPath)?.NativePath;
+		}
+
+		private void DrawPieGradientEffects(PieDrawingStyle pieDrawingStyle, RectangleF position, float startAngle, float sweepAngle, float doughnutRadius, IGraphicsPath doughnutPath)
 		{
 			switch (pieDrawingStyle)
 			{
@@ -3370,14 +3381,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				float num3 = Math.Min(position.Width, position.Height) * 0.05f;
 				RectangleF rectangleF = position;
 				rectangleF.Inflate(0f - num3, 0f - num3);
-				using (GraphicsPath graphicsPath5 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath5 = resourceFactory.CreatePath())
 				{
 					graphicsPath5.AddEllipse(rectangleF);
-					using (GraphicsPath graphicsPath6 = new GraphicsPath())
+					using (IGraphicsPath graphicsPath6 = resourceFactory.CreatePath())
 					{
 						if (doughnutRadius < 0f)
 						{
-							graphicsPath6.AddPie(Rectangle.Round(rectangleF), startAngle, sweepAngle);
+							Rectangle rectangle = Rectangle.Round(rectangleF);
+							graphicsPath6.AddPie(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, startAngle, sweepAngle);
 						}
 						else
 						{
@@ -3385,7 +3397,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							graphicsPath6.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle + sweepAngle, 0f - sweepAngle);
 						}
 						rectangleF.Inflate(1f, 1f);
-						using (LinearGradientBrush linearGradientBrush = new LinearGradientBrush(rectangleF, Color.Red, Color.Green, LinearGradientMode.Vertical))
+						using (ILinearGradientBrush linearGradientBrush = resourceFactory.CreateLinearGradientBrush(rectangleF, Color.Red, Color.Green, 90f))
 						{
 							ColorBlend colorBlend = new ColorBlend(3);
 							colorBlend.Colors[0] = Color.FromArgb(100, Color.Black);
@@ -3409,15 +3421,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					num2 = num * doughnutRadius / 100f / 8f;
 				}
-				using (GraphicsPath graphicsPath = new GraphicsPath())
+				using (IGraphicsPath graphicsPath = resourceFactory.CreatePath())
 				{
 					graphicsPath.AddEllipse(position);
-					using (GraphicsPath graphicsPath2 = new GraphicsPath())
+					using (IGraphicsPath graphicsPath2 = resourceFactory.CreatePath())
 					{
 						graphicsPath2.AddArc(position.X + num2, position.Y + num2, position.Width - num2 * 2f, position.Height - num2 * 2f, startAngle, sweepAngle);
 						graphicsPath2.AddArc(position.X, position.Y, position.Width, position.Height, startAngle + sweepAngle, 0f - sweepAngle);
 						graphicsPath2.CloseFigure();
-						using (PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath))
+						using (IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath))
 						{
 							pathGradientBrush.CenterColor = Color.Transparent;
 							pathGradientBrush.SurroundColors = new Color[1]
@@ -3439,17 +3451,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						break;
 					}
-					using (GraphicsPath graphicsPath3 = new GraphicsPath())
+					using (IGraphicsPath graphicsPath3 = resourceFactory.CreatePath())
 					{
 						RectangleF rect = position;
 						rect.Inflate((0f - position.Width) * doughnutRadius / 200f + num2, (0f - position.Height) * doughnutRadius / 200f + num2);
 						graphicsPath3.AddEllipse(rect);
-						using (GraphicsPath graphicsPath4 = new GraphicsPath())
+						using (IGraphicsPath graphicsPath4 = resourceFactory.CreatePath())
 						{
 							graphicsPath4.AddArc(rect.X + num2, rect.Y + num2, rect.Width - 2f * num2, rect.Height - 2f * num2, startAngle, sweepAngle);
 							graphicsPath4.AddArc(rect.X, rect.Y, rect.Width, rect.Height, startAngle + sweepAngle, 0f - sweepAngle);
 							graphicsPath4.CloseFigure();
-							using (PathGradientBrush pathGradientBrush2 = new PathGradientBrush(graphicsPath3))
+							using (IPathGradientBrush pathGradientBrush2 = resourceFactory.CreatePathGradientBrush(graphicsPath3))
 							{
 								pathGradientBrush2.CenterColor = Color.FromArgb(100, Color.Black);
 								pathGradientBrush2.SurroundColors = new Color[1]
@@ -3476,9 +3488,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private void DrawPieSoftShadow(double shadowOffset, float startAngle, float sweepAngle, bool explodedShadow, RectangleF absRect, Color backColor)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			graphicsPath.AddEllipse(absRect.X, absRect.Y, absRect.Width, absRect.Height);
-			PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
+			IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath);
 			Color[] colors = new Color[3]
 			{
 				Color.FromArgb(0, backColor),
