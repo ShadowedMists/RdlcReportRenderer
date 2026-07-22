@@ -709,6 +709,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 			return arrayList;
 		}
 
+		/// <summary>
+		/// The <paramref name="g"/> parameter is retained for compatibility with the (single, internal)
+		/// caller's shape, but is no longer assigned: it's always the same <see cref="Graphics"/> already
+		/// live on <see cref="Graph"/>.<c>Graphics</c> at the point of the call (see
+		/// <see cref="DrawSelection()"/>), so re-assigning it back was a no-op round trip.
+		/// </summary>
 		internal virtual void DrawSelection(Graphics g)
 		{
 			if (Chart.isSelectionMode)
@@ -726,7 +732,6 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 			{
 				return;
 			}
-			graph.Graphics = g;
 			foreach (PointF marker in GetMarkers(graph))
 			{
 				int markerSize = 5;
