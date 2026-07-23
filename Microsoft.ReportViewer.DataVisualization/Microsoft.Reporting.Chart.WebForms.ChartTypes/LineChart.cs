@@ -20,7 +20,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		protected bool drawShadowOnly;
 
-		private Pen linePen = new Pen(Color.Black);
+		private IPen linePen;
 
 		protected double hAxisMin;
 
@@ -332,6 +332,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				if (color != Color.Empty && borderWidth > 0 && borderStyle != 0)
 				{
+					if (linePen == null)
+					{
+						linePen = graph.ResourceFactory.CreatePen(Color.Black, 1f);
+					}
 					if (linePen.Color != color)
 					{
 						linePen.Color = color;
