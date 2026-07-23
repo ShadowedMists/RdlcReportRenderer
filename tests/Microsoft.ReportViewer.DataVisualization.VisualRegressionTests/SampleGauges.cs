@@ -96,5 +96,59 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             container.SaveAsImage(stream);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises <c>DigitalSegment.cs</c>/<c>SegmentsCache.cs</c> end to end (see
+        /// tasks/gauge-gdi-type-abstraction.md Milestone B2 open item #7) — a
+        /// <see cref="NumericIndicatorStyle.Digital7Segment"/> indicator with a non-empty value (real
+        /// per-digit segment geometry via <c>DigitalSegment.GetSymbol7</c>) rendered twice in the same
+        /// frame so the same segment shape is drawn from a cache hit as well as a cache miss
+        /// (<c>SegmentsCache.GetSegment</c>/<c>SetSegment</c>), plus the LED-dim "blank" segment path
+        /// (<c>DigitalSegment.GetOrientedSegments</c>) via its <see cref="NumericIndicator.LedDimColor"/>
+        /// branch. Not previously exercised by any sample gauge — none of the other three set
+        /// <see cref="NumericIndicator.IndicatorStyle"/> away from its <c>Mechanical</c> default.
+        /// </summary>
+        internal static byte[] RenderDigital7SegmentNumericIndicator()
+        {
+            using var container = new GaugeContainer();
+            container.Width = 300;
+            container.Height = 150;
+
+            var circularGauge = new CircularGauge();
+            container.CircularGauges.Add(circularGauge);
+
+            var scale = new CircularScale();
+            circularGauge.Scales.Add(scale);
+
+            var pointer = new CircularPointer();
+            pointer.Value = 65;
+            circularGauge.Pointers.Add(pointer);
+
+            var indicator = container.NumericIndicators.Add("digital7");
+            indicator.IndicatorStyle = NumericIndicatorStyle.Digital7Segment;
+            indicator.LedDimColor = Color.FromArgb(40, 40, 40);
+            indicator.Digits = 3;
+            indicator.Decimals = 1;
+            indicator.Value = 42.5;
+            indicator.Location.X = 10f;
+            indicator.Location.Y = 40f;
+            indicator.Size.Width = 80f;
+            indicator.Size.Height = 20f;
+
+            var indicator2 = container.NumericIndicators.Add("digital7b");
+            indicator2.IndicatorStyle = NumericIndicatorStyle.Digital7Segment;
+            indicator2.LedDimColor = Color.FromArgb(40, 40, 40);
+            indicator2.Digits = 3;
+            indicator2.Decimals = 1;
+            indicator2.Value = 42.5;
+            indicator2.Location.X = 10f;
+            indicator2.Location.Y = 65f;
+            indicator2.Size.Width = 80f;
+            indicator2.Size.Height = 20f;
+
+            using var stream = new MemoryStream();
+            container.SaveAsImage(stream);
+            return stream.ToArray();
+        }
     }
 }
