@@ -34,5 +34,13 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             var result = ImageComparer.CompareToBaseline(actual, "CircularGaugeWithFrameImage.png");
             Assert.IsTrue(result.Matches, result.Message);
         }
+
+        [TestMethod]
+        public void Digital7SegmentNumericIndicator_MatchesBaseline()
+        {
+            var actual = SampleGauges.RenderDigital7SegmentNumericIndicator();
+            var result = ImageComparer.CompareToBaseline(actual, "Digital7SegmentNumericIndicator.png");
+            Assert.IsTrue(result.Matches, result.Message);
+        }
     }
 }

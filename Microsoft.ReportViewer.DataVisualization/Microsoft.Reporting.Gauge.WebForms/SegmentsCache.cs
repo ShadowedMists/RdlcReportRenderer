@@ -1,27 +1,38 @@
 using System;
 using System.Collections;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Numerics;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
+	/// <summary>
+	/// Converted alongside <c>DigitalSegment.cs</c> (Milestone B2 open item #7,
+	/// tasks/gauge-gdi-type-abstraction.md). <see cref="IGraphicsPath"/> has no <c>Clone()</c> member (not
+	/// in Appendix A.1's method list), so the cached-copy semantics that GDI+'s <c>GraphicsPath.Clone()</c>
+	/// provided are reconstructed via <see cref="IGaugeDrawingResourceFactory.CreatePath(PointF[], byte[])"/>
+	/// — feeding the cached path's own <c>PathPoints</c>/<c>PathTypes</c> back in builds an independent copy
+	/// without adding a new interface member. The translate-only <c>matrix</c> field (GDI+'s <c>Matrix</c> is
+	/// mutable, reused via <c>Reset()</c>/<c>Translate()</c>) is replaced by a fresh
+	/// <see cref="Matrix3x2.CreateTranslation(float, float)"/> built on each call — <see cref="Matrix3x2"/> is
+	/// a value type with no mutation methods, matching the pattern <c>GaugeGraphics.DrawPathShadowAbs</c>'s
+	/// interface-typed sibling already established.
+	/// </summary>
 	internal class SegmentsCache
 	{
 		private Hashtable cacheTable = new Hashtable();
 
-		private Matrix matrix = new Matrix();
-
 		private float size = -1f;
 
-		internal GraphicsPath GetSegment(Enum segments, PointF p, float size)
+		internal IGraphicsPath GetSegment(IGaugeDrawingResourceFactory resourceFactory, Enum segments, PointF p, float size)
 		{
 			CheckCache(size);
 			if (cacheTable.Contains(segments))
 			{
-				GraphicsPath obj = (GraphicsPath)((GraphicsPath)cacheTable[segments]).Clone();
-				matrix.Reset();
-				matrix.Translate(p.X, p.Y);
-				obj.Transform(matrix);
+				IGraphicsPath cached = (IGraphicsPath)cacheTable[segments];
+				IGraphicsPath obj = resourceFactory.CreatePath(cached.PathPoints, cached.PathTypes);
+				obj.Transform(Matrix3x2.CreateTranslation(p.X, p.Y));
 				return obj;
 			}
 			return null;
@@ -48,13 +59,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal void SetSegment(Enum segment, GraphicsPath path, PointF p, float size)
+		internal void SetSegment(IGaugeDrawingResourceFactory resourceFactory, Enum segment, IGraphicsPath path, PointF p, float size)
 		{
 			CheckCache(size);
-			GraphicsPath graphicsPath = (GraphicsPath)path.Clone();
-			matrix.Reset();
-			matrix.Translate(0f - p.X, 0f - p.Y);
-			graphicsPath.Transform(matrix);
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath(path.PathPoints, path.PathTypes);
+			graphicsPath.Transform(Matrix3x2.CreateTranslation(0f - p.X, 0f - p.Y));
 			cacheTable[segment] = graphicsPath;
 		}
 	}
