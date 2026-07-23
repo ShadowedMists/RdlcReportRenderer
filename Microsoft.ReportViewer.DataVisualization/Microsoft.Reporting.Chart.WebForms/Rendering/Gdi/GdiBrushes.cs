@@ -42,6 +42,11 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			NativeBrush = new LinearGradientBrush(rect, startColor, endColor, angle);
 		}
 
+		internal GdiLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2)
+		{
+			NativeBrush = new LinearGradientBrush(point1, point2, color1, color2);
+		}
+
 		public Blend Blend
 		{
 			get => NativeBrush.Blend;
