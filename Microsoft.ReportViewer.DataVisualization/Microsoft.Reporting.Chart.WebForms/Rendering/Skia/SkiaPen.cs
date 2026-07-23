@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using SkiaSharp;
@@ -108,6 +109,18 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public PenAlignment Alignment { get; set; }
 
 		public float[] DashPattern { get; set; }
+
+		public CustomLineCap CustomStartCap
+		{
+			get => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
+			set => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
+		}
+
+		public CustomLineCap CustomEndCap
+		{
+			get => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
+			set => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
+		}
 
 		private void ApplyDashStyle()
 		{

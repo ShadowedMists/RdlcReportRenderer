@@ -67,6 +67,18 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 			set => NativePen.DashPattern = value;
 		}
 
+		public CustomLineCap CustomStartCap
+		{
+			get => NativePen.CustomStartCap;
+			set => NativePen.CustomStartCap = value;
+		}
+
+		public CustomLineCap CustomEndCap
+		{
+			get => NativePen.CustomEndCap;
+			set => NativePen.CustomEndCap = value;
+		}
+
 		public IPen Clone()
 		{
 			GdiPen gdiPen = new GdiPen(Color, Width);
