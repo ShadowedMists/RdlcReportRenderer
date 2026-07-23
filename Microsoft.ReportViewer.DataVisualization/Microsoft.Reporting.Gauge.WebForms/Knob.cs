@@ -62,7 +62,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private bool selected;
 
-		private GraphicsPath[] hotRegions = new GraphicsPath[2];
+		private IGraphicsPath[] hotRegions = new IGraphicsPath[2];
 
 		[SRCategory("CategoryMisc")]
 		[SRDescription("DescriptionAttributeKnob_Name")]
@@ -1154,7 +1154,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (knobStyleAttrib.paths[0] != null)
 					{
-						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(knobStyleAttrib.paths[0]).Clone(), primary: true);
+						AddHotRegion(g.ResourceFactory.CreatePath(knobStyleAttrib.paths[0].PathPoints, knobStyleAttrib.paths[0].PathTypes), primary: true);
 					}
 				}
 			}
@@ -1244,7 +1244,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					GraphicsPath graphicsPath = new GraphicsPath();
 					graphicsPath.AddRectangle(rectangle);
 					graphicsPath.Transform(matrix);
-					AddHotRegion(graphicsPath, primary);
+					AddHotRegion(g.ResourceFactory.WrapPath(graphicsPath), primary);
 				}
 			}
 		}
@@ -1303,7 +1303,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal void AddHotRegion(GraphicsPath path, bool primary)
+		internal void AddHotRegion(IGraphicsPath path, bool primary)
 		{
 			if (primary)
 			{
@@ -1318,6 +1318,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		internal void SetAllHotRegions(GaugeGraphics g)
 		{
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, g.GetAbsolutePoint(GetScale().GetPivotPoint()), hotRegions[0], hotRegions[1]);
+			hotRegions[0]?.Dispose();
+			hotRegions[1]?.Dispose();
 			hotRegions[0] = null;
 			hotRegions[1] = null;
 		}

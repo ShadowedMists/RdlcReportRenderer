@@ -1719,7 +1719,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					g.FillRectangle(brush, new Rectangle(new Point(-1, -1), new Size(GetWidth() + 2, GetHeight() + 2)));
 				}
 				HotRegionList.Clear();
-				HotRegionList.SetHotRegion(this);
+				HotRegionList.SetHotRegion(this, Array.Empty<GraphicsPath>());
 				BackFrame.RenderFrame(g);
 				RenderBorder(g);
 				RenderElements(g, null, renderStaticElements: true);

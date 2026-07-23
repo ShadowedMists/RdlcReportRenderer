@@ -34,7 +34,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private bool selected;
 
-		private GraphicsPath[] hotRegions = new GraphicsPath[2];
+		private IGraphicsPath[] hotRegions = new IGraphicsPath[2];
 
 		[SRCategory("CategoryTypeSpecific")]
 		[SRDescription("DescriptionAttributeLinearPointer_Type")]
@@ -376,7 +376,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (barStyleAttrib.primaryPath != null)
 				{
-					AddHotRegion(g.ResourceFactory.UnwrapPath(barStyleAttrib.primaryPath), primary: true);
+					AddHotRegion(barStyleAttrib.primaryPath, primary: true);
 				}
 			}
 			else if (Type == LinearPointerType.Thermometer)
@@ -416,7 +416,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (thermometerStyleAttrib.primaryPath != null)
 				{
-					AddHotRegion(g.ResourceFactory.UnwrapPath(thermometerStyleAttrib.primaryPath), primary: true);
+					AddHotRegion(thermometerStyleAttrib.primaryPath, primary: true);
 				}
 			}
 			else
@@ -440,7 +440,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (markerStyleAttrib.path != null)
 				{
-					AddHotRegion(g.ResourceFactory.UnwrapPath(markerStyleAttrib.path), primary: true);
+					AddHotRegion(markerStyleAttrib.path, primary: true);
 				}
 			}
 			SetAllHotRegions(g);
@@ -727,7 +727,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				GraphicsPath graphicsPath = new GraphicsPath();
 				graphicsPath.AddRectangle(rectangle);
-				AddHotRegion(graphicsPath, primary: true);
+				AddHotRegion(g.ResourceFactory.WrapPath(graphicsPath), primary: true);
 			}
 		}
 
@@ -857,7 +857,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal void AddHotRegion(GraphicsPath path, bool primary)
+		internal void AddHotRegion(IGraphicsPath path, bool primary)
 		{
 			if (primary)
 			{
@@ -872,6 +872,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		internal void SetAllHotRegions(GaugeGraphics g)
 		{
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, PointF.Empty, hotRegions[0], hotRegions[1]);
+			hotRegions[0]?.Dispose();
+			hotRegions[1]?.Dispose();
 			hotRegions[0] = null;
 			hotRegions[1] = null;
 		}

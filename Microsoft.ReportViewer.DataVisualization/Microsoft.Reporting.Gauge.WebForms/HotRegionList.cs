@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -31,6 +33,24 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		public void SetHotRegion(object selectedObject, params GraphicsPath[] paths)
 		{
 			SetHotRegion(selectedObject, PointF.Empty, paths);
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="SetHotRegion(object, GraphicsPath[])"/> (Milestone B2 —
+		/// see gauge-gdi-type-abstraction.md item 1). Stored hot regions are only ever consumed via
+		/// <see cref="CheckHotRegions"/>'s point-containment check, never redrawn, so bridging back to a
+		/// concrete <see cref="GraphicsPath"/> for storage here is safe. Same <c>PathPoints</c>/<c>PathTypes</c>
+		/// bridge as Chart's <c>HotRegionsList.AddHotRegion(IGraphicsPath, ...)</c> overloads.
+		/// </summary>
+		public void SetHotRegion(object selectedObject, params IGraphicsPath[] paths)
+		{
+			SetHotRegion(selectedObject, PointF.Empty, paths);
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="SetHotRegion(object, PointF, GraphicsPath[])"/> (see remarks above).</summary>
+		public void SetHotRegion(object selectedObject, PointF pinPoint, params IGraphicsPath[] paths)
+		{
+			SetHotRegion(selectedObject, pinPoint, paths.Select(path => (path != null) ? new GraphicsPath(path.PathPoints, path.PathTypes) : null).ToArray());
 		}
 
 		public void SetHotRegion(object selectedObject, PointF pinPoint, params GraphicsPath[] paths)
