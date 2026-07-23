@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -352,7 +353,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private void DrawLabel(Placement placement, string labelStr, double value, float labelPos, float rotateLabelAngle, Font font, Color color, FontUnit fontUnit)
 		{
-			StringFormat stringFormat = new StringFormat();
+			GaugeGraphics graph = Common.Graph;
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Near;
 			float num = GetPositionFromValue(value);
@@ -365,12 +367,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				labels.Add(markerPosition);
 			}
-			GaugeGraphics graph = Common.Graph;
-			using (Brush brush2 = new SolidBrush(color))
+			using (IBrush brush2 = graph.ResourceFactory.CreateSolidBrush(color))
 			{
 				Font resizedFont = GetResizedFont(font, fontUnit);
 				try
 				{
+					IChartFont resizedChartFont = graph.ResourceFactory.WrapFont(resizedFont);
 					float num2 = 0f;
 					if (ParentGauge.GetOrientation() == GaugeOrientation.Vertical)
 					{
@@ -412,14 +414,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						{
 							if (base.ShadowOffset != 0f)
 							{
-								using (Brush brush = graph.GetShadowBrush())
+								using (IBrush brush = graph.GetShadowBrushResource())
 								{
 									RectangleF layoutRectangle = rectangleF;
 									layoutRectangle.Offset(base.ShadowOffset, base.ShadowOffset);
-									graph.DrawString(labelStr, resizedFont, brush, layoutRectangle, stringFormat);
+									graph.DrawString(labelStr, resizedChartFont, brush, layoutRectangle, stringFormat);
 								}
 							}
-							graph.DrawString(labelStr, resizedFont, brush2, rectangleF, stringFormat);
+							graph.DrawString(labelStr, resizedChartFont, brush2, rectangleF, stringFormat);
 							return;
 						}
 						TextRenderingHint textRenderingHint = graph.TextRenderingHint;
@@ -431,20 +433,20 @@ namespace Microsoft.Reporting.Gauge.WebForms
 							}
 							if (base.ShadowOffset != 0f)
 							{
-								using (Brush brush3 = graph.GetShadowBrush())
+								using (IBrush brush3 = graph.GetShadowBrushResource())
 								{
 									using (Matrix matrix2 = matrix.Clone())
 									{
 										matrix2.Translate(base.ShadowOffset, base.ShadowOffset);
 										matrix2.RotateAt(rotateLabelAngle, absolutePoint);
 										graph.Transform = matrix2;
-										graph.DrawString(labelStr, resizedFont, brush3, rectangleF, stringFormat);
+										graph.DrawString(labelStr, resizedChartFont, brush3, rectangleF, stringFormat);
 									}
 								}
 							}
 							matrix.RotateAt(rotateLabelAngle, absolutePoint);
 							graph.Transform = matrix;
-							graph.DrawString(labelStr, resizedFont, brush2, rectangleF, stringFormat);
+							graph.DrawString(labelStr, resizedChartFont, brush2, rectangleF, stringFormat);
 						}
 						finally
 						{
