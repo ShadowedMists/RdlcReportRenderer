@@ -13,6 +13,7 @@
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2 done; D3/E1/E2 open) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | 🔄 In progress (Milestones A-B3 done; several named gaps open) | HIGH |
 | 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 NOT STARTED | VERY HIGH |
+| 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF Phase 1 | HIGH |
 
 > The prior "Chart Library Migration (OxyPlot)" decision was retracted — see `docs/decisions.md`. Charts/gauges are rendered by vendored GDI+ engines this repo owns, not external libraries; the plan re-targets their existing rendering seams to SkiaSharp.
 
@@ -34,7 +35,7 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 
 **Gauge engine** (`tasks/gauge-gdi-type-abstraction.md`): Milestones A-A4 (foundation + clip-region), B1 (factory injection), B3 (the "atomic rewrite" of `KnobStyleAttrib`/`NeedleStyleAttrib`/`MarkerStyleAttrib`/`BarStyleAttrib`, 2026-07-22) are done, verified pixel-exact (55/55 tests, zero baseline diffs). B2 (real call-site conversion) is substantially done with 9 named open items remaining — most notably `HotRegionList`/`DrawRadialSelection` (systemic concrete-only hit-testing, its own future milestone) and `XamlRenderer.cs`/`XamlLayer.cs` (architecturally blocked, needs new gradient/transform/no-live-engine primitives).
 
-**Map engine** (`Microsoft.Reporting.Map.WebForms`) is a third, separate GDI+-coupled rendering engine discovered during this work; its scope (in scope for this initiative, or permanently Windows-only?) is still an open decision.
+**Map engine** (`Microsoft.Reporting.Map.WebForms`) is a third, separate GDI+-coupled rendering engine discovered during this work (347 files, ~22,400 lines) — a real, wired-in RDL `<Map>` feature (`MapMapper.cs` + ~20 sibling mappers), not dead code. **Decision (2026-07-22): deferred, LOW priority, scheduled after PDF Phase 1** — see `docs/decisions.md`. Its built-in Bing Maps tile-layer integration (`Microsoft.Reporting.Map.WebForms.BingMaps`) is independently broken: preliminary research indicates Bing Maps (Free and Enterprise) has been end-of-lifed for RDL/RDLC consumers, so a cross-platform migration wouldn't restore the feature's main value-add on its own. If revisited, the tile-service question needs its own decision first — a Google Maps adapter (commercial API, usage-based billing) or an OpenStreetMap adapter (tile-server-based, no API key, but self-hosting/usage-policy considerations at production volume) are the two candidate replacements — before any GDI+→interface migration work on Map itself would be worth starting.
 
 **Verification convention** (both engines, every increment): `dotnet build` 0 errors + full test suite (`VisualRegressionTests` + `Chart.Rdl.Tests`) passing + zero baseline PNG diffs. See `docs/rendering-abstractions.md` for the git-stash baseline-generation technique used for previously-uncovered render paths.
 

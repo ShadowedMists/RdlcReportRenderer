@@ -23,13 +23,13 @@ The new rendering abstractions are intended to support a gradual migration away 
 
 ## Chart, Gauge, and Map rendering (GDI+)
 
-There are **three separate, parallel GDI+-coupled rendering engines** in the solution, not one: Chart (`Microsoft.Reporting.Chart.WebForms`), Gauge (`Microsoft.Reporting.Gauge.WebForms`), and Map (`Microsoft.Reporting.Map.WebForms`). Chart and Gauge are actively being migrated to the Ports & Adapters design in `docs/rendering-abstractions.md`; Map has not been started and its scope (in scope for this initiative, or permanently Windows-only?) is still an open decision.
+There are **three separate, parallel GDI+-coupled rendering engines** in the solution, not one: Chart (`Microsoft.Reporting.Chart.WebForms`), Gauge (`Microsoft.Reporting.Gauge.WebForms`), and Map (`Microsoft.Reporting.Map.WebForms`). Chart and Gauge are actively being migrated to the Ports & Adapters design in `docs/rendering-abstractions.md`; Map's migration is deferred (LOW priority, scheduled after PDF Phase 1 — see `docs/decisions.md`), since its built-in Bing Maps tile-layer integration is independently end-of-lifed for RDL/RDLC consumers.
 
 | Area | Windows | Linux/macOS | Notes |
 | --- | --- | --- | --- |
 | Chart rendering | Yes | No | Full GDI+→interface migration in progress; see `tasks/chart-gdi-type-abstraction.md` |
 | Gauge rendering | Yes | No | Same migration, in progress; see `tasks/gauge-gdi-type-abstraction.md` |
-| Map rendering | Yes | No | Not started; scope undecided |
+| Map rendering | Yes | No | Deferred, LOW priority (after PDF Phase 1) — see `docs/decisions.md`; Bing Maps tile integration is end-of-lifed regardless, a Google Maps/OpenStreetMap adapter would be a prerequisite decision |
 | Chart/Gauge Skia backend | N/A | Spike only | A hand-built scene renders correctly on both platforms through Skia, validating the design, but no real `Chart`/`Gauge` object can use it yet |
 
 **Fundamental blocker (confirmed by a Phase 0 spike, 2026-07-18):** GDI+ cannot construct *any* `System.Drawing` object at all on Linux under .NET 10 — not even a bare `Font`/`Pen`/`Bitmap` — even with `libgdiplus` installed. This is deeper than a rendering-seam limitation: it blocks the whole `Chart.Save`/`ChartImage.GetImage` path today on non-Windows, independent of backend selection.
