@@ -1180,8 +1180,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (chartArea.CircularUsePolygons)
 			{
 				clip = graph.GetClipRegion();
-				GraphicsPath polygonCirclePath = graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber);
-				IGraphicsPath polygonCirclePathResource = graph.ResourceFactory.CreatePath(polygonCirclePath.PathPoints, polygonCirclePath.PathTypes);
+				IGraphicsPath polygonCirclePathResource = graph.GetPolygonCirclePathResource(relative, chartArea.CircularSectorsNumber);
 				graph.SetClipRegion(graph.ResourceFactory.CreateRegion(polygonCirclePathResource));
 			}
 			PointF absolutePoint = graph.GetAbsolutePoint(chartArea.circularCenter);
@@ -1248,8 +1247,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				if (chartArea.CircularUsePolygons)
 				{
-					GraphicsPath polygonCirclePath = graph.GetPolygonCirclePath(relative, chartArea.CircularSectorsNumber);
-					graphicsPath = graph.ResourceFactory.CreatePath(polygonCirclePath.PathPoints, polygonCirclePath.PathTypes);
+					graphicsPath = graph.GetPolygonCirclePathResource(relative, chartArea.CircularSectorsNumber);
 				}
 				else
 				{

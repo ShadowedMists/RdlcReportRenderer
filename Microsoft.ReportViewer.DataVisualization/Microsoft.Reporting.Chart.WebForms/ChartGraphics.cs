@@ -850,7 +850,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			base.SetTransform(myMatrix);
 			if (!backColor.IsEmpty || !borderColor.IsEmpty)
 			{
-				using (Brush brush = new SolidBrush(backColor))
+				using (IBrush brush = resourceFactory.CreateSolidBrush(backColor))
 				{
 					FillRectangle(brush, rect);
 				}
@@ -874,7 +874,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else
 			{
-				using (Brush brush2 = new SolidBrush(Color.Transparent))
+				using (IBrush brush2 = resourceFactory.CreateSolidBrush(Color.Transparent))
 				{
 					FillRectangle(brush2, rect);
 				}
@@ -897,9 +897,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				else
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
+					IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 					graphicsPath.AddRectangle(rect);
-					graphicsPath.Transform(myMatrix.ToGdiMatrix());
+					graphicsPath.Transform(myMatrix);
 					common.HotRegionsList.AddHotRegion(graphicsPath, relativePath: false, this, point, series.Name, pointIndex);
 				}
 				point.ToolTip = toolTip;
@@ -1630,7 +1630,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					num2 = 2f;
 				}
-				using (GraphicsPath graphicsPath4 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath4 = resourceFactory.CreatePath())
 				{
 					PointF[] points = new PointF[6]
 					{
@@ -1642,12 +1642,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 						new PointF(rect.Left + num2, rect.Bottom - num2)
 					};
 					graphicsPath4.AddPolygon(points);
-					using (SolidBrush brush4 = new SolidBrush(Color.FromArgb(100, Color.White)))
+					using (IBrush brush4 = resourceFactory.CreateSolidBrush(Color.FromArgb(100, Color.White)))
 					{
 						FillPath(brush4, graphicsPath4);
 					}
 				}
-				using (GraphicsPath graphicsPath5 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath5 = resourceFactory.CreatePath())
 				{
 					PointF[] points2 = new PointF[6]
 					{
@@ -1659,7 +1659,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						new PointF(rect.Right - num2, rect.Top + num2)
 					};
 					graphicsPath5.AddPolygon(points2);
-					using (SolidBrush brush5 = new SolidBrush(Color.FromArgb(80, Color.Black)))
+					using (IBrush brush5 = resourceFactory.CreateSolidBrush(Color.FromArgb(80, Color.Black)))
 					{
 						FillPath(brush5, graphicsPath5);
 					}
@@ -1718,7 +1718,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					num = rect.Width / 2f;
 				}
 				RectangleF rectangleF = rect;
-				using (GraphicsPath graphicsPath = new GraphicsPath())
+				using (IGraphicsPath graphicsPath = resourceFactory.CreatePath())
 				{
 					if (isVertical)
 					{
@@ -1733,12 +1733,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 						graphicsPath.AddLine(rectangleF.Right, rectangleF.Bottom, rectangleF.Left, rectangleF.Bottom);
 					}
 					graphicsPath.CloseAllFigures();
-					using (SolidBrush brush = new SolidBrush(Color.FromArgb(90, Color.Black)))
+					using (IBrush brush = resourceFactory.CreateSolidBrush(Color.FromArgb(90, Color.Black)))
 					{
 						FillPath(brush, graphicsPath);
 					}
 				}
-				using (GraphicsPath graphicsPath2 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath2 = resourceFactory.CreatePath())
 				{
 					if (isVertical)
 					{
@@ -1750,10 +1750,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 						graphicsPath2.AddLine(rectangleF.Right, rectangleF.Y, rectangleF.Right - num, rectangleF.Y + rectangleF.Height / 2f);
 						graphicsPath2.AddLine(rectangleF.Right - num, rectangleF.Y + rectangleF.Height / 2f, rectangleF.Right, rectangleF.Bottom);
 					}
-					using (SolidBrush brush2 = new SolidBrush(Color.FromArgb(50, Color.Black)))
+					using (IBrush brush2 = resourceFactory.CreateSolidBrush(Color.FromArgb(50, Color.Black)))
 					{
 						FillPath(brush2, graphicsPath2);
-						using (Pen pen = new Pen(Color.FromArgb(20, Color.Black), 1f))
+						using (IPen pen = resourceFactory.CreatePen(Color.FromArgb(20, Color.Black), 1f))
 						{
 							DrawPath(pen, graphicsPath2);
 							if (isVertical)
@@ -1765,7 +1765,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 								DrawLine(pen, rect.X + num, rect.Y + rect.Height / 2f, rect.X + num, rect.Bottom - rect.Height / 2f);
 							}
 						}
-						using (Pen pen2 = new Pen(Color.FromArgb(40, Color.White), 1f))
+						using (IPen pen2 = resourceFactory.CreatePen(Color.FromArgb(40, Color.White), 1f))
 						{
 							DrawPath(pen2, graphicsPath2);
 							if (isVertical)
@@ -1779,7 +1779,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						}
 					}
 				}
-				using (GraphicsPath graphicsPath3 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath3 = resourceFactory.CreatePath())
 				{
 					if (isVertical)
 					{
@@ -1791,14 +1791,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 						graphicsPath3.AddLine(rectangleF.X, rectangleF.Y, rectangleF.X + num, rectangleF.Y + rectangleF.Height / 2f);
 						graphicsPath3.AddLine(rectangleF.X + num, rectangleF.Y + rectangleF.Height / 2f, rectangleF.X, rectangleF.Bottom);
 					}
-					using (SolidBrush brush3 = new SolidBrush(Color.FromArgb(50, Color.Black)))
+					using (IBrush brush3 = resourceFactory.CreateSolidBrush(Color.FromArgb(50, Color.Black)))
 					{
 						FillPath(brush3, graphicsPath3);
-						using (Pen pen3 = new Pen(Color.FromArgb(20, Color.Black), 1f))
+						using (IPen pen3 = resourceFactory.CreatePen(Color.FromArgb(20, Color.Black), 1f))
 						{
 							DrawPath(pen3, graphicsPath3);
 						}
-						using (Pen pen4 = new Pen(Color.FromArgb(40, Color.White), 1f))
+						using (IPen pen4 = resourceFactory.CreatePen(Color.FromArgb(40, Color.White), 1f))
 						{
 							DrawPath(pen4, graphicsPath3);
 						}
@@ -2311,6 +2311,33 @@ namespace Microsoft.Reporting.Chart.WebForms
 			PointF point = new PointF(position.X + position.Width / 2f, position.Y + position.Height / 2f);
 			float num = 0f;
 			GraphicsPath graphicsPath = new GraphicsPath();
+			PointF pt = PointF.Empty;
+			float num2 = 0f;
+			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
+			for (num2 = 0f; num2 < 360f; num2 += num)
+			{
+				PointF[] array = new PointF[1]
+				{
+					pointF
+				};
+				Matrix3x2.Identity.RotateAt(num2, point).TransformPoints(array);
+				if (!pt.IsEmpty)
+				{
+					graphicsPath.AddLine(pt, array[0]);
+				}
+				pt = array[0];
+			}
+			graphicsPath.CloseAllFigures();
+			return graphicsPath;
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="GetPolygonCirclePath"/> (E1 — see chart-gdi-type-abstraction.md). Its path is fully self-contained (built and returned, never handed to a GDI+-typed callee), so it converts without rippling into any other signature.</summary>
+		internal IGraphicsPath GetPolygonCirclePathResource(RectangleF position, int polygonSectorsNumber)
+		{
+			PointF pointF = new PointF(position.X + position.Width / 2f, position.Y);
+			PointF point = new PointF(position.X + position.Width / 2f, position.Y + position.Height / 2f);
+			float num = 0f;
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			PointF pt = PointF.Empty;
 			float num2 = 0f;
 			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
@@ -3535,7 +3562,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			if (type != 0)
 			{
-				SolidBrush solidBrush = new SolidBrush(color);
+				IBrush solidBrush = resourceFactory.CreateSolidBrush(color);
 				PointF endPoint = PointF.Empty;
 				PointF absolutePoint = GetAbsolutePoint(position);
 				switch (type)
@@ -3887,7 +3914,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			base.SetTransform(myMatrix);
 			if (!backColor.IsEmpty || !borderColor.IsEmpty)
 			{
-				using (Brush brush = new SolidBrush(backColor))
+				using (IBrush brush = resourceFactory.CreateSolidBrush(backColor))
 				{
 					FillRectangle(brush, rect);
 				}
@@ -3911,7 +3938,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else
 			{
-				using (Brush brush2 = new SolidBrush(Color.Transparent))
+				using (IBrush brush2 = resourceFactory.CreateSolidBrush(Color.Transparent))
 				{
 					FillRectangle(brush2, rect);
 				}
@@ -3923,10 +3950,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			if (common != null && common.ProcessModeRegions)
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 				RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
 				graphicsPath.AddRectangle(rect);
-				graphicsPath.Transform(myMatrix.ToGdiMatrix());
+				graphicsPath.Transform(myMatrix);
 				common.HotRegionsList.AddHotRegion(this, graphicsPath, relativePath: false, node.LabelToolTip, node.LabelHref, "", node, ChartElementType.Nothing);
 				if (common.HotRegionsList.List != null)
 				{
