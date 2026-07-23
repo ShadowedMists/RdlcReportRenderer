@@ -5,8 +5,11 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Reflection;
 using System.Xml;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -21,6 +24,15 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		private XamlLayer[] layers;
 
 		private bool disposed;
+
+		/// <summary>
+		/// Threaded in from the caller's live <see cref="GaugeGraphics.ResourceFactory"/> (see
+		/// tasks/gauge-gdi-type-abstraction.md item 2) — <see cref="XamlRenderer"/>'s geometry-parsing
+		/// methods run before any <see cref="GaugeGraphics"/> instance exists, so the factory has to be
+		/// supplied at construction rather than read off an engine instance (same shape as
+		/// <c>DigitalSegment</c>'s static call chain).
+		/// </summary>
+		private readonly IGaugeDrawingResourceFactory resourceFactory;
 
 		public XmlDocument Xaml => xaml;
 
@@ -58,8 +70,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		public XamlRenderer(string xamlResource)
+		public XamlRenderer(string xamlResource, IGaugeDrawingResourceFactory resourceFactory)
 		{
+			this.resourceFactory = resourceFactory;
 			xaml = new XmlDocument();
 			Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(GaugeContainer).Namespace + ".Xaml." + xamlResource);
 			xaml.Load(manifestResourceStream);
@@ -167,9 +180,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			int num3 = 0;
 			int num4 = CountChildNodes(canvasNode);
-			xamlLayer.Paths = new GraphicsPath[num4];
-			xamlLayer.Brushes = new Brush[num4];
-			xamlLayer.Pens = new Pen[num4];
+			xamlLayer.Paths = new IGraphicsPath[num4];
+			xamlLayer.Brushes = new IBrush[num4];
+			xamlLayer.Pens = new IPen[num4];
 			foreach (XmlNode childNode in canvasNode.ChildNodes)
 			{
 				if (childNode.NodeType == XmlNodeType.Comment)
@@ -210,7 +223,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				PointF location = rectangleF.Location;
 				RectangleF originalShapeRect = rectangleF;
 				rectangleF = TransformRectangle(rectangleF, fromBounds, toBounds);
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 				if (childNode.Name == "Ellipse")
 				{
 					graphicsPath.AddEllipse(rectangleF);
@@ -241,30 +254,30 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					graphicsPath.AddRectangle(rectangleF);
 				}
 				xamlLayer.Paths[num3] = graphicsPath;
-				Brush brush = null;
+				IBrush brush = null;
 				XmlAttribute xmlAttribute7 = childNode.Attributes["Fill"];
 				XmlNode xmlNode3 = FindFillNode(childNode);
 				if (xmlAttribute7 != null)
 				{
 					Color color = ColorTranslator.FromHtml(xmlAttribute7.Value);
-					brush = new SolidBrush(TransformColor(color, layerIndex));
+					brush = resourceFactory.CreateSolidBrush(TransformColor(color, layerIndex));
 				}
 				else if (xmlNode3 != null)
 				{
 					brush = CreateBrush(FindChildNode(xmlNode3, "*"), layerIndex, rectangleF, originalShapeRect, fromBounds, toBounds);
 				}
 				xamlLayer.Brushes[num3] = brush;
-				Pen pen = null;
+				IPen pen = null;
 				XmlAttribute xmlAttribute8 = childNode.Attributes["Stroke"];
 				XmlNode xmlNode4 = FindStrokeNode(childNode);
 				if (xmlAttribute8 != null)
 				{
 					Color color2 = ColorTranslator.FromHtml(xmlAttribute8.Value);
-					pen = new Pen(TransformColor(color2, layerIndex));
+					pen = resourceFactory.CreatePen(TransformColor(color2, layerIndex), 1f);
 				}
 				else if (xmlNode4 != null)
 				{
-					pen = new Pen(CreateBrush(FindChildNode(xmlNode4, "*"), layerIndex, rectangleF, originalShapeRect, fromBounds, toBounds));
+					pen = resourceFactory.CreatePen(CreateBrush(FindChildNode(xmlNode4, "*"), layerIndex, rectangleF, originalShapeRect, fromBounds, toBounds), 1f);
 				}
 				XmlAttribute xmlAttribute9 = childNode.Attributes["StrokeThickness"];
 				if (xmlAttribute9 != null)
@@ -430,9 +443,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return array;
 		}
 
-		private Brush CreateBrush(XmlNode brushNode, int layerIndex, RectangleF shapeRect, RectangleF originalShapeRect, RectangleF fromBounds, RectangleF toBounds)
+		private IBrush CreateBrush(XmlNode brushNode, int layerIndex, RectangleF shapeRect, RectangleF originalShapeRect, RectangleF fromBounds, RectangleF toBounds)
 		{
-			Brush brush = null;
+			IBrush brush = null;
 			if (brushNode.Name == "LinearGradientBrush")
 			{
 				PointF startPoint = ParsePoint(brushNode.Attributes["StartPoint"].Value);
@@ -461,7 +474,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				endPoint = RelativeToAbsolute(endPoint, shapeRect);
 				float stretchFactor = CalculateStretchFactor(startPoint, endPoint, shapeRect);
 				StretchBrushPoints(stretchFactor, ref startPoint, ref endPoint);
-				brush = new LinearGradientBrush(startPoint, endPoint, Color.Black, Color.Black);
+				brush = resourceFactory.CreateLinearGradientBrush(startPoint, endPoint, Color.Black, Color.Black);
 				XmlNode xmlNode2 = FindChildNode(brushNode, "LinearGradientBrush.GradientStops");
 				if (xmlNode2 == null && FindChildNode(brushNode, "GradientStop") != null)
 				{
@@ -469,7 +482,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (xmlNode2 != null)
 				{
-					((LinearGradientBrush)brush).InterpolationColors = CreateColorBlend(xmlNode2, layerIndex, stretchFactor, radialBrush: false);
+					((ILinearGradientBrush)brush).InterpolationColors = CreateColorBlend(xmlNode2, layerIndex, stretchFactor, radialBrush: false);
 				}
 				XmlNode xmlNode3 = FindChildNode(brushNode, "LinearGradientBrush.RelativeTransform");
 				if (xmlNode3 != null && xmlNode3.HasChildNodes)
@@ -510,16 +523,16 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				rect.Offset(pointF2.X - pointF.X, pointF2.Y - pointF.Y);
 				float num5 = 8f;
 				rect.Inflate(rect.Size.Width * (num5 - 1f) / 2f, rect.Size.Height * (num5 - 1f) / 2f);
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 				graphicsPath.AddEllipse(rect);
-				brush = new PathGradientBrush(graphicsPath);
+				brush = resourceFactory.CreatePathGradientBrush(graphicsPath);
 				PointF relativePoint2 = new PointF(0.5f, 0.5f);
 				XmlAttribute xmlAttribute5 = brushNode.Attributes["GradientOrigin"];
 				if (xmlAttribute5 != null)
 				{
 					relativePoint2 = ParsePoint(xmlAttribute5.Value);
 				}
-				((PathGradientBrush)brush).CenterPoint = RelativeToAbsolute(relativePoint2, shapeRect);
+				((IPathGradientBrush)brush).CenterPoint = RelativeToAbsolute(relativePoint2, shapeRect);
 				XmlNode xmlNode4 = FindChildNode(brushNode, "RadialGradientBrush.GradientStops");
 				if (xmlNode4 == null && FindChildNode(brushNode, "GradientStop") != null)
 				{
@@ -527,7 +540,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				if (xmlNode4 != null)
 				{
-					((PathGradientBrush)brush).InterpolationColors = CreateColorBlend(xmlNode4, layerIndex, num5, radialBrush: true);
+					((IPathGradientBrush)brush).InterpolationColors = CreateColorBlend(xmlNode4, layerIndex, num5, radialBrush: true);
 				}
 				XmlNode xmlNode5 = FindChildNode(brushNode, "RadialGradientBrush.RelativeTransform");
 				if (xmlNode5 != null && xmlNode5.HasChildNodes)
@@ -576,7 +589,36 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		private void ApplyTransform(XmlNode transformNode, RectangleF shapeRect, RectangleF fromBounds, RectangleF toBounds, ref Brush brush)
+		/// <summary>
+		/// Composes <paramref name="matrix"/> (an arbitrary, already-built native GDI+ matrix — scale/shear/
+		/// general-matrix operations have no <see cref="Matrix3x2"/>-native equivalent worth re-deriving,
+		/// consistent with <c>DigitalSegment</c>/<c>SegmentsCache</c>'s established convention) into
+		/// <paramref name="brush"/>'s existing transform via the new interface-typed
+		/// <see cref="ILinearGradientBrush.MultiplyTransform"/>/<see cref="IPathGradientBrush.MultiplyTransform"/>
+		/// (see tasks/gauge-gdi-type-abstraction.md item 2) — bridged to <see cref="Matrix3x2"/> only at
+		/// this call boundary via <see cref="ToMatrix3x2"/>. No-op for brush kinds that don't support it
+		/// (mirrors the original code's silent no-op for e.g. solid/texture/hatch brushes).
+		/// </summary>
+		private void ApplyBrushMultiplyTransform(IBrush brush, Matrix matrix)
+		{
+			if (brush is ILinearGradientBrush linearGradientBrush)
+			{
+				linearGradientBrush.MultiplyTransform(ToMatrix3x2(matrix), MatrixOrder.Append);
+			}
+			else if (brush is IPathGradientBrush pathGradientBrush && AllowPathGradientTransform)
+			{
+				pathGradientBrush.MultiplyTransform(ToMatrix3x2(matrix), MatrixOrder.Append);
+			}
+		}
+
+		/// <summary>Bridges a native GDI+ <see cref="Matrix"/> to <see cref="Matrix3x2"/> at the interface call boundary — same convention as <c>DigitalSegment.ToMatrix3x2</c>.</summary>
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+		}
+
+		private void ApplyTransform(XmlNode transformNode, RectangleF shapeRect, RectangleF fromBounds, RectangleF toBounds, ref IBrush brush)
 		{
 			XmlNode xmlNode = FindChildNode(transformNode, "TransformGroup");
 			if (xmlNode == null)
@@ -615,21 +657,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				array2[5] = pointF.Y;
 				matrix = new Matrix(array2[0], array2[1], array2[2], array2[3], array2[4], array2[5]);
 			}
-			if (matrix != null && brush is LinearGradientBrush)
+			if (matrix != null)
 			{
-				Matrix matrix3 = ((LinearGradientBrush)brush).Transform.Clone();
-				matrix3.Multiply(matrix, MatrixOrder.Append);
-				((LinearGradientBrush)brush).Transform = matrix3;
-			}
-			else if (matrix != null && brush is PathGradientBrush && AllowPathGradientTransform)
-			{
-				Matrix matrix4 = ((PathGradientBrush)brush).Transform.Clone();
-				matrix4.Multiply(matrix, MatrixOrder.Append);
-				((PathGradientBrush)brush).Transform = matrix4;
+				ApplyBrushMultiplyTransform(brush, matrix);
 			}
 		}
 
-		private void ApplyRelativeTransform(XmlNode transformNode, RectangleF originalShapeRect, RectangleF shapeRect, RectangleF fromBounds, RectangleF toBounds, ref Brush brush)
+		private void ApplyRelativeTransform(XmlNode transformNode, RectangleF originalShapeRect, RectangleF shapeRect, RectangleF fromBounds, RectangleF toBounds, ref IBrush brush)
 		{
 			XmlNode xmlNode = FindChildNode(transformNode, "TransformGroup");
 			if (xmlNode == null)
@@ -663,21 +697,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				{
 					scaleY = float.Parse(xmlAttribute4.Value, CultureInfo.InvariantCulture);
 				}
-				if (brush is LinearGradientBrush)
+				using (Matrix matrix = new Matrix())
 				{
-					Matrix matrix = ((LinearGradientBrush)brush).Transform.Clone();
 					matrix.Translate(0f - relativePoint.X, 0f - relativePoint.Y, MatrixOrder.Append);
 					matrix.Scale(scaleX, scaleY, MatrixOrder.Append);
 					matrix.Translate(relativePoint.X, relativePoint.Y, MatrixOrder.Append);
-					((LinearGradientBrush)brush).Transform = matrix;
-				}
-				else if (brush is PathGradientBrush && AllowPathGradientTransform)
-				{
-					Matrix matrix2 = ((PathGradientBrush)brush).Transform.Clone();
-					matrix2.Translate(0f - relativePoint.X, 0f - relativePoint.Y, MatrixOrder.Append);
-					matrix2.Scale(scaleX, scaleY, MatrixOrder.Append);
-					matrix2.Translate(relativePoint.X, relativePoint.Y, MatrixOrder.Append);
-					((PathGradientBrush)brush).Transform = matrix2;
+					ApplyBrushMultiplyTransform(brush, matrix);
 				}
 			}
 			XmlNode xmlNode3 = FindChildNode(xmlNode, "SkewTransform");
@@ -697,21 +722,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					num2 = float.Parse(xmlAttribute6.Value, CultureInfo.InvariantCulture);
 				}
 				num2 = (float)Math.Tan((double)num2 * Math.PI / 180.0) * shapeRect.Height / shapeRect.Width;
-				if (brush is LinearGradientBrush)
+				using (Matrix matrix3 = new Matrix())
 				{
-					Matrix matrix3 = ((LinearGradientBrush)brush).Transform.Clone();
 					matrix3.Translate(0f - shapeRect.X, 0f - shapeRect.Y, MatrixOrder.Append);
 					matrix3.Shear(num, num2, MatrixOrder.Append);
 					matrix3.Translate(shapeRect.X, shapeRect.Y, MatrixOrder.Append);
-					((LinearGradientBrush)brush).Transform = matrix3;
-				}
-				else if (brush is PathGradientBrush && AllowPathGradientTransform)
-				{
-					Matrix matrix4 = ((PathGradientBrush)brush).Transform.Clone();
-					matrix4.Translate(0f - shapeRect.X, 0f - shapeRect.Y, MatrixOrder.Append);
-					matrix4.Shear(num, num2, MatrixOrder.Append);
-					matrix4.Translate(shapeRect.X, shapeRect.Y, MatrixOrder.Append);
-					((PathGradientBrush)brush).Transform = matrix4;
+					ApplyBrushMultiplyTransform(brush, matrix3);
 				}
 			}
 			XmlNode xmlNode4 = FindChildNode(xmlNode, "RotateTransform");
@@ -735,17 +751,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				{
 					angle = float.Parse(xmlAttribute9.Value, CultureInfo.InvariantCulture);
 				}
-				if (brush is LinearGradientBrush)
+				using (Matrix matrix5 = new Matrix())
 				{
-					Matrix matrix5 = ((LinearGradientBrush)brush).Transform.Clone();
 					matrix5.RotateAt(angle, relativePoint2, MatrixOrder.Append);
-					((LinearGradientBrush)brush).Transform = matrix5;
-				}
-				else if (brush is PathGradientBrush && AllowPathGradientTransform)
-				{
-					Matrix matrix6 = ((PathGradientBrush)brush).Transform.Clone();
-					matrix6.RotateAt(angle, relativePoint2, MatrixOrder.Append);
-					((PathGradientBrush)brush).Transform = matrix6;
+					ApplyBrushMultiplyTransform(brush, matrix5);
 				}
 			}
 			XmlNode xmlNode5 = FindChildNode(xmlNode, "TranslateTransform");
@@ -765,17 +774,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				relativePoint3 = RelativeToAbsolute(relativePoint3, shapeRect);
 				relativePoint3.X -= shapeRect.X;
 				relativePoint3.Y -= shapeRect.Y;
-				if (brush is LinearGradientBrush)
+				using (Matrix matrix7 = new Matrix())
 				{
-					Matrix matrix7 = ((LinearGradientBrush)brush).Transform.Clone();
 					matrix7.Translate(relativePoint3.X, relativePoint3.Y, MatrixOrder.Append);
-					((LinearGradientBrush)brush).Transform = matrix7;
-				}
-				else if (brush is PathGradientBrush && AllowPathGradientTransform)
-				{
-					Matrix matrix8 = ((PathGradientBrush)brush).Transform.Clone();
-					matrix8.Translate(relativePoint3.X, relativePoint3.Y, MatrixOrder.Append);
-					((PathGradientBrush)brush).Transform = matrix8;
+					ApplyBrushMultiplyTransform(brush, matrix7);
 				}
 			}
 		}
@@ -917,7 +919,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return streamGeometry.Split(' ');
 		}
 
-		private void IntepretStreamGeometry(string[] parts, PointF shapeOffset, float stretchFactorX, float stretchFactorY, bool includeOrigin, RectangleF fromBounds, RectangleF toBounds, ref GraphicsPath graphicsPath)
+		private void IntepretStreamGeometry(string[] parts, PointF shapeOffset, float stretchFactorX, float stretchFactorY, bool includeOrigin, RectangleF fromBounds, RectangleF toBounds, ref IGraphicsPath graphicsPath)
 		{
 			shapeOffset.X /= stretchFactorX;
 			shapeOffset.Y /= stretchFactorY;

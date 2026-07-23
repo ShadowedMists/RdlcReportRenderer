@@ -31,6 +31,14 @@ namespace Microsoft.Reporting.Rendering
 
 		void AddBezier(PointF pt1, PointF pt2, PointF pt3, PointF pt4);
 
+		/// <summary>
+		/// Abstracts <c>GraphicsPath.AddBeziers(PointF[])</c> — a chained sequence of cubic Béziers
+		/// sharing endpoints (distinct from the single 4-point <see cref="AddBezier"/>). Needed by
+		/// the Gauge engine's <c>XamlRenderer</c> StreamGeometry parser (see
+		/// tasks/gauge-gdi-type-abstraction.md item 2) — not in the original Appendix A.1 inventory.
+		/// </summary>
+		void AddBeziers(PointF[] points);
+
 		void AddCurve(PointF[] points, float tension);
 
 		void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension);

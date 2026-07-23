@@ -1,22 +1,23 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class XamlLayer : IDisposable
 	{
-		private GraphicsPath[] paths;
+		private IGraphicsPath[] paths;
 
-		private Brush[] brushes;
+		private IBrush[] brushes;
 
-		private Pen[] pens;
+		private IPen[] pens;
 
 		private XamlLayer[] innerLayers;
 
 		private bool disposed;
 
-		public GraphicsPath[] Paths
+		public IGraphicsPath[] Paths
 		{
 			get
 			{
@@ -26,7 +27,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				if (paths != value && paths != null)
 				{
-					GraphicsPath[] array = paths;
+					IGraphicsPath[] array = paths;
 					for (int i = 0; i < array.Length; i++)
 					{
 						array[i]?.Dispose();
@@ -36,7 +37,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		public Brush[] Brushes
+		public IBrush[] Brushes
 		{
 			get
 			{
@@ -46,7 +47,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				if (brushes != value && brushes != null)
 				{
-					Brush[] array = brushes;
+					IBrush[] array = brushes;
 					for (int i = 0; i < array.Length; i++)
 					{
 						array[i]?.Dispose();
@@ -56,7 +57,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		public Pen[] Pens
+		public IPen[] Pens
 		{
 			get
 			{
@@ -66,7 +67,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				if (pens != value && pens != null)
 				{
-					Pen[] array = pens;
+					IPen[] array = pens;
 					for (int i = 0; i < array.Length; i++)
 					{
 						array[i]?.Dispose();
@@ -122,12 +123,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		public void SetSingleBrush(Brush brush)
+		public void SetSingleBrush(ISolidBrush brush)
 		{
-			Brushes = new Brush[Paths.Length];
+			Brushes = new IBrush[Paths.Length];
 			for (int i = 0; i < Brushes.Length; i++)
 			{
-				Brushes[i] = (Brush)brush.Clone();
+				Brushes[i] = brush.Clone();
 			}
 		}
 

@@ -33,6 +33,9 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>
 			new GdiLinearGradientBrush(rect, startColor, endColor, angle);
 
+		public ILinearGradientBrush CreateLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2) =>
+			new GdiLinearGradientBrush(point1, point2, color1, color2);
+
 		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode) =>
 			new GdiTextureBrush(((GdiChartImage)image).NativeImage, wrapMode);
 
