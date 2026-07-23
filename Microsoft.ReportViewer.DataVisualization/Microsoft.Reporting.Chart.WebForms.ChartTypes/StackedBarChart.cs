@@ -434,7 +434,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						size.Width += size.Width / (float)text.Length;
 						empty = new RectangleF(pointF.X - size.Width / 2f, pointF.Y - size.Height / 2f - relativeSize.Height / 10f, size.Width, size.Height);
 						empty = area.smartLabels.GetLabelPosition(graph, pointF, size, format, adjustForDrawing: true);
-						graph.DrawPointLabelStringRel(common, text, point.Font, new SolidBrush(point.FontColor), pointF, format, angle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
+						IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+						ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+						bridgedFormat.Alignment = format.Alignment;
+						bridgedFormat.LineAlignment = format.LineAlignment;
+						bridgedFormat.FormatFlags = format.FormatFlags;
+						bridgedFormat.Trimming = format.Trimming;
+						graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), pointF, bridgedFormat, angle, empty, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
 					}
 				}
 			}

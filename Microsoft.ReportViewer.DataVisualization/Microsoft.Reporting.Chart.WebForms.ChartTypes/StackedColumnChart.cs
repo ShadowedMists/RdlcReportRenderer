@@ -442,7 +442,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						SizeF sizeF = new SizeF(labelSize.Width, labelSize.Height);
 						sizeF.Height += labelSize.Height / 8f;
 						sizeF.Width += sizeF.Width / (float)text.Length;
-						graph.DrawPointLabelStringRel(backPosition: new RectangleF(pointF.X - sizeF.Width / 2f, pointF.Y - sizeF.Height / 2f - labelSize.Height / 10f, sizeF.Width, sizeF.Height), common: common, text: text, font: point.Font, brush: new SolidBrush(point.FontColor), position: pointF, format: format, angle: angle, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: series, point: point, pointIndex: pointIndex);
+						IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+						ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+						bridgedFormat.Alignment = format.Alignment;
+						bridgedFormat.LineAlignment = format.LineAlignment;
+						bridgedFormat.FormatFlags = format.FormatFlags;
+						bridgedFormat.Trimming = format.Trimming;
+						graph.DrawPointLabelStringRel(backPosition: new RectangleF(pointF.X - sizeF.Width / 2f, pointF.Y - sizeF.Height / 2f - labelSize.Height / 10f, sizeF.Width, sizeF.Height), common: common, text: text, font: bridgedFont, brush: graph.ResourceFactory.CreateSolidBrush(point.FontColor), position: pointF, format: bridgedFormat, angle: angle, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: series, point: point, pointIndex: pointIndex);
 					}
 				}
 			}
