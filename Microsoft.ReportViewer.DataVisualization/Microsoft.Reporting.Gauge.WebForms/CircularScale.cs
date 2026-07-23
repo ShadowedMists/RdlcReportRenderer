@@ -311,34 +311,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, g.GetAbsolutePoint(GetPivotPoint()), barPath);
 		}
 
-		internal GraphicsPath GetCompoundPath(GaugeGraphics g)
-		{
-			GraphicsPath graphicsPath = new GraphicsPath();
-			PointF location = new PointF(GetPivotPoint().X - GetRadius(), GetPivotPoint().Y - GetRadius());
-			RectangleF relative = new RectangleF(location, new SizeF(GetRadius() * 2f, GetRadius() * 2f));
-			float num = 0f;
-			if (MajorTickMark.Visible)
-			{
-				num = (float)Math.Atan(MajorTickMark.Width / 2f / GetRadius());
-			}
-			if (MinorTickMark.Visible)
-			{
-				num = (float)Math.Max(num, Math.Atan(MinorTickMark.Width / 2f / GetRadius()));
-			}
-			num = Utils.Rad2Deg(num);
-			float startAngle = Utils.ToGDIAngle(base.StartPosition - num);
-			float startAngle2 = Utils.ToGDIAngle(base.EndPosition + num);
-			float num2 = base.EndPosition - base.StartPosition + num * 2f;
-			graphicsPath.StartFigure();
-			graphicsPath.AddArc(g.GetAbsoluteRectangle(relative), startAngle, num2);
-			relative.Inflate((0f - relative.Width) / 2f, (0f - relative.Height) / 2f);
-			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(relative);
-			absoluteRectangle.Inflate(15f, 15f);
-			graphicsPath.AddArc(absoluteRectangle, startAngle2, 360f - num2);
-			graphicsPath.CloseAllFigures();
-			return graphicsPath;
-		}
-
 		internal GraphicsPath GetShadowPath(GaugeGraphics g)
 		{
 			if (base.Visible && base.ShadowOffset != 0f && Width > 0f)
