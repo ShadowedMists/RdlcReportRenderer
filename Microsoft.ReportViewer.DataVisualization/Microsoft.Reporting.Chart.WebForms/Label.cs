@@ -1331,7 +1331,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					InitAnimation(graph, this.axis.CustomLabels.Count, num3);
 					graph.StartAnimation();
-					graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, (this.axis.autoLabelFont == null) ? font : this.axis.autoLabelFont, new SolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, stringFormat, num6, (!TruncatedLabels || customLabel.Row > LabelRow.First) ? RectangleF.Empty : rectangleF, customLabel, truncatedLeft, truncatedRight);
+					Font labelFont = (this.axis.autoLabelFont == null) ? font : this.axis.autoLabelFont;
+					ITextFormat bridgedLabelFormat = graph.ResourceFactory.CreateTextFormat();
+					bridgedLabelFormat.Alignment = stringFormat.Alignment;
+					bridgedLabelFormat.LineAlignment = stringFormat.LineAlignment;
+					bridgedLabelFormat.FormatFlags = stringFormat.FormatFlags;
+					bridgedLabelFormat.Trimming = stringFormat.Trimming;
+					graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont(labelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedLabelFormat, num6, (!TruncatedLabels || customLabel.Row > LabelRow.First) ? RectangleF.Empty : rectangleF, customLabel, truncatedLeft, truncatedRight);
 					graph.StopAnimation();
 					if (stringFormat2 != null)
 					{
