@@ -152,11 +152,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return path;
 		}
 
-		// --- Everything below is intentionally unreachable in the spike: ChartGraphics
-		// still allocates concrete GDI+ objects (new Pen/SolidBrush/Font/GraphicsPath, see
-		// ChartGraphics.cs fields + the B1b blocker notes in chart-gdi-type-abstraction.md)
-		// and calls the GDI+-typed IChartRenderingEngine overloads below, not the interface-
-		// typed ones above. A real backend can only retire these once B1b/B2/C1-C8 land.
+		// --- The GDI+-typed members immediately below are intentionally unreachable in the
+		// spike: ChartGraphics still allocates concrete GDI+ objects (new Pen/SolidBrush/Font/
+		// GraphicsPath, see ChartGraphics.cs fields + the B1b blocker notes in
+		// chart-gdi-type-abstraction.md) and calls the GDI+-typed IChartRenderingEngine
+		// overloads, not the interface-typed ones above. A real backend can only retire these
+		// once B1b/B2/C1-C8 land. The interface-typed (Rendering.*) overloads further down this
+		// block (DrawImage(IChartImage,...)/DrawPie/DrawArc/DrawLines/FillPie/FillRegion/
+		// DrawCurve(IPen,...)) are genuinely reachable from real E1-converted call paths and are
+		// implemented for real (E1, 2026-07-22) rather than left as NotReachable() stubs.
 
 		private static NotSupportedException NotReachable([System.Runtime.CompilerServices.CallerMemberName] string member = "") =>
 			new($"{member}: unreachable in the spike — ChartGraphics still calls the GDI+-typed IChartRenderingEngine surface " +
@@ -208,15 +212,97 @@ namespace Microsoft.Reporting.Chart.WebForms
 		public void TranslateTransform(float dx, float dy) => throw NotReachable();
 		public void BeginSelection(string hRef, string title) { }
 		public void EndSelection() { }
-		public void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr) => throw NotReachable();
-		public void DrawCurve(IPen pen, PointF[] points, int offset, int numberOfSegments, float tension) => throw NotReachable();
-		public void DrawImage(IChartImage image, Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttrs) => throw NotReachable();
-		public void DrawPie(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) => throw NotReachable();
-		public void DrawArc(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) => throw NotReachable();
-		public void DrawImage(IChartImage image, RectangleF rect) => throw NotReachable();
-		public void DrawLines(IPen pen, PointF[] points) => throw NotReachable();
-		public void FillRegion(IBrush brush, IClipRegion region) => throw NotReachable();
-		public void FillPie(IBrush brush, float x, float y, float width, float height, float startAngle, float sweepAngle) => throw NotReachable();
-		public void SetClip(IGraphicsPath path, CombineMode combineMode) => throw NotReachable();
+		public void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr) =>
+			DrawImageCore(image, destRect, srcX, srcY, srcWidth, srcHeight, imageAttr);
+		public void DrawCurve(IPen pen, PointF[] points, int offset, int numberOfSegments, float tension)
+		{
+			using SKPath path = BuildCurvePath(points, offset, numberOfSegments, tension);
+			canvas.DrawPath(path, Native(pen));
+		}
+		public void DrawImage(IChartImage image, Rectangle destRect, float srcX, float srcY, float srcWidth, float srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttrs) =>
+			DrawImageCore(image, destRect, srcX, srcY, srcWidth, srcHeight, imageAttrs);
+		public void DrawPie(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			canvas.DrawArc(new SKRect(x, y, x + width, y + height), startAngle, sweepAngle, useCenter: true, Native(pen));
+		public void DrawArc(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			canvas.DrawArc(new SKRect(x, y, x + width, y + height), startAngle, sweepAngle, useCenter: false, Native(pen));
+		public void DrawImage(IChartImage image, RectangleF rect) => canvas.DrawBitmap(((SkiaChartImage)image).NativeBitmap, SkiaConvert.ToSKRect(rect));
+		public void DrawLines(IPen pen, PointF[] points)
+		{
+			using SKPath path = new SKPath();
+			path.AddPoly(Array.ConvertAll(points, SkiaConvert.ToSKPoint), close: false);
+			canvas.DrawPath(path, Native(pen));
+		}
+		public void FillRegion(IBrush brush, IClipRegion region)
+		{
+			using SKPath path = ((SkiaClipRegion)region).ToDrawablePath();
+			canvas.DrawPath(path, Native(brush));
+		}
+		public void FillPie(IBrush brush, float x, float y, float width, float height, float startAngle, float sweepAngle) =>
+			canvas.DrawArc(new SKRect(x, y, x + width, y + height), startAngle, sweepAngle, useCenter: true, Native(brush));
+
+		// Mirrors the no-op GDI+-typed SetClip(GraphicsPath, CombineMode) above and SvgChartGraphics's
+		// identical no-op — real callers of this overload are the Gauge/Map engines' own separate
+		// GDI+-coupled pipelines (out of scope here); wiring SkiaClipRegion into the canvas's own clip
+		// stack (Save/Restore parity included) is the still-open follow-up noted on SkiaClipRegion/
+		// SetClipRegion above, not something this pass attempts.
+		public void SetClip(IGraphicsPath path, CombineMode combineMode) { }
+
+		/// <summary>Shared by both int/float <c>DrawImage(IChartImage,...)</c> overloads — GDI+'s <c>Graphics.DrawImage(Image, Rectangle, float×4, GraphicsUnit, ImageAttributes)</c> equivalent. <paramref name="srcUnit"/> is ignored (every real caller passes <see cref="GraphicsUnit.Pixel"/>).</summary>
+		private void DrawImageCore(IChartImage image, RectangleF destRect, float srcX, float srcY, float srcWidth, float srcHeight, IImageDrawOptions imageAttr)
+		{
+			SKBitmap bitmap = ((SkiaChartImage)image).NativeBitmap;
+			SkiaImageDrawOptions options = imageAttr as SkiaImageDrawOptions;
+			SKBitmap ownedBitmap = null;
+			if (options?.TransparentColor is Color transparentColor)
+			{
+				bitmap = ownedBitmap = ApplyColorKey(bitmap, SkiaConvert.ToSKColor(transparentColor));
+			}
+			try
+			{
+				SKRect srcRect = new SKRect(srcX, srcY, srcX + srcWidth, srcY + srcHeight);
+				canvas.DrawBitmap(bitmap, srcRect, SkiaConvert.ToSKRect(destRect));
+			}
+			finally
+			{
+				ownedBitmap?.Dispose();
+			}
+		}
+
+		private static SKBitmap ApplyColorKey(SKBitmap source, SKColor keyColor)
+		{
+			SKBitmap result = source.Copy();
+			for (int y = 0; y < result.Height; y++)
+			{
+				for (int x = 0; x < result.Width; x++)
+				{
+					SKColor pixel = result.GetPixel(x, y);
+					if (pixel.Red == keyColor.Red && pixel.Green == keyColor.Green && pixel.Blue == keyColor.Blue)
+					{
+						result.SetPixel(x, y, SKColors.Transparent);
+					}
+				}
+			}
+			return result;
+		}
+
+		/// <summary>Cardinal-spline-to-Bezier conversion matching GDI+'s <c>Graphics.DrawCurve</c> tension convention (each segment's control points scaled by <paramref name="tension"/>/3) — SkiaSharp has no native cardinal-spline primitive.</summary>
+		private static SKPath BuildCurvePath(PointF[] points, int offset, int numberOfSegments, float tension)
+		{
+			SKPath path = new SKPath();
+			path.MoveTo(SkiaConvert.ToSKPoint(points[offset]));
+			float t = tension / 3f;
+			for (int i = 0; i < numberOfSegments; i++)
+			{
+				int i0 = offset + i;
+				PointF p0 = i0 > 0 ? points[i0 - 1] : points[i0];
+				PointF p1 = points[i0];
+				PointF p2 = points[i0 + 1];
+				PointF p3 = i0 + 2 < points.Length ? points[i0 + 2] : points[i0 + 1];
+				SKPoint c1 = new SKPoint(p1.X + (p2.X - p0.X) * t, p1.Y + (p2.Y - p0.Y) * t);
+				SKPoint c2 = new SKPoint(p2.X - (p3.X - p1.X) * t, p2.Y - (p3.Y - p1.Y) * t);
+				path.CubicTo(c1, c2, SkiaConvert.ToSKPoint(p2));
+			}
+			return path;
+		}
 	}
 }

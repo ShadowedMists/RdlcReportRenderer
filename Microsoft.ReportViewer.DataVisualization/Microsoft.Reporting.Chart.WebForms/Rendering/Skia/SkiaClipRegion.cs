@@ -139,6 +139,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public void Dispose() => path?.Dispose();
 
+		/// <summary>Caller-owned copy of the region's current geometry (the sentinel rect if infinite), for drawing (e.g. <see cref="SkiaChartGraphics.FillRegion"/>) — never the live field, so the caller's disposal can't corrupt this region.</summary>
+		internal SKPath ToDrawablePath() => isInfinite ? EffectivePath() : new SKPath(path);
+
 		private static RectangleF ToRectangleF(SKRect rect) => new RectangleF(rect.Left, rect.Top, rect.Width, rect.Height);
 	}
 }
