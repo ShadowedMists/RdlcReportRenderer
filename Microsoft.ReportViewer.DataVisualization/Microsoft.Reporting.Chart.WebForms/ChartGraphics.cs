@@ -16,9 +16,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 	{
 		internal CommonElements common;
 
-		internal Pen pen;
-
-		private SolidBrush solidBrush;
+		// Milestone B1b: shared, reused-per-call pen (retyped from concrete Pen
+		// 2026-07-23) - avoids reallocating on every DrawLineAbs/FillRectangleRel
+		// call site. The former `solidBrush` sibling field was removed in the same
+		// pass: once FillRectangleAbs/DrawPathAbs stopped reading it directly (see
+		// their remarks), it had no remaining readers.
+		internal IPen pen;
 
 		// Migrated by C2: tracks the "current transform" via the interface-typed
 		// GetTransform()/SetTransform(Matrix3x2) pair rather than the still-concrete
@@ -27,11 +30,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 		// with GDI+'s default MatrixOrder.Prepend before converting any call site).
 		private Matrix3x2 myMatrix;
 
-		// Milestone B1: injectable port for creating rendering resources. Not yet
-		// consumed by the `pen`/`solidBrush` fields above or by this
-		// class's many local Pen/Brush/GraphicsPath allocations — those still
-		// depend on the per-type migrations (C4-C8, esp. GraphicsPath/C7 and the
-		// Brush family/C4) landing first. See tasks/chart-gdi-type-abstraction.md.
+		// Milestone B1: injectable port for creating rendering resources. Also backs
+		// the `pen` field above (B1b) and this class's many local Pen/Brush/GraphicsPath
+		// allocations. See tasks/chart-gdi-type-abstraction.md.
 		private readonly IDrawingResourceFactory resourceFactory;
 
 		// C3: exposed so the ~70 painter classes outside ChartGraphics (Axis, Title,
@@ -2976,140 +2977,20 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return Color.FromArgb(beginColor.A, 0, 0, 0);
 		}
 
+		/// <summary>
+		/// Milestone B1b (2026-07-23): previously used the shared <c>pen</c>/<c>solidBrush</c> fields
+		/// directly; now delegates to <see cref="FillRectangleAbsResource"/>, whose local
+		/// <see cref="IPen"/>/<see cref="IBrush"/> resources are a strict superset of what this method
+		/// needs. Both overloads share the exact same parameter list (named distinctly rather than
+		/// overloaded — see remarks on <see cref="FillRectangleAbsResource"/>), so this is a pure
+		/// one-line forward.
+		/// </summary>
 		internal void FillRectangleAbs(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment)
 		{
-			Brush brush = null;
-			Brush brush2 = null;
-			SmoothingMode smoothingMode = base.SmoothingMode;
-			base.SmoothingMode = SmoothingMode.None;
-			if (backColor.IsEmpty)
-			{
-				backColor = Color.White;
-			}
-			if (backGradientEndColor.IsEmpty)
-			{
-				backGradientEndColor = Color.White;
-			}
-			if (borderColor.IsEmpty)
-			{
-				borderColor = Color.White;
-				borderWidth = 0;
-			}
-			pen.Color = borderColor;
-			pen.Width = borderWidth;
-			pen.Alignment = penAlignment;
-			pen.DashStyle = GetPenStyle(borderStyle);
-			if (backGradientType == GradientType.None)
-			{
-				solidBrush.Color = backColor;
-				brush = solidBrush;
-			}
-			else
-			{
-				brush = GetGradientBrush(rect, backColor, backGradientEndColor, backGradientType);
-			}
-			if (backHatchStyle != 0)
-			{
-				brush = GetHatchBrush(backHatchStyle, backColor, backGradientEndColor);
-			}
-			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
-			{
-				brush2 = brush;
-				brush = GetTextureBrush(backImage, backImageTranspColor, backImageMode, backColor);
-			}
-			RectangleF rectangleF = new RectangleF(rect.X + (float)borderWidth, rect.Y + (float)borderWidth, rect.Width - (float)(borderWidth * 2), rect.Height - (float)(borderWidth * 2));
-			rectangleF.Width += 1f;
-			rectangleF.Height += 1f;
-			if (backImage.Length > 0 && (backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled))
-			{
-				Image image = common.ImageLoader.LoadImage(backImage);
-				ImageAttributes imageAttributes = new ImageAttributes();
-				if (backImageTranspColor != Color.Empty)
-				{
-					imageAttributes.SetColorKey(backImageTranspColor, backImageTranspColor, ColorAdjustType.Default);
-				}
-				RectangleF rectangleF2 = default(RectangleF);
-				rectangleF2.X = rectangleF.X;
-				rectangleF2.Y = rectangleF.Y;
-				rectangleF2.Width = rectangleF.Width;
-				rectangleF2.Height = rectangleF.Height;
-				if (backImageMode == ChartImageWrapMode.Unscaled)
-				{
-					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, ref size);
-					rectangleF2.Width = size.Width;
-					rectangleF2.Height = size.Height;
-					if (rectangleF2.Width < rectangleF.Width)
-					{
-						switch (backImageAlign)
-						{
-						case ChartImageAlign.TopRight:
-						case ChartImageAlign.Right:
-						case ChartImageAlign.BottomRight:
-							rectangleF2.X = rectangleF.Right - rectangleF2.Width;
-							break;
-						case ChartImageAlign.Top:
-						case ChartImageAlign.Bottom:
-						case ChartImageAlign.Center:
-							rectangleF2.X = rectangleF.X + (rectangleF.Width - rectangleF2.Width) / 2f;
-							break;
-						}
-					}
-					if (rectangleF2.Height < rectangleF.Height)
-					{
-						switch (backImageAlign)
-						{
-						case ChartImageAlign.BottomRight:
-						case ChartImageAlign.Bottom:
-						case ChartImageAlign.BottomLeft:
-							rectangleF2.Y = rectangleF.Bottom - rectangleF2.Height;
-							break;
-						case ChartImageAlign.Right:
-						case ChartImageAlign.Left:
-						case ChartImageAlign.Center:
-							rectangleF2.Y = rectangleF.Y + (rectangleF.Height - rectangleF2.Height) / 2f;
-							break;
-						}
-					}
-				}
-				FillRectangle(brush, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
-				DrawImage(image, new Rectangle((int)Math.Round(rectangleF2.X), (int)Math.Round(rectangleF2.Y), (int)Math.Round(rectangleF2.Width), (int)Math.Round(rectangleF2.Height)), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
-			}
-			else
-			{
-				if (brush2 != null && backImageTranspColor != Color.Empty)
-				{
-					FillRectangle(brush2, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
-				}
-				FillRectangle(brush, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
-			}
-			if (borderStyle != 0)
-			{
-				if (borderWidth > 1)
-				{
-					DrawRectangle(pen, rect.X, rect.Y, rect.Width + 1f, rect.Height + 1f);
-				}
-				else if (borderWidth == 1)
-				{
-					DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
-				}
-			}
-			if (backGradientType != 0)
-			{
-				brush.Dispose();
-			}
-			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
-			{
-				brush.Dispose();
-			}
-			if (backHatchStyle != 0)
-			{
-				brush.Dispose();
-			}
-			base.SmoothingMode = smoothingMode;
+			FillRectangleAbsResource(rect, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment);
 		}
 
-		/// <summary>Interface-typed counterpart of <see cref="FillRectangleAbs"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Uses its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c> rather than the shared <c>pen</c>/<c>solidBrush</c> fields, so — unlike the original, which conditionally skips disposing the shared <c>solidBrush</c> field — every resource created here is disposed unconditionally at the end.</summary>
+		/// <summary>Interface-typed counterpart of <see cref="FillRectangleAbs"/> (Milestone B2). Uses its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c> — since 2026-07-23 (B1b) <see cref="FillRectangleAbs"/> is a pure one-line forward to this method, so every resource created here is disposed unconditionally at the end for both callers.</summary>
 		internal void FillRectangleAbsResource(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment)
 		{
 			IBrush brush = null;
@@ -3251,129 +3132,31 @@ namespace Microsoft.Reporting.Chart.WebForms
 			DrawPathAbs(path, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment);
 		}
 
+		/// <summary>
+		/// Milestone B1b (2026-07-23): previously used the shared <c>pen</c>/<c>solidBrush</c> fields
+		/// directly; now bridges <paramref name="path"/> to an <see cref="IGraphicsPath"/> (same
+		/// <c>PathPoints</c>/<c>PathTypes</c> bridge used throughout this migration, e.g. <c>Axis.cs</c>)
+		/// and delegates to the interface-typed sibling below. This is the one field-touching method
+		/// whose parameter type genuinely differs from its sibling (concrete <see cref="GraphicsPath"/>
+		/// vs. <see cref="IGraphicsPath"/>) — bridging here, rather than converting this method's 6 real
+		/// callers (<c>PolylineAnnotation.cs</c>, <c>CalloutAnnotation.cs</c>, <c>ArrowAnnotation.cs</c>,
+		/// <c>FunnelChart.cs</c>, <c>Borders3D/SunkenBorder.cs</c>, <c>Borders3D/EmbossBorder.cs</c>),
+		/// avoids the ripple previously flagged in chart-gdi-type-abstraction.md.
+		/// </summary>
 		internal void DrawPathAbs(GraphicsPath path, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment)
 		{
-			Brush brush = null;
-			Brush brush2 = null;
-			if (backColor.IsEmpty)
-			{
-				backColor = Color.White;
-			}
-			if (backGradientEndColor.IsEmpty)
-			{
-				backGradientEndColor = Color.White;
-			}
-			if (borderColor.IsEmpty)
-			{
-				borderColor = Color.White;
-				borderWidth = 0;
-			}
-			pen.Color = borderColor;
-			pen.Width = borderWidth;
-			pen.Alignment = penAlignment;
-			pen.DashStyle = GetPenStyle(borderStyle);
-			if (backGradientType == GradientType.None)
-			{
-				solidBrush.Color = backColor;
-				brush = solidBrush;
-			}
-			else
-			{
-				RectangleF bounds = path.GetBounds();
-				bounds.Inflate(new SizeF(2f, 2f));
-				brush = GetGradientBrush(bounds, backColor, backGradientEndColor, backGradientType);
-			}
-			if (backHatchStyle != 0)
-			{
-				brush = GetHatchBrush(backHatchStyle, backColor, backGradientEndColor);
-			}
-			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
-			{
-				brush2 = brush;
-				brush = GetTextureBrush(backImage, backImageTranspColor, backImageMode, backColor);
-			}
-			RectangleF bounds2 = path.GetBounds();
-			if (backImage.Length > 0 && (backImageMode == ChartImageWrapMode.Unscaled || backImageMode == ChartImageWrapMode.Scaled))
-			{
-				Image image = common.ImageLoader.LoadImage(backImage);
-				ImageAttributes imageAttributes = new ImageAttributes();
-				if (backImageTranspColor != Color.Empty)
-				{
-					imageAttributes.SetColorKey(backImageTranspColor, backImageTranspColor, ColorAdjustType.Default);
-				}
-				RectangleF rectangleF = default(RectangleF);
-				rectangleF.X = bounds2.X;
-				rectangleF.Y = bounds2.Y;
-				rectangleF.Width = bounds2.Width;
-				rectangleF.Height = bounds2.Height;
-				if (backImageMode == ChartImageWrapMode.Unscaled)
-				{
-					SizeF size = default(SizeF);
-					ImageLoader.GetAdjustedImageSize(image, ref size);
-					rectangleF.Width = size.Width;
-					rectangleF.Height = size.Height;
-					if (rectangleF.Width < bounds2.Width)
-					{
-						switch (backImageAlign)
-						{
-						case ChartImageAlign.TopRight:
-						case ChartImageAlign.Right:
-						case ChartImageAlign.BottomRight:
-							rectangleF.X = bounds2.Right - rectangleF.Width;
-							break;
-						case ChartImageAlign.Top:
-						case ChartImageAlign.Bottom:
-						case ChartImageAlign.Center:
-							rectangleF.X = bounds2.X + (bounds2.Width - rectangleF.Width) / 2f;
-							break;
-						}
-					}
-					if (rectangleF.Height < bounds2.Height)
-					{
-						switch (backImageAlign)
-						{
-						case ChartImageAlign.BottomRight:
-						case ChartImageAlign.Bottom:
-						case ChartImageAlign.BottomLeft:
-							rectangleF.Y = bounds2.Bottom - rectangleF.Height;
-							break;
-						case ChartImageAlign.Right:
-						case ChartImageAlign.Left:
-						case ChartImageAlign.Center:
-							rectangleF.Y = bounds2.Y + (bounds2.Height - rectangleF.Height) / 2f;
-							break;
-						}
-					}
-				}
-				FillPath(brush, path);
-				Region clip = base.Clip;
-				base.Clip = new Region(path);
-				DrawImage(image, new Rectangle((int)Math.Round(rectangleF.X), (int)Math.Round(rectangleF.Y), (int)Math.Round(rectangleF.Width), (int)Math.Round(rectangleF.Height)), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, imageAttributes);
-				base.Clip = clip;
-			}
-			else
-			{
-				if (brush2 != null && backImageTranspColor != Color.Empty)
-				{
-					FillPath(brush2, path);
-				}
-				FillPath(brush, path);
-			}
-			if (borderColor != Color.Empty && borderWidth > 0 && borderStyle != 0)
-			{
-				DrawPath(pen, path);
-			}
+			using IGraphicsPath pathResource = resourceFactory.CreatePath(path.PathPoints, path.PathTypes);
+			DrawPathAbs(pathResource, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backGradientEndColor, borderColor, borderWidth, borderStyle, penAlignment);
 		}
 
 		/// <summary>
 		/// Interface-typed counterpart of <see cref="DrawPathAbs(GraphicsPath, Color, ChartHatchStyle, string, ChartImageWrapMode, Color, ChartImageAlign, GradientType, Color, Color, int, ChartDashStyle, PenAlignment, int, Color)"/>
-		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Unlike the
-		/// concrete overload, this one does not touch the shared <c>pen</c>/<c>solidBrush</c> fields — it
-		/// constructs its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via <c>resourceFactory</c>,
-		/// which is what avoids the ripple that would otherwise force every caller of the concrete overload
-		/// (6 files: <c>PolylineAnnotation.cs</c>, <c>CalloutAnnotation.cs</c>, <c>ArrowAnnotation.cs</c>,
-		/// <c>FunnelChart.cs</c>, <c>Borders3D/SunkenBorder.cs</c>, <c>Borders3D/EmbossBorder.cs</c>) to
-		/// convert their own path-building code at the same time.
+		/// (Milestone B2). Constructs its own local <see cref="IPen"/>/<see cref="IBrush"/> resources via
+		/// <c>resourceFactory</c> — since 2026-07-23 (B1b) the concrete overload bridges its
+		/// <see cref="GraphicsPath"/> to an <see cref="IGraphicsPath"/> and forwards here, rather than
+		/// converting its own 6 real callers (<c>PolylineAnnotation.cs</c>, <c>CalloutAnnotation.cs</c>,
+		/// <c>ArrowAnnotation.cs</c>, <c>FunnelChart.cs</c>, <c>Borders3D/SunkenBorder.cs</c>,
+		/// <c>Borders3D/EmbossBorder.cs</c>) to build an <see cref="IGraphicsPath"/> themselves.
 		/// </summary>
 		internal void DrawPathAbs(IGraphicsPath path, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, PenAlignment penAlignment, int shadowOffset, Color shadowColor)
 		{
@@ -4194,8 +3977,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			this.common = common;
 			this.resourceFactory = resourceFactory ?? new GdiResourceFactory();
-			pen = new Pen(Color.Black);
-			solidBrush = new SolidBrush(Color.Black);
+			pen = this.resourceFactory.CreatePen(Color.Black, 1f);
 		}
 
 		internal void Dispose()
@@ -4203,10 +3985,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (pen != null)
 			{
 				pen.Dispose();
-			}
-			if (solidBrush != null)
-			{
-				solidBrush.Dispose();
 			}
 		}
 
