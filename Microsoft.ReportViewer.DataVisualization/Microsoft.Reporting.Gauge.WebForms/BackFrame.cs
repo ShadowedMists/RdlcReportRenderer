@@ -1251,9 +1251,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				bounds.Y += absoluteDimension5;
 				bounds.Width -= absoluteDimension5 * 2f;
 				bounds.Height -= absoluteDimension5 * 2f;
-				GraphicsPath circularRangePath = g.GetCircularRangePath(g.GetRelativeRectangle(bounds), 226f, 30f, 6f, 6f, Placement.Inside);
-				GraphicsPath circularRangePath2 = g.GetCircularRangePath(g.GetRelativeRectangle(bounds), 224f, -30f, 6f, 6f, Placement.Inside);
-				Brush brush3 = new SolidBrush(Color.FromArgb(200, Color.White));
+				using IGraphicsPath circularRangePath = g.GetCircularRangePath(g.GetRelativeRectangle(bounds), 226f, 30f, 6f, 6f, Placement.Inside);
+				using IGraphicsPath circularRangePath2 = g.GetCircularRangePath(g.GetRelativeRectangle(bounds), 224f, -30f, 6f, 6f, Placement.Inside);
+				using IBrush brush3 = g.ResourceFactory.CreateSolidBrush(Color.FromArgb(200, Color.White));
 				g.FillPath(brush3, circularRangePath);
 				g.FillPath(brush3, circularRangePath2);
 			}

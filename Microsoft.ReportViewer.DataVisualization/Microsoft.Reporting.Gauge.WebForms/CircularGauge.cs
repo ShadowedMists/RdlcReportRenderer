@@ -386,20 +386,18 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				foreach (CircularRange range in Ranges)
 				{
-					GraphicsPath path = range.GetPath(g, getShadowPath: true);
+					using IGraphicsPath path = range.GetPath(g, getShadowPath: true);
 					if (path != null)
 					{
-						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(path);
-						graphicsPath.AddPath(wrapped, connect: false);
+						graphicsPath.AddPath(path, connect: false);
 					}
 				}
 				foreach (CircularScale scale in Scales)
 				{
-					GraphicsPath shadowPath = scale.GetShadowPath(g);
+					using IGraphicsPath shadowPath = scale.GetShadowPath(g);
 					if (shadowPath != null)
 					{
-						using IGraphicsPath wrapped = g.ResourceFactory.WrapPath(shadowPath);
-						graphicsPath.AddPath(wrapped, connect: false);
+						graphicsPath.AddPath(shadowPath, connect: false);
 					}
 				}
 				graphicsPath.FillMode = FillMode.Winding;

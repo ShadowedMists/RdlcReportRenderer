@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -196,10 +197,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			minimumPin = new LinearSpecialPosition(this);
 		}
 
-		private GraphicsPath GetBarPath(float barOffsetInside, float barOffsetOutside)
+		private IGraphicsPath GetBarPath(float barOffsetInside, float barOffsetOutside)
 		{
 			GaugeGraphics graph = Common.Graph;
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			float num = 0f;
 			if (MajorTickMark.Visible)
 			{
@@ -301,28 +302,24 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					gap.Inside = Math.Max(gap.Inside, LabelStyle.DistanceFromScale + (float)LabelStyle.Font.Height + Width / 2f);
 				}
 			}
-			GraphicsPath barPath = GetBarPath(gap.Inside, gap.Outside);
+			IGraphicsPath barPath = GetBarPath(gap.Inside, gap.Outside);
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, PointF.Empty, barPath);
 		}
 
-		internal GraphicsPath GetShadowPath()
+		internal IGraphicsPath GetShadowPath()
 		{
 			if (base.Visible && base.ShadowOffset != 0f && Width > 0f)
 			{
-				GraphicsPath barPath = GetBarPath(Width / 2f, Width / 2f);
-				using (Matrix matrix = new Matrix())
-				{
-					matrix.Translate(base.ShadowOffset, base.ShadowOffset);
-					barPath.Transform(matrix);
-					return barPath;
-				}
+				IGraphicsPath barPath = GetBarPath(Width / 2f, Width / 2f);
+				barPath.Transform(Matrix3x2.CreateTranslation(base.ShadowOffset, base.ShadowOffset));
+				return barPath;
 			}
 			return null;
 		}
 
 		private void RenderBar(GaugeGraphics g)
 		{
-			using (GraphicsPath path = GetBarPath(Width / 2f, Width / 2f))
+			using (IGraphicsPath path = GetBarPath(Width / 2f, Width / 2f))
 			{
 				g.DrawPathAbs(path, base.FillColor, base.FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.Center, base.FillGradientType, base.FillGradientEndColor, base.BorderColor, base.BorderWidth, base.BorderStyle, PenAlignment.Outset);
 			}
@@ -747,7 +744,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					gap.Inside = Math.Max(gap.Inside, LabelStyle.DistanceFromScale + (float)LabelStyle.Font.Height + Width / 2f);
 				}
 			}
-			using (GraphicsPath graphicsPath = GetBarPath(gap.Inside, gap.Outside))
+			using (IGraphicsPath graphicsPath = GetBarPath(gap.Inside, gap.Outside))
 			{
 				if (graphicsPath != null)
 				{

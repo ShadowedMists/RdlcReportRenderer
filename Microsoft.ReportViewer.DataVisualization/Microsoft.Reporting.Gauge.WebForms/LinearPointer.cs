@@ -471,12 +471,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (base.BarStyle == BarStyle.Style1)
 			{
-				GraphicsPath primaryPath = g.GetLinearRangePath(positionFromValue, positionFromValue2, Width, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
+				IGraphicsPath primaryPath = g.GetLinearRangePath(positionFromValue, positionFromValue2, Width, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
 				if (primaryPath == null)
 				{
 					return barStyleAttrib;
 				}
-				barStyleAttrib.primaryPath = g.ResourceFactory.WrapPath(primaryPath);
+				barStyleAttrib.primaryPath = primaryPath;
 				barStyleAttrib.primaryBrush = g.GetLinearRangeBrushResource(barStyleAttrib.primaryPath.GetBounds(), FillColor, FillHatchStyle, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), 0.0, 0.0);
 				LinearRange[] colorRanges = GetColorRanges();
 				if (colorRanges != null)
@@ -514,8 +514,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						}
 						else
 						{
-							GraphicsPath secondaryPath = g.GetLinearRangePath(positionFromValue3, positionFromValue4, Width, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
-							barStyleAttrib.secondaryPaths[num2] = (secondaryPath != null) ? g.ResourceFactory.WrapPath(secondaryPath) : null;
+							IGraphicsPath secondaryPath = g.GetLinearRangePath(positionFromValue3, positionFromValue4, Width, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
+							barStyleAttrib.secondaryPaths[num2] = secondaryPath;
 							barStyleAttrib.secondaryBrushes[num2] = g.GetLinearRangeBrushResource(barStyleAttrib.primaryPath.GetBounds(), linearRange.InRangeBarPointerColor, FillHatchStyle, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), 0.0, 0.0);
 						}
 						num2++;
@@ -556,14 +556,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				num3 = scale.Maximum;
 			}
 			float positionFromValue3 = scale.GetPositionFromValue(num3);
-			GraphicsPath primaryPath = g.GetThermometerPath(positionFromValue, positionFromValue2, width, scale.Position, GetGauge().GetOrientation(), distanceFromScale, Placement, scale.GetReversed(), scale.Width, bulbOffset, bulbSize, ThermometerStyle);
+			IGraphicsPath primaryPath = g.GetThermometerPath(positionFromValue, positionFromValue2, width, scale.Position, GetGauge().GetOrientation(), distanceFromScale, Placement, scale.GetReversed(), scale.Width, bulbOffset, bulbSize, ThermometerStyle);
 			if (primaryPath == null)
 			{
 				return barStyleAttrib;
 			}
-			barStyleAttrib.primaryPath = g.ResourceFactory.WrapPath(primaryPath);
-			GraphicsPath totalPath = g.GetThermometerPath(positionFromValue, positionFromValue3, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.GetReversed(), scale.Width, ThermometerBulbOffset, ThermometerBulbSize, ThermometerStyle);
-			barStyleAttrib.totalPath = (totalPath != null) ? g.ResourceFactory.WrapPath(totalPath) : null;
+			barStyleAttrib.primaryPath = primaryPath;
+			IGraphicsPath totalPath = g.GetThermometerPath(positionFromValue, positionFromValue3, Width, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.GetReversed(), scale.Width, ThermometerBulbOffset, ThermometerBulbSize, ThermometerStyle);
+			barStyleAttrib.totalPath = totalPath;
 			barStyleAttrib.totalBrush = g.GetLinearRangeBrushResource(barStyleAttrib.totalPath.GetBounds(), ThermometerBackColor, ThermometerBackHatchStyle, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), ThermometerBackGradientType.ToString()), ThermometerBackGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), 0.0, 0.0);
 			barStyleAttrib.primaryBrush = g.GetLinearRangeBrushResource(barStyleAttrib.primaryPath.GetBounds(), FillColor, FillHatchStyle, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), 0.0, 0.0);
 			LinearRange[] colorRanges = GetColorRanges();
@@ -602,8 +602,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					else
 					{
-						GraphicsPath secondaryPath = g.GetLinearRangePath(positionFromValue4, positionFromValue5, width, width, scale.Position, GetGauge().GetOrientation(), distanceFromScale, Placement, scale.Width);
-						barStyleAttrib.secondaryPaths[num4] = (secondaryPath != null) ? g.ResourceFactory.WrapPath(secondaryPath) : null;
+						IGraphicsPath secondaryPath = g.GetLinearRangePath(positionFromValue4, positionFromValue5, width, width, scale.Position, GetGauge().GetOrientation(), distanceFromScale, Placement, scale.Width);
+						barStyleAttrib.secondaryPaths[num4] = secondaryPath;
 						barStyleAttrib.secondaryBrushes[num4] = g.GetLinearRangeBrushResource(barStyleAttrib.primaryPath.GetBounds(), linearRange.InRangeBarPointerColor, FillHatchStyle, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), 0.0, 0.0);
 					}
 					num4++;
