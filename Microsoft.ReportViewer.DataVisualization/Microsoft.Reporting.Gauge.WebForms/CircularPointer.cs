@@ -978,12 +978,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			if (base.BarStyle == BarStyle.Style1)
 			{
 				RectangleF rectangleF = CalculateBarRectangle();
-				GraphicsPath primaryPath = g.GetCircularRangePath(rectangleF, positionFromValue + 90f, num, Width, Width, Placement);
+				IGraphicsPath primaryPath = g.GetCircularRangePath(rectangleF, positionFromValue + 90f, num, Width, Width, Placement);
 				if (primaryPath == null)
 				{
 					return barStyleAttrib;
 				}
-				barStyleAttrib.primaryPath = g.ResourceFactory.WrapPath(primaryPath);
+				barStyleAttrib.primaryPath = primaryPath;
 				RectangleF rect = rectangleF;
 				if (Placement != 0)
 				{
@@ -1033,8 +1033,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						}
 						else
 						{
-							GraphicsPath secondaryPath = g.GetCircularRangePath(rectangleF, positionFromValue2 + 90f, num5, Width, Width, Placement);
-							barStyleAttrib.secondaryPaths[num2] = (secondaryPath != null) ? g.ResourceFactory.WrapPath(secondaryPath) : null;
+							IGraphicsPath secondaryPath = g.GetCircularRangePath(rectangleF, positionFromValue2 + 90f, num5, Width, Width, Placement);
+							barStyleAttrib.secondaryPaths[num2] = secondaryPath;
 							barStyleAttrib.secondaryBrushes[num2] = g.GetCircularRangeBrushResource(rectangleF, positionFromValue2 + 90f, num5, circularRange.InRangeBarPointerColor, FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, (RangeGradientType)Enum.Parse(typeof(RangeGradientType), FillGradientType.ToString()), FillGradientEndColor);
 						}
 						num2++;

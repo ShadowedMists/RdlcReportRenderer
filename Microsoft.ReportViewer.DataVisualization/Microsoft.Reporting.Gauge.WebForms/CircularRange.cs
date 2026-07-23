@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Numerics;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -185,9 +187,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				Common.GaugeCore.TraceWrite("GaugePaint", SR.TraceRenderingComplete(Name));
 				return;
 			}
-			Pen pen = null;
-			Brush brush = null;
-			GraphicsPath graphicsPath = null;
+			IPen pen = null;
+			IBrush brush = null;
+			IGraphicsPath graphicsPath = null;
 			try
 			{
 				graphicsPath = g.GetCircularRangePath(rectangleF, positionFromValue + 90f, num, StartWidth, EndWidth, Placement);
@@ -216,8 +218,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 				}
 				RangeGradientType fillGradientType = base.FillGradientType;
-				brush = g.GetCircularRangeBrush(rect, positionFromValue + 90f, num, base.FillColor, base.FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, fillGradientType, base.FillGradientEndColor);
-				pen = new Pen(base.BorderColor, base.BorderWidth);
+				brush = g.GetCircularRangeBrushResource(rect, positionFromValue + 90f, num, base.FillColor, base.FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.TopLeft, fillGradientType, base.FillGradientEndColor);
+				pen = g.ResourceFactory.CreatePen(base.BorderColor, base.BorderWidth);
 				pen.DashStyle = g.GetPenStyle(base.BorderStyle);
 				g.FillPath(brush, graphicsPath);
 				if (base.BorderStyle != 0 && base.BorderWidth > 0)
@@ -262,7 +264,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return result;
 		}
 
-		internal GraphicsPath GetPath(GaugeGraphics g, bool getShadowPath)
+		internal IGraphicsPath GetPath(GaugeGraphics g, bool getShadowPath)
 		{
 			if (getShadowPath && (!base.Visible || base.ShadowOffset == 0f))
 			{
@@ -280,26 +282,18 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				g.RestoreDrawRegion();
 				return null;
 			}
-			GraphicsPath circularRangePath = g.GetCircularRangePath(rect, positionFromValue + 90f, positionFromValue2 - positionFromValue, StartWidth, EndWidth, Placement);
+			IGraphicsPath circularRangePath = g.GetCircularRangePath(rect, positionFromValue + 90f, positionFromValue2 - positionFromValue, StartWidth, EndWidth, Placement);
 			if (circularRangePath != null && getShadowPath)
 			{
-				using (Matrix matrix = new Matrix())
-				{
-					matrix.Translate(base.ShadowOffset, base.ShadowOffset);
-					circularRangePath.Transform(matrix);
-				}
+				circularRangePath.Transform(Matrix3x2.CreateTranslation(base.ShadowOffset, base.ShadowOffset));
 			}
 			PointF pointF = new PointF(g.Graphics.Transform.OffsetX, g.Graphics.Transform.OffsetY);
 			g.RestoreDrawRegion();
 			PointF pointF2 = new PointF(g.Graphics.Transform.OffsetX, g.Graphics.Transform.OffsetY);
 			if (circularRangePath != null)
 			{
-				using (Matrix matrix2 = new Matrix())
-				{
-					matrix2.Translate(pointF.X - pointF2.X, pointF.Y - pointF2.Y);
-					circularRangePath.Transform(matrix2);
-					return circularRangePath;
-				}
+				circularRangePath.Transform(Matrix3x2.CreateTranslation(pointF.X - pointF2.X, pointF.Y - pointF2.Y));
+				return circularRangePath;
 			}
 			return circularRangePath;
 		}
@@ -320,7 +314,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				g.CreateDrawRegion(item.GetBoundRect(g));
 			}
 			g.CreateDrawRegion(((IRenderable)GetGauge()).GetBoundRect(g));
-			using (GraphicsPath graphicsPath = GetPath(g, getShadowPath: false))
+			using (IGraphicsPath graphicsPath = GetPath(g, getShadowPath: false))
 			{
 				if (graphicsPath != null)
 				{

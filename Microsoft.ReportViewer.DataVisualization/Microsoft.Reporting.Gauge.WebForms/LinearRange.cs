@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Numerics;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
@@ -172,9 +174,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			Common.GaugeCore.TraceWrite("GaugePaint", SR.TraceStartRendering(Name));
 			g.StartHotRegion(this);
 			LinearScale scale = GetScale();
-			Pen pen = null;
-			Brush brush = null;
-			GraphicsPath graphicsPath = null;
+			IPen pen = null;
+			IBrush brush = null;
+			IGraphicsPath graphicsPath = null;
 			try
 			{
 				graphicsPath = g.GetLinearRangePath(scale.GetPositionFromValue(StartValue), scale.GetPositionFromValue(EndValue), StartWidth, EndWidth, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
@@ -184,8 +186,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					Common.GaugeCore.TraceWrite("GaugePaint", SR.TraceRenderingComplete(Name));
 					return;
 				}
-				brush = g.GetLinearRangeBrush(graphicsPath.GetBounds(), base.FillColor, base.FillHatchStyle, base.FillGradientType, base.FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), StartValue, EndValue);
-				pen = new Pen(base.BorderColor, base.BorderWidth);
+				brush = g.GetLinearRangeBrushResource(graphicsPath.GetBounds(), base.FillColor, base.FillHatchStyle, base.FillGradientType, base.FillGradientEndColor, GetGauge().GetOrientation(), GetScale().GetReversed(), StartValue, EndValue);
+				pen = g.ResourceFactory.CreatePen(base.BorderColor, base.BorderWidth);
 				pen.DashStyle = g.GetPenStyle(base.BorderStyle);
 				g.FillPath(brush, graphicsPath);
 				if (base.BorderStyle != 0 && base.BorderWidth > 0)
@@ -205,7 +207,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			Common.GaugeCore.TraceWrite("GaugePaint", SR.TraceRenderingComplete(Name));
 		}
 
-		internal GraphicsPath GetPath(GaugeGraphics g, bool getShadowPath)
+		internal IGraphicsPath GetPath(GaugeGraphics g, bool getShadowPath)
 		{
 			if (getShadowPath && (!base.Visible || base.ShadowOffset == 0f))
 			{
@@ -216,15 +218,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				return null;
 			}
 			LinearScale scale = GetScale();
-			GraphicsPath linearRangePath = g.GetLinearRangePath(scale.GetPositionFromValue(StartValue), scale.GetPositionFromValue(EndValue), StartWidth, EndWidth, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
+			IGraphicsPath linearRangePath = g.GetLinearRangePath(scale.GetPositionFromValue(StartValue), scale.GetPositionFromValue(EndValue), StartWidth, EndWidth, scale.Position, GetGauge().GetOrientation(), DistanceFromScale, Placement, scale.Width);
 			if (getShadowPath)
 			{
-				using (Matrix matrix = new Matrix())
-				{
-					matrix.Translate(base.ShadowOffset, base.ShadowOffset);
-					linearRangePath.Transform(matrix);
-					return linearRangePath;
-				}
+				linearRangePath.Transform(Matrix3x2.CreateTranslation(base.ShadowOffset, base.ShadowOffset));
+				return linearRangePath;
 			}
 			return linearRangePath;
 		}
@@ -245,7 +243,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				g.CreateDrawRegion(item.GetBoundRect(g));
 			}
 			g.CreateDrawRegion(((IRenderable)GetGauge()).GetBoundRect(g));
-			using (GraphicsPath graphicsPath = GetPath(g, getShadowPath: false))
+			using (IGraphicsPath graphicsPath = GetPath(g, getShadowPath: false))
 			{
 				if (graphicsPath != null)
 				{

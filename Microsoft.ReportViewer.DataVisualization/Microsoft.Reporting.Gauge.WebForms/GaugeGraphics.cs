@@ -1099,13 +1099,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return ResourceFactory.CreateSolidBrush(backColor);
 		}
 
-		internal GraphicsPath GetCircularRangePath(RectangleF rect, float startAngle, float sweepAngle, float startRadius, float endRadius, Placement placement)
+		internal IGraphicsPath GetCircularRangePath(RectangleF rect, float startAngle, float sweepAngle, float startRadius, float endRadius, Placement placement)
 		{
 			if (rect.Width == 0f || rect.Height == 0f)
 			{
 				return null;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
 			RectangleF absoluteRectangle = GetAbsoluteRectangle(rect);
 			float num = GetAbsoluteDimension(startRadius);
 			float num2 = GetAbsoluteDimension(endRadius);
@@ -1167,7 +1167,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						num7 += num8;
 					}
 				}
-				graphicsPath.AddCurve(array);
+				graphicsPath.AddCurve(array, 0.5f);
 			}
 			else
 			{
@@ -1207,8 +1207,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				{
 					array7[k] = array4[num9 - k - 1];
 				}
-				graphicsPath.AddCurve(array3);
-				graphicsPath.AddCurve(array7);
+				graphicsPath.AddCurve(array3, 0.5f);
+				graphicsPath.AddCurve(array7, 0.5f);
 			}
 			graphicsPath.CloseFigure();
 			return graphicsPath;
@@ -1238,7 +1238,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return array;
 		}
 
-		internal GraphicsPath GetLinearRangePath(float startPosition, float endPosition, float startWidth, float endWidth, float scalePosition, GaugeOrientation orientation, float distanceFromScale, Placement placement, float scaleBarWidth)
+		internal IGraphicsPath GetLinearRangePath(float startPosition, float endPosition, float startWidth, float endWidth, float scalePosition, GaugeOrientation orientation, float distanceFromScale, Placement placement, float scaleBarWidth)
 		{
 			PointF[] array = new PointF[4];
 			array[0].X = endPosition;
@@ -1279,7 +1279,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				array[j] = GetAbsolutePoint(array[j]);
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
 			graphicsPath.AddLines(array);
 			graphicsPath.CloseFigure();
 			return graphicsPath;
@@ -1365,7 +1365,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return ResourceFactory.CreateSolidBrush(backColor);
 		}
 
-		internal GraphicsPath GetThermometerPath(float startPosition, float endPosition, float barWidth, float scalePosition, GaugeOrientation orientation, float distanceFromScale, Placement placement, bool reversedScale, float scaleBarWidth, float bulbOffset, float bulbSize, ThermometerStyle thermometerStyle)
+		internal IGraphicsPath GetThermometerPath(float startPosition, float endPosition, float barWidth, float scalePosition, GaugeOrientation orientation, float distanceFromScale, Placement placement, bool reversedScale, float scaleBarWidth, float bulbOffset, float bulbSize, ThermometerStyle thermometerStyle)
 		{
 			PointF[] array = new PointF[4];
 			array[0].X = endPosition;
@@ -1406,7 +1406,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				array[j] = GetAbsolutePoint(array[j]);
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = ResourceFactory.CreatePath();
 			graphicsPath.AddLines(array);
 			if (bulbSize > 0f)
 			{
@@ -1435,7 +1435,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						num2 = 90f;
 						sweepAngle = 180f;
 					}
-					graphicsPath.AddArc(rect, num2, sweepAngle);
+					graphicsPath.AddArc(rect.X, rect.Y, rect.Width, rect.Height, num2, sweepAngle);
 					graphicsPath.AddLine(bounds.Left, bounds.Top, bounds.Right, bounds.Top);
 					graphicsPath.AddLine(bounds.Right, bounds.Top, bounds.Right, bounds.Bottom);
 					graphicsPath.AddLine(bounds.Right, bounds.Bottom, bounds.Left, bounds.Bottom);
@@ -1459,7 +1459,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						num3 = 90f;
 						sweepAngle2 = 180f;
 					}
-					graphicsPath.AddArc(rect2, num3 - 90f, sweepAngle2);
+					graphicsPath.AddArc(rect2.X, rect2.Y, rect2.Width, rect2.Height, num3 - 90f, sweepAngle2);
 					graphicsPath.AddLine(bounds.Left, bounds.Bottom, bounds.Left, bounds.Top);
 					graphicsPath.AddLine(bounds.Left, bounds.Top, bounds.Right, bounds.Top);
 					graphicsPath.AddLine(bounds.Right, bounds.Top, bounds.Right, bounds.Bottom);
@@ -1469,7 +1469,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					using (Matrix matrix = new Matrix())
 					{
 						matrix.RotateAt(180f, point, MatrixOrder.Append);
-						graphicsPath.Transform(matrix);
+						float[] elements = matrix.Elements;
+						graphicsPath.Transform(new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]));
 					}
 				}
 			}

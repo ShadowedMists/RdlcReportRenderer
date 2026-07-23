@@ -6,6 +6,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -213,10 +214,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return new PointF(50f, 50f);
 		}
 
-		private GraphicsPath GetBarPath(float barOffsetInside, float barOffsetOutside, float angularMargin)
+		private IGraphicsPath GetBarPath(float barOffsetInside, float barOffsetOutside, float angularMargin)
 		{
 			GaugeGraphics graph = Common.Graph;
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			PointF location = new PointF(GetPivotPoint().X - GetRadius(), GetPivotPoint().Y - GetRadius());
 			RectangleF relative = new RectangleF(location, new SizeF(GetRadius() * 2f, GetRadius() * 2f));
 			float num = 0f;
@@ -235,12 +236,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			float num2 = base.EndPosition - base.StartPosition + num * 2f;
 			graphicsPath.StartFigure();
 			relative.Inflate(barOffsetOutside, barOffsetOutside);
-			graphicsPath.AddArc(graph.GetAbsoluteRectangle(relative), startAngle, num2);
+			RectangleF rectangleF = graph.GetAbsoluteRectangle(relative);
+			graphicsPath.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle, num2);
 			relative.Inflate(0f - (barOffsetInside + barOffsetOutside), 0f - (barOffsetInside + barOffsetOutside));
 			RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(relative);
 			if (absoluteRectangle.Width > 0f && absoluteRectangle.Height > 0f)
 			{
-				graphicsPath.AddArc(absoluteRectangle, startAngle2, 0f - num2);
+				graphicsPath.AddArc(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height, startAngle2, 0f - num2);
 			}
 			graphicsPath.CloseAllFigures();
 			return graphicsPath;
@@ -307,34 +309,26 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					gap.Inside = Math.Max(gap.Inside, LabelStyle.DistanceFromScale + (float)LabelStyle.Font.Height + Width / 2f);
 				}
 			}
-			GraphicsPath barPath = GetBarPath(gap.Inside, gap.Outside, 0f);
+			IGraphicsPath barPath = GetBarPath(gap.Inside, gap.Outside, 0f);
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, g.GetAbsolutePoint(GetPivotPoint()), barPath);
 		}
 
-		internal GraphicsPath GetShadowPath(GaugeGraphics g)
+		internal IGraphicsPath GetShadowPath(GaugeGraphics g)
 		{
 			if (base.Visible && base.ShadowOffset != 0f && Width > 0f)
 			{
 				SetDrawRegion(g);
-				GraphicsPath graphicsPath = new GraphicsPath();
-				using (GraphicsPath addingPath = GetBarPath(Width / 2f, Width / 2f, 0f))
+				IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
+				using (IGraphicsPath addingPath = GetBarPath(Width / 2f, Width / 2f, 0f))
 				{
 					graphicsPath.AddPath(addingPath, connect: false);
 				}
-				using (Matrix matrix = new Matrix())
-				{
-					matrix.Translate(base.ShadowOffset, base.ShadowOffset);
-					graphicsPath.Transform(matrix);
-				}
+				graphicsPath.Transform(Matrix3x2.CreateTranslation(base.ShadowOffset, base.ShadowOffset));
 				PointF pointF = new PointF(g.Graphics.Transform.OffsetX, g.Graphics.Transform.OffsetY);
 				g.RestoreDrawRegion();
 				PointF pointF2 = new PointF(g.Graphics.Transform.OffsetX, g.Graphics.Transform.OffsetY);
-				using (Matrix matrix2 = new Matrix())
-				{
-					matrix2.Translate(pointF.X - pointF2.X, pointF.Y - pointF2.Y);
-					graphicsPath.Transform(matrix2);
-					return graphicsPath;
-				}
+				graphicsPath.Transform(Matrix3x2.CreateTranslation(pointF.X - pointF2.X, pointF.Y - pointF2.Y));
+				return graphicsPath;
 			}
 			return null;
 		}
@@ -343,7 +337,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			if (Width > 0f)
 			{
-				using (GraphicsPath path = GetBarPath(Width / 2f, Width / 2f, 0f))
+				using (IGraphicsPath path = GetBarPath(Width / 2f, Width / 2f, 0f))
 				{
 					g.DrawPathAbs(path, base.FillColor, base.FillHatchStyle, "", GaugeImageWrapMode.Unscaled, Color.Empty, GaugeImageAlign.Center, base.FillGradientType, base.FillGradientEndColor, base.BorderColor, base.BorderWidth, base.BorderStyle, PenAlignment.Outset);
 				}
@@ -836,12 +830,17 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			float angularMargin = 4f;
 			float num = 5f;
-			using (GraphicsPath graphicsPath = GetBarPath(gap.Inside + num, gap.Outside + num, angularMargin))
+			using (IGraphicsPath graphicsPath = GetBarPath(gap.Inside + num, gap.Outside + num, angularMargin))
 			{
 				if (graphicsPath != null)
 				{
 					PointF[] selectionMarkers = GetSelectionMarkers(g, gap.Inside + num, gap.Outside + num, angularMargin);
-					g.DrawRadialSelection(g, graphicsPath, selectionMarkers, designTimeSelection, Common.GaugeCore.SelectionBorderColor, Common.GaugeCore.SelectionMarkerColor);
+					// Bridge back to concrete only for DrawRadialSelection, which is deliberately still
+					// concrete-only (see GaugeGraphics.DrawRadialSelection's own remarks). UnwrapPath returns
+					// the *same* native GraphicsPath backing graphicsPath, not a copy, so it must not be
+					// disposed separately here — the outer `using` above owns its lifetime.
+					GraphicsPath concretePath = g.ResourceFactory.UnwrapPath(graphicsPath);
+					g.DrawRadialSelection(g, concretePath, selectionMarkers, designTimeSelection, Common.GaugeCore.SelectionBorderColor, Common.GaugeCore.SelectionMarkerColor);
 				}
 			}
 			g.RestoreDrawRegion();
@@ -874,10 +873,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			ArrayList arrayList = new ArrayList();
 			relative.Inflate(barOffsetOutside, barOffsetOutside);
 			float flatness = 0.1f;
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 			{
-				graphicsPath.AddArc(g.GetAbsoluteRectangle(relative), startAngle, sweepAngle);
-				graphicsPath.Flatten(null, flatness);
+				RectangleF rectangleF = g.GetAbsoluteRectangle(relative);
+				graphicsPath.AddArc(rectangleF.X, rectangleF.Y, rectangleF.Width, rectangleF.Height, startAngle, sweepAngle);
+				graphicsPath.Flatten(flatness);
 				PointF[] pathPoints = graphicsPath.PathPoints;
 				GetBoundsFromPoints(pathPoints, out PointF minPoint, out PointF maxPoint);
 				if (SweepAngle + num * 2f < 360f)
@@ -917,10 +917,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(relative);
 			if (absoluteRectangle.Width > 0f && absoluteRectangle.Height > 0f)
 			{
-				using (GraphicsPath graphicsPath2 = new GraphicsPath())
+				using (IGraphicsPath graphicsPath2 = g.ResourceFactory.CreatePath())
 				{
-					graphicsPath2.AddArc(absoluteRectangle, startAngle, sweepAngle);
-					graphicsPath2.Flatten(null, flatness);
+					graphicsPath2.AddArc(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height, startAngle, sweepAngle);
+					graphicsPath2.Flatten(flatness);
 					PointF[] pathPoints2 = graphicsPath2.PathPoints;
 					GetBoundsFromPoints(pathPoints2, out PointF minPoint2, out PointF maxPoint2);
 					if (SweepAngle + num * 2f < 360f)
