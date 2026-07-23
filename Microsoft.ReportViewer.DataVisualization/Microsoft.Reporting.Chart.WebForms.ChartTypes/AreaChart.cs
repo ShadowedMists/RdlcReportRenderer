@@ -11,7 +11,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 	{
 		protected bool gradientFill;
 
-		protected GraphicsPath areaPath;
+		protected IGraphicsPath areaPath;
 
 		protected Series series;
 
@@ -90,21 +90,21 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			Color borderColor = point.BorderColor;
 			int borderWidth = point.BorderWidth;
 			ChartDashStyle borderStyle = point.BorderStyle;
-			Brush brush = null;
+			IBrush brush = null;
 			if (point.BackHatchStyle != 0)
 			{
-				brush = graph.GetHatchBrush(point.BackHatchStyle, color, point.BackGradientEndColor);
+				brush = graph.GetHatchBrushResource(point.BackHatchStyle, color, point.BackGradientEndColor);
 			}
 			else if (point.BackGradientType == GradientType.None)
 			{
-				brush = ((point.BackImage.Length <= 0 || point.BackImageMode == ChartImageWrapMode.Unscaled || point.BackImageMode == ChartImageWrapMode.Scaled) ? new SolidBrush(color) : graph.GetTextureBrush(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color));
+				brush = ((point.BackImage.Length <= 0 || point.BackImageMode == ChartImageWrapMode.Unscaled || point.BackImageMode == ChartImageWrapMode.Scaled) ? graph.ResourceFactory.CreateSolidBrush(color) : graph.GetTextureBrushResource(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color));
 			}
 			else
 			{
 				gradientFill = true;
 				this.series = point.series;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			graphicsPath.AddLine(pointF.X, axisPos.Y, pointF.X, pointF.Y);
 			if (lineTension == 0f)
 			{
@@ -120,8 +120,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				graph.shadowDrawingMode = true;
 				if (color != Color.Empty && color != Color.Transparent)
 				{
-					IGraphicsPath graphicsPathForRegion = graph.ResourceFactory.CreatePath(graphicsPath.PathPoints, graphicsPath.PathTypes);
-					IClipRegion region = graph.ResourceFactory.CreateRegion(graphicsPathForRegion);
+					IClipRegion region = graph.ResourceFactory.CreateRegion(graphicsPath);
 					Color shadowFillColor = (series.ShadowColor.A != byte.MaxValue) ? series.ShadowColor : Color.FromArgb((int)color.A / 2, series.ShadowColor);
 					IBrush brush2 = graph.ResourceFactory.CreateSolidBrush(shadowFillColor);
 					GraphicsState gstate = graph.Save();
@@ -165,7 +164,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				if (graph.SmoothingMode != SmoothingMode.None)
 				{
 					graph.StartHotRegion(point);
-					Pen pen2 = new Pen(brush, 1f);
+					IPen pen2 = graph.ResourceFactory.CreatePen(brush, 1f);
 					if (lineTension == 0f)
 					{
 						if (points[pointIndex - 1].X != points[pointIndex].X && points[pointIndex - 1].Y != points[pointIndex].Y)
@@ -182,7 +181,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			if (areaPath == null)
 			{
-				areaPath = new GraphicsPath();
+				areaPath = graph.ResourceFactory.CreatePath();
 				areaPath.AddLine(pointF.X, axisPos.Y, pointF.X, pointF.Y);
 			}
 			if (lineTension == 0f)
@@ -195,7 +194,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			if (borderWidth > 0 && borderColor != Color.Empty)
 			{
-				Pen pen3 = new Pen((borderColor != Color.Empty) ? borderColor : color, borderWidth);
+				IPen pen3 = graph.ResourceFactory.CreatePen((borderColor != Color.Empty) ? borderColor : color, borderWidth);
 				pen3.DashStyle = graph.GetPenStyle(borderStyle);
 				pen3.StartCap = LineCap.Round;
 				pen3.EndCap = LineCap.Round;
@@ -272,12 +271,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		{
 			if (areaPath != null)
 			{
-				areaPath.AddLine(areaPath.GetLastPoint().X, areaPath.GetLastPoint().Y, areaPath.GetLastPoint().X, axisPos.Y);
+				PointF lastPoint = areaPath.PathPoints[areaPath.PathPoints.Length - 1];
+				areaPath.AddLine(lastPoint.X, lastPoint.Y, lastPoint.X, axisPos.Y);
 			}
 			if (gradientFill && areaPath != null)
 			{
 				graph.SetClip(area.PlotAreaPosition.ToRectangleF());
-				Brush gradientBrush = graph.GetGradientBrush(areaPath.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
+				IBrush gradientBrush = graph.GetGradientBrushResource(areaPath.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
 				graph.FillPath(gradientBrush, areaPath);
 				gradientFill = false;
 				graph.ResetClip();
