@@ -127,7 +127,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		}
 
 		/// <summary>Interface-typed sibling of <see cref="GetShadowBrush"/> (dual-overload, additive).</summary>
-		internal IBrush GetShadowBrushResource()
+		internal ISolidBrush GetShadowBrushResource()
 		{
 			return ResourceFactory.CreateSolidBrush(GetShadowColor());
 		}

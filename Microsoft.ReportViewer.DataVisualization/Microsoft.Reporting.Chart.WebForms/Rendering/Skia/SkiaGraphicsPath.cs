@@ -76,6 +76,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			NativePath.CubicTo(SkiaConvert.ToSKPoint(pt2), SkiaConvert.ToSKPoint(pt3), SkiaConvert.ToSKPoint(pt4));
 		}
 
+		public void AddBeziers(PointF[] points) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		public void AddCurve(PointF[] points, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
 		public void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");

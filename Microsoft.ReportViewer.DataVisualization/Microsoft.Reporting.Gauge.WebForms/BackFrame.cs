@@ -520,7 +520,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				backFrameStyle = BackFrameStyle.Edged;
 			}
-			xamlRenderer = new XamlRenderer(FrameShape.ToString() + "." + backFrameStyle.ToString() + ".xaml");
+			xamlRenderer = new XamlRenderer(FrameShape.ToString() + "." + backFrameStyle.ToString() + ".xaml", g.ResourceFactory);
 			xamlRenderer.AllowPathGradientTransform = false;
 			RectangleF frameRectangle = GetFrameRectangle(g);
 			Color[] layerHues = new Color[2]
@@ -588,7 +588,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				GraphicsPath graphicsPath4 = new GraphicsPath();
 				graphicsPath4.FillMode = FillMode.Winding;
 				XamlRenderer cachedXamlRenderer = GetCachedXamlRenderer(g);
-				graphicsPath4.AddPath(cachedXamlRenderer.Layers[0].Paths[0], connect: false);
+				graphicsPath4.AddPath(g.ResourceFactory.UnwrapPath(cachedXamlRenderer.Layers[0].Paths[0]), connect: false);
 				return graphicsPath4;
 			}
 			float num = (!(frameRectangle.Width > frameRectangle.Height)) ? frameRectangle.Width : frameRectangle.Height;
@@ -612,7 +612,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				GraphicsPath graphicsPath = new GraphicsPath();
 				graphicsPath.FillMode = FillMode.Winding;
 				XamlRenderer cachedXamlRenderer = GetCachedXamlRenderer(g);
-				graphicsPath.AddPath(cachedXamlRenderer.Layers[2].Paths[0], connect: false);
+				graphicsPath.AddPath(g.ResourceFactory.UnwrapPath(cachedXamlRenderer.Layers[2].Paths[0]), connect: false);
 				return graphicsPath;
 			}
 			return GetFramePath(g, FrameWidth);

@@ -1196,7 +1196,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 							}
 							else
 							{
-								XamlLayer[] layers = GetCachedXamlRenderer(GetNeedleCapBounds(g, absolutePoint)).Layers;
+								XamlLayer[] layers = GetCachedXamlRenderer(g, GetNeedleCapBounds(g, absolutePoint)).Layers;
 								for (int i = 0; i < layers.Length; i++)
 								{
 									layers[i].Render(g);
@@ -1228,7 +1228,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 							}
 							else
 							{
-								XamlLayer[] layers = GetCachedXamlRenderer(GetNeedleCapBounds(g, absolutePoint)).Layers;
+								XamlLayer[] layers = GetCachedXamlRenderer(g, GetNeedleCapBounds(g, absolutePoint)).Layers;
 								for (int i = 0; i < layers.Length; i++)
 								{
 									layers[i].Render(g);
@@ -1597,13 +1597,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return Width / 2f;
 		}
 
-		internal XamlRenderer GetCachedXamlRenderer(RectangleF bounds)
+		internal XamlRenderer GetCachedXamlRenderer(GaugeGraphics g, RectangleF bounds)
 		{
 			if (xamlRenderer != null)
 			{
 				return xamlRenderer;
 			}
-			xamlRenderer = new XamlRenderer(CapStyle.ToString() + ".xaml");
+			xamlRenderer = new XamlRenderer(CapStyle.ToString() + ".xaml", g.ResourceFactory);
 			xamlRenderer.AllowPathGradientTransform = false;
 			Color[] layerHues = new Color[1]
 			{

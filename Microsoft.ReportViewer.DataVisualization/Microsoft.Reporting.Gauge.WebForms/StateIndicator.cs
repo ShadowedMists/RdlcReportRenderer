@@ -6,6 +6,8 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Numerics;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
@@ -882,9 +884,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return data.GetValueInPercents();
 		}
 
-		internal static XamlRenderer CreateXamlRenderer(StateIndicatorStyle style, Color color, RectangleF rect, bool addBorder)
+		internal static XamlRenderer CreateXamlRenderer(StateIndicatorStyle style, Color color, RectangleF rect, bool addBorder, IGaugeDrawingResourceFactory resourceFactory)
 		{
-			XamlRenderer xamlRenderer = new XamlRenderer(style.ToString() + ".xaml");
+			XamlRenderer xamlRenderer = new XamlRenderer(style.ToString() + ".xaml", resourceFactory);
 			xamlRenderer.AllowPathGradientTransform = false;
 			xamlRenderer.ParseXaml(rect, new Color[5]
 			{
@@ -910,25 +912,32 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				}
 				float num = squareScaledAbsoluteRectangle.Width / 2f;
 				RectangleF rect = CalculateXamlMarkerBounds(currentState.IndicatorStyle, new PointF(squareScaledAbsoluteRectangle.X + num, squareScaledAbsoluteRectangle.Y + num), num, num);
-				xamlRenderer = CreateXamlRenderer(currentState.IndicatorStyle, currentState.FillColor, rect, showBorder);
+				xamlRenderer = CreateXamlRenderer(currentState.IndicatorStyle, currentState.FillColor, rect, showBorder, g.ResourceFactory);
 				XamlLayer[] layers = xamlRenderer.Layers;
 				for (int i = 0; i < layers.Length; i++)
 				{
-					GraphicsPath[] paths = layers[i].Paths;
-					foreach (GraphicsPath graphicsPath in paths)
+					IGraphicsPath[] paths = layers[i].Paths;
+					foreach (IGraphicsPath graphicsPath in paths)
 					{
 						if (Angle != 0f)
 						{
 							using (Matrix matrix = new Matrix())
 							{
 								matrix.RotateAt(point: new PointF(squareScaledAbsoluteRectangle.X + squareScaledAbsoluteRectangle.Width / 2f, squareScaledAbsoluteRectangle.Y + squareScaledAbsoluteRectangle.Height / 2f), angle: Angle);
-								graphicsPath.Transform(matrix);
+								graphicsPath.Transform(ToMatrix3x2(matrix));
 							}
 						}
 					}
 				}
 			}
 			return xamlRenderer;
+		}
+
+		/// <summary>Bridges a native GDI+ <see cref="Matrix"/> to <see cref="Matrix3x2"/> at the interface call boundary — same convention as <c>DigitalSegment.ToMatrix3x2</c>.</summary>
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
 		}
 
 		internal static bool IsXamlMarker(StateIndicatorStyle style)
@@ -1587,6 +1596,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			Brush brush = null;
 			Brush brush2 = null;
 			Pen pen = null;
+			ISolidBrush xamlShadowBrush = null;
 			try
 			{
 				switch (state.IndicatorStyle)
@@ -1690,8 +1700,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						{
 							if (ShadowOffset != 0f)
 							{
-								brush2 = g.GetShadowBrush();
-								xamlRenderer.Layers[i].SetSingleBrush(brush2);
+								xamlShadowBrush = g.GetShadowBrushResource();
+								xamlRenderer.Layers[i].SetSingleBrush(xamlShadowBrush);
 								xamlRenderer.Layers[i].Render(g);
 							}
 						}
@@ -1709,6 +1719,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				brush2?.Dispose();
 				brush?.Dispose();
 				pen?.Dispose();
+				xamlShadowBrush?.Dispose();
 				g.EndHotRegion();
 			}
 		}

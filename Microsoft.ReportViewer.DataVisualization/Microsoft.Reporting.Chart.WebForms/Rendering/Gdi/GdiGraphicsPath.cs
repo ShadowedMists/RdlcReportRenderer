@@ -43,6 +43,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void AddBezier(PointF pt1, PointF pt2, PointF pt3, PointF pt4) => NativePath.AddBezier(pt1, pt2, pt3, pt4);
 
+		public void AddBeziers(PointF[] points) => NativePath.AddBeziers(points);
+
 		public void AddCurve(PointF[] points, float tension) => NativePath.AddCurve(points, tension);
 
 		public void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension) => NativePath.AddCurve(points, offset, numberOfSegments, tension);

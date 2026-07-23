@@ -24,6 +24,13 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 
 		ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle);
 
+		/// <summary>
+		/// GDI+'s point-pair <c>LinearGradientBrush(PointF, PointF, Color, Color)</c> constructor,
+		/// needed by <c>XamlRenderer.CreateBrush</c>'s absolute/relative gradient-stop geometry
+		/// (see tasks/gauge-gdi-type-abstraction.md item 2).
+		/// </summary>
+		ILinearGradientBrush CreateLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2);
+
 		ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode);
 
 		/// <summary>

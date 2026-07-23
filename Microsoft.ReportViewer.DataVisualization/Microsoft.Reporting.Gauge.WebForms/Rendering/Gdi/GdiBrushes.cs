@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Numerics;
 using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
@@ -21,6 +22,13 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 			set => NativeBrush.Color = value;
 		}
 
+		public ISolidBrush Clone() => new GdiSolidBrush((SolidBrush)NativeBrush.Clone());
+
+		private GdiSolidBrush(SolidBrush nativeBrush)
+		{
+			NativeBrush = nativeBrush;
+		}
+
 		public void Dispose() => NativeBrush.Dispose();
 	}
 
@@ -32,6 +40,11 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		internal GdiLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle)
 		{
 			NativeBrush = new LinearGradientBrush(rect, startColor, endColor, angle);
+		}
+
+		internal GdiLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2)
+		{
+			NativeBrush = new LinearGradientBrush(point1, point2, color1, color2);
 		}
 
 		public Blend Blend
@@ -64,6 +77,14 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		public void RotateTransform(float angle, MatrixOrder order) => NativeBrush.RotateTransform(angle, order);
 
 		public void TranslateTransform(float dx, float dy, MatrixOrder order) => NativeBrush.TranslateTransform(dx, dy, order);
+
+		public void MultiplyTransform(Matrix3x2 matrix, MatrixOrder order)
+		{
+			using Matrix bridgedMatrix = new Matrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.M31, matrix.M32);
+			using Matrix transform = NativeBrush.Transform.Clone();
+			transform.Multiply(bridgedMatrix, order);
+			NativeBrush.Transform = transform;
+		}
 
 		public void Dispose() => NativeBrush.Dispose();
 	}
@@ -167,6 +188,14 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 		public void RotateTransform(float angle, MatrixOrder order) => NativeBrush.RotateTransform(angle, order);
 
 		public void TranslateTransform(float dx, float dy, MatrixOrder order) => NativeBrush.TranslateTransform(dx, dy, order);
+
+		public void MultiplyTransform(Matrix3x2 matrix, MatrixOrder order)
+		{
+			using Matrix bridgedMatrix = new Matrix(matrix.M11, matrix.M12, matrix.M21, matrix.M22, matrix.M31, matrix.M32);
+			using Matrix transform = NativeBrush.Transform.Clone();
+			transform.Multiply(bridgedMatrix, order);
+			NativeBrush.Transform = transform;
+		}
 
 		public void Dispose() => NativeBrush.Dispose();
 	}

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 using SkiaSharp;
 using Microsoft.Reporting.Rendering;
 
@@ -27,6 +28,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			set => NativePaint.Color = SkiaConvert.ToSKColor(value);
 		}
 
+		public ISolidBrush Clone() => new SkiaSolidBrush(Color);
+
 		public void Dispose() => NativePaint.Dispose();
 	}
 
@@ -44,6 +47,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public void SetRotationTransform(float angle, PointF center) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 		public void RotateTransform(float angle, MatrixOrder order) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 		public void TranslateTransform(float dx, float dy, MatrixOrder order) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		public void MultiplyTransform(Matrix3x2 matrix, MatrixOrder order) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 		public void Dispose() { }
 	}
 
