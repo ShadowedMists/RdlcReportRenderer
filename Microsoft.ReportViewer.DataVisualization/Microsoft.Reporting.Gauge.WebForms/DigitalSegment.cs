@@ -1,9 +1,24 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
+using Microsoft.Reporting.Gauge.WebForms.Rendering;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
+	/// <summary>
+	/// Milestone B2 open item #7 (tasks/gauge-gdi-type-abstraction.md): pure geometry-building `static`
+	/// utility class, converted to <see cref="IGraphicsPath"/> in one atomic pass since its only real
+	/// caller, <c>NumericIndicator.DrawSymbol</c>, was the sole consumer of every public entry point
+	/// (confirmed by solution-wide grep) — retype in place, no dual overload needed. Since this class has
+	/// no instance and hence no <c>ResourceFactory</c> field of its own, every method threads an
+	/// <see cref="IGaugeDrawingResourceFactory"/> parameter down from the caller's live <c>GaugeGraphics</c>
+	/// instead. Rotation/shear matrices stay built via the native <see cref="Matrix"/> (RotateAt/Shear are
+	/// exact, well-understood GDI+ operations) and are only bridged to <see cref="Matrix3x2"/> at the
+	/// <see cref="IGraphicsPath.Transform(Matrix3x2)"/> call site itself, via <see cref="ToMatrix3x2"/> —
+	/// the same literal 1:1-port convention used by <c>Knob.cs</c>/<c>LinearPointer.cs</c>/<c>ScaleBase.cs</c>.
+	/// </summary>
 	internal static class DigitalSegment
 	{
 		internal const float widthRatio = 0.618034f;
@@ -11,6 +26,12 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		internal const float shearFactor = 0.0618034f;
 
 		internal const float sgmntWidth7 = 0.142857149f;
+
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+		}
 
 		private static PointF[] GetSegment7(PointF p, SizeF s)
 		{
@@ -25,9 +46,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			};
 		}
 
-		private static PointF[] GetSegmentHKLN(PointF p, SizeF s, float smallWidth, bool left)
+		private static PointF[] GetSegmentHKLN(IGaugeDrawingResourceFactory resourceFactory, PointF p, SizeF s, float smallWidth, bool left)
 		{
-			using (GraphicsPath graphicsPath = new GraphicsPath())
+			using (IGraphicsPath graphicsPath = resourceFactory.CreatePath())
 			{
 				RectangleF rect = new RectangleF(0f, 0f, s.Width / 2f - smallWidth - smallWidth / 6f, smallWidth / 0.618034f);
 				rect.X = (0f - rect.Width) / 2f;
@@ -36,18 +57,18 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix = new Matrix())
 				{
 					matrix.Shear(0f, left ? 1.3f : (-1.3f));
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					matrix.Reset();
 					matrix.Translate(p.X, p.Y);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 				}
 				return (PointF[])graphicsPath.PathPoints.Clone();
 			}
 		}
 
-		private static GraphicsPath GetSegment7(LEDSegment7 segment, PointF p, float size)
+		private static IGraphicsPath GetSegment7(IGaugeDrawingResourceFactory resourceFactory, LEDSegment7 segment, PointF p, float size)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			SizeF sizeF = new SizeF(size * 0.618034f, size);
 			float num = sizeF.Width * 0.142857149f;
 			SizeF s = new SizeF(sizeF.Width - num, num);
@@ -86,7 +107,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						using (Matrix matrix6 = new Matrix())
 						{
 							matrix6.Translate(0f, (0f - sizeF.Height) / 2f + num / 2f);
-							graphicsPath.Transform(matrix6);
+							graphicsPath.Transform(ToMatrix3x2(matrix6));
 							return graphicsPath;
 						}
 					}
@@ -97,10 +118,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						using (Matrix matrix5 = new Matrix())
 						{
 							matrix5.RotateAt(90f, p);
-							graphicsPath.Transform(matrix5);
+							graphicsPath.Transform(ToMatrix3x2(matrix5));
 							matrix5.Reset();
 							matrix5.Translate(sizeF.Width / 2f - num / 2f, sizeF.Height / 4f - num / 4f);
-							graphicsPath.Transform(matrix5);
+							graphicsPath.Transform(ToMatrix3x2(matrix5));
 							return graphicsPath;
 						}
 					}
@@ -111,10 +132,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 						using (Matrix matrix4 = new Matrix())
 						{
 							matrix4.RotateAt(90f, p);
-							graphicsPath.Transform(matrix4);
+							graphicsPath.Transform(ToMatrix3x2(matrix4));
 							matrix4.Reset();
 							matrix4.Translate(sizeF.Width / 2f - num / 2f, (0f - sizeF.Height) / 4f + num / 4f);
-							graphicsPath.Transform(matrix4);
+							graphicsPath.Transform(ToMatrix3x2(matrix4));
 							return graphicsPath;
 						}
 					}
@@ -131,10 +152,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					using (Matrix matrix8 = new Matrix())
 					{
 						matrix8.RotateAt(180f, p);
-						graphicsPath.Transform(matrix8);
+						graphicsPath.Transform(ToMatrix3x2(matrix8));
 						matrix8.Reset();
 						matrix8.Translate(0f, sizeF.Height / 2f - num / 2f);
-						graphicsPath.Transform(matrix8);
+						graphicsPath.Transform(ToMatrix3x2(matrix8));
 						return graphicsPath;
 					}
 				}
@@ -145,10 +166,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					using (Matrix matrix7 = new Matrix())
 					{
 						matrix7.RotateAt(90f, p);
-						graphicsPath.Transform(matrix7);
+						graphicsPath.Transform(ToMatrix3x2(matrix7));
 						matrix7.Reset();
 						matrix7.Translate((0f - sizeF.Width) / 2f + num / 2f, sizeF.Height / 4f - num / 4f);
-						graphicsPath.Transform(matrix7);
+						graphicsPath.Transform(ToMatrix3x2(matrix7));
 						return graphicsPath;
 					}
 				}
@@ -166,10 +187,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix3 = new Matrix())
 				{
 					matrix3.RotateAt(90f, p);
-					graphicsPath.Transform(matrix3);
+					graphicsPath.Transform(ToMatrix3x2(matrix3));
 					matrix3.Reset();
 					matrix3.Translate((0f - sizeF.Width) / 2f + num / 2f, (0f - sizeF.Height) / 4f + num / 4f);
-					graphicsPath.Transform(matrix3);
+					graphicsPath.Transform(ToMatrix3x2(matrix3));
 					return graphicsPath;
 				}
 			}
@@ -179,7 +200,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix2 = new Matrix())
 				{
 					matrix2.Translate(sizeF.Width / 2f + num / 2f, sizeF.Height / 2f - num * 2f);
-					graphicsPath.Transform(matrix2);
+					graphicsPath.Transform(ToMatrix3x2(matrix2));
 					return graphicsPath;
 				}
 			}
@@ -189,7 +210,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					using (Matrix matrix = new Matrix())
 					{
 						matrix.Translate(sizeF.Width / 2f + num / 2f, sizeF.Height / 2f - num * 2f);
-						graphicsPath.Transform(matrix);
+						graphicsPath.Transform(ToMatrix3x2(matrix));
 						return graphicsPath;
 					}
 				}
@@ -199,9 +220,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return graphicsPath;
 		}
 
-		private static GraphicsPath GetSegment14(LEDSegment14 segment, PointF p, float size)
+		private static IGraphicsPath GetSegment14(IGaugeDrawingResourceFactory resourceFactory, LEDSegment14 segment, PointF p, float size)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			SizeF sizeF = new SizeF(size * 0.618034f, size);
 			float num = sizeF.Width * 0.142857149f;
 			SizeF s = new SizeF(sizeF.Width - num, num);
@@ -218,7 +239,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix8 = new Matrix())
 				{
 					matrix8.Translate((0f - s.Width) / 2f - num / 6f, 0f);
-					graphicsPath.Transform(matrix8);
+					graphicsPath.Transform(ToMatrix3x2(matrix8));
 					return graphicsPath;
 				}
 			}
@@ -230,7 +251,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix7 = new Matrix())
 				{
 					matrix7.Translate(s.Width / 2f + num / 6f, 0f);
-					graphicsPath.Transform(matrix7);
+					graphicsPath.Transform(ToMatrix3x2(matrix7));
 					return graphicsPath;
 				}
 			}
@@ -242,10 +263,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix6 = new Matrix())
 				{
 					matrix6.RotateAt(90f, p);
-					graphicsPath.Transform(matrix6);
+					graphicsPath.Transform(ToMatrix3x2(matrix6));
 					matrix6.Reset();
 					matrix6.Translate(0f, (0f - s2.Width) / 2f - num / 6f);
-					graphicsPath.Transform(matrix6);
+					graphicsPath.Transform(ToMatrix3x2(matrix6));
 					return graphicsPath;
 				}
 			}
@@ -257,50 +278,50 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				using (Matrix matrix5 = new Matrix())
 				{
 					matrix5.RotateAt(90f, p);
-					graphicsPath.Transform(matrix5);
+					graphicsPath.Transform(ToMatrix3x2(matrix5));
 					matrix5.Reset();
 					matrix5.Translate(0f, s2.Width / 2f + num / 6f);
-					graphicsPath.Transform(matrix5);
+					graphicsPath.Transform(ToMatrix3x2(matrix5));
 					return graphicsPath;
 				}
 			}
 			case LEDSegment14.SH:
 			{
-				graphicsPath.AddPolygon(GetSegmentHKLN(p, s, num, left: true));
+				graphicsPath.AddPolygon(GetSegmentHKLN(resourceFactory, p, s, num, left: true));
 				using (Matrix matrix4 = new Matrix())
 				{
 					matrix4.Translate((0f - (s.Width / 2f + num / 6f)) / 2f, (0f - s2.Width) / 2f - num / 6f);
-					graphicsPath.Transform(matrix4);
+					graphicsPath.Transform(ToMatrix3x2(matrix4));
 					return graphicsPath;
 				}
 			}
 			case LEDSegment14.SL:
 			{
-				graphicsPath.AddPolygon(GetSegmentHKLN(p, s, num, left: true));
+				graphicsPath.AddPolygon(GetSegmentHKLN(resourceFactory, p, s, num, left: true));
 				using (Matrix matrix3 = new Matrix())
 				{
 					matrix3.Translate((s.Width / 2f + num / 6f) / 2f, s2.Width / 2f - num / 6f);
-					graphicsPath.Transform(matrix3);
+					graphicsPath.Transform(ToMatrix3x2(matrix3));
 					return graphicsPath;
 				}
 			}
 			case LEDSegment14.SK:
 			{
-				graphicsPath.AddPolygon(GetSegmentHKLN(p, s, num, left: false));
+				graphicsPath.AddPolygon(GetSegmentHKLN(resourceFactory, p, s, num, left: false));
 				using (Matrix matrix2 = new Matrix())
 				{
 					matrix2.Translate((s.Width / 2f + num / 6f) / 2f, (0f - s2.Width) / 2f - num / 6f);
-					graphicsPath.Transform(matrix2);
+					graphicsPath.Transform(ToMatrix3x2(matrix2));
 					return graphicsPath;
 				}
 			}
 			case LEDSegment14.SN:
 			{
-				graphicsPath.AddPolygon(GetSegmentHKLN(p, s, num, left: false));
+				graphicsPath.AddPolygon(GetSegmentHKLN(resourceFactory, p, s, num, left: false));
 				using (Matrix matrix = new Matrix())
 				{
 					matrix.Translate((0f - (s.Width / 2f + num / 6f)) / 2f, s2.Width / 2f - num / 6f);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					return graphicsPath;
 				}
 			}
@@ -309,13 +330,13 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal static GraphicsPath GetSegments(LEDSegment7 segments, PointF point, float size)
+		internal static IGraphicsPath GetSegments(IGaugeDrawingResourceFactory resourceFactory, LEDSegment7 segments, PointF point, float size)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			PointF p = new PointF(0f, 0f);
 			if ((segments & LEDSegment7.SA) == LEDSegment7.SA)
 			{
-				using (GraphicsPath graphicsPath2 = GetSegment7(LEDSegment7.SA, p, size))
+				using (IGraphicsPath graphicsPath2 = GetSegment7(resourceFactory, LEDSegment7.SA, p, size))
 				{
 					if (graphicsPath2.PointCount > 0)
 					{
@@ -325,7 +346,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SB) == LEDSegment7.SB)
 			{
-				using (GraphicsPath graphicsPath3 = GetSegment7(LEDSegment7.SB, p, size))
+				using (IGraphicsPath graphicsPath3 = GetSegment7(resourceFactory, LEDSegment7.SB, p, size))
 				{
 					if (graphicsPath3.PointCount > 0)
 					{
@@ -335,7 +356,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SC) == LEDSegment7.SC)
 			{
-				using (GraphicsPath graphicsPath4 = GetSegment7(LEDSegment7.SC, p, size))
+				using (IGraphicsPath graphicsPath4 = GetSegment7(resourceFactory, LEDSegment7.SC, p, size))
 				{
 					if (graphicsPath4.PointCount > 0)
 					{
@@ -345,7 +366,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SD) == LEDSegment7.SD)
 			{
-				using (GraphicsPath graphicsPath5 = GetSegment7(LEDSegment7.SD, p, size))
+				using (IGraphicsPath graphicsPath5 = GetSegment7(resourceFactory, LEDSegment7.SD, p, size))
 				{
 					if (graphicsPath5.PointCount > 0)
 					{
@@ -355,7 +376,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SE) == LEDSegment7.SE)
 			{
-				using (GraphicsPath graphicsPath6 = GetSegment7(LEDSegment7.SE, p, size))
+				using (IGraphicsPath graphicsPath6 = GetSegment7(resourceFactory, LEDSegment7.SE, p, size))
 				{
 					if (graphicsPath6.PointCount > 0)
 					{
@@ -365,7 +386,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SF) == LEDSegment7.SF)
 			{
-				using (GraphicsPath graphicsPath7 = GetSegment7(LEDSegment7.SF, p, size))
+				using (IGraphicsPath graphicsPath7 = GetSegment7(resourceFactory, LEDSegment7.SF, p, size))
 				{
 					if (graphicsPath7.PointCount > 0)
 					{
@@ -375,7 +396,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SG) == LEDSegment7.SG)
 			{
-				using (GraphicsPath graphicsPath8 = GetSegment7(LEDSegment7.SG, p, size))
+				using (IGraphicsPath graphicsPath8 = GetSegment7(resourceFactory, LEDSegment7.SG, p, size))
 				{
 					if (graphicsPath8.PointCount > 0)
 					{
@@ -385,7 +406,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SDP) == LEDSegment7.SDP)
 			{
-				using (GraphicsPath graphicsPath9 = GetSegment7(LEDSegment7.SDP, p, size))
+				using (IGraphicsPath graphicsPath9 = GetSegment7(resourceFactory, LEDSegment7.SDP, p, size))
 				{
 					if (graphicsPath9.PointCount > 0)
 					{
@@ -395,7 +416,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment7.SComma) == LEDSegment7.SComma)
 			{
-				using (GraphicsPath graphicsPath10 = GetSegment7(LEDSegment7.SComma, p, size))
+				using (IGraphicsPath graphicsPath10 = GetSegment7(resourceFactory, LEDSegment7.SComma, p, size))
 				{
 					if (graphicsPath10.PointCount <= 0)
 					{
@@ -408,33 +429,33 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return graphicsPath;
 		}
 
-		internal static GraphicsPath GetOrientedSegments(LEDSegment7 segments, PointF point, float size, SegmentsCache cache)
+		internal static IGraphicsPath GetOrientedSegments(IGaugeDrawingResourceFactory resourceFactory, LEDSegment7 segments, PointF point, float size, SegmentsCache cache)
 		{
-			GraphicsPath graphicsPath = cache.GetSegment(segments, point, size);
+			IGraphicsPath graphicsPath = cache.GetSegment(resourceFactory, segments, point, size);
 			if (graphicsPath == null)
 			{
-				graphicsPath = GetSegments(segments, point, size);
+				graphicsPath = GetSegments(resourceFactory, segments, point, size);
 				using (Matrix matrix = new Matrix())
 				{
 					matrix.Shear(-0.0618034f, 0f);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					matrix.Reset();
 					matrix.Translate(point.X, point.Y);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					matrix.Reset();
 				}
-				cache.SetSegment(segments, graphicsPath, point, size);
+				cache.SetSegment(resourceFactory, segments, graphicsPath, point, size);
 			}
 			return graphicsPath;
 		}
 
-		internal static GraphicsPath GetSegments(LEDSegment14 segments, PointF point, float size)
+		internal static IGraphicsPath GetSegments(IGaugeDrawingResourceFactory resourceFactory, LEDSegment14 segments, PointF point, float size)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			PointF p = new PointF(0f, 0f);
 			if ((segments & LEDSegment14.SA) == LEDSegment14.SA)
 			{
-				using (GraphicsPath graphicsPath2 = GetSegment7(LEDSegment7.SA, p, size))
+				using (IGraphicsPath graphicsPath2 = GetSegment7(resourceFactory, LEDSegment7.SA, p, size))
 				{
 					if (graphicsPath2.PointCount > 0)
 					{
@@ -444,7 +465,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SB) == LEDSegment14.SB)
 			{
-				using (GraphicsPath graphicsPath3 = GetSegment7(LEDSegment7.SB, p, size))
+				using (IGraphicsPath graphicsPath3 = GetSegment7(resourceFactory, LEDSegment7.SB, p, size))
 				{
 					if (graphicsPath3.PointCount > 0)
 					{
@@ -454,7 +475,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SC) == LEDSegment14.SC)
 			{
-				using (GraphicsPath graphicsPath4 = GetSegment7(LEDSegment7.SC, p, size))
+				using (IGraphicsPath graphicsPath4 = GetSegment7(resourceFactory, LEDSegment7.SC, p, size))
 				{
 					if (graphicsPath4.PointCount > 0)
 					{
@@ -464,7 +485,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SD) == LEDSegment14.SD)
 			{
-				using (GraphicsPath graphicsPath5 = GetSegment7(LEDSegment7.SD, p, size))
+				using (IGraphicsPath graphicsPath5 = GetSegment7(resourceFactory, LEDSegment7.SD, p, size))
 				{
 					if (graphicsPath5.PointCount > 0)
 					{
@@ -474,7 +495,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SE) == LEDSegment14.SE)
 			{
-				using (GraphicsPath graphicsPath6 = GetSegment7(LEDSegment7.SE, p, size))
+				using (IGraphicsPath graphicsPath6 = GetSegment7(resourceFactory, LEDSegment7.SE, p, size))
 				{
 					if (graphicsPath6.PointCount > 0)
 					{
@@ -484,7 +505,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SF) == LEDSegment14.SF)
 			{
-				using (GraphicsPath graphicsPath7 = GetSegment7(LEDSegment7.SF, p, size))
+				using (IGraphicsPath graphicsPath7 = GetSegment7(resourceFactory, LEDSegment7.SF, p, size))
 				{
 					if (graphicsPath7.PointCount > 0)
 					{
@@ -494,7 +515,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SDP) == LEDSegment14.SDP)
 			{
-				using (GraphicsPath graphicsPath8 = GetSegment7(LEDSegment7.SDP, p, size))
+				using (IGraphicsPath graphicsPath8 = GetSegment7(resourceFactory, LEDSegment7.SDP, p, size))
 				{
 					if (graphicsPath8.PointCount > 0)
 					{
@@ -504,7 +525,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SComma) == LEDSegment14.SComma)
 			{
-				using (GraphicsPath graphicsPath9 = GetSegment7(LEDSegment7.SComma, p, size))
+				using (IGraphicsPath graphicsPath9 = GetSegment7(resourceFactory, LEDSegment7.SComma, p, size))
 				{
 					if (graphicsPath9.PointCount > 0)
 					{
@@ -514,7 +535,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SG1) == LEDSegment14.SG1)
 			{
-				using (GraphicsPath graphicsPath10 = GetSegment14(LEDSegment14.SG1, p, size))
+				using (IGraphicsPath graphicsPath10 = GetSegment14(resourceFactory, LEDSegment14.SG1, p, size))
 				{
 					if (graphicsPath10.PointCount > 0)
 					{
@@ -524,7 +545,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SG2) == LEDSegment14.SG2)
 			{
-				using (GraphicsPath graphicsPath11 = GetSegment14(LEDSegment14.SG2, p, size))
+				using (IGraphicsPath graphicsPath11 = GetSegment14(resourceFactory, LEDSegment14.SG2, p, size))
 				{
 					if (graphicsPath11.PointCount > 0)
 					{
@@ -534,7 +555,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SJ) == LEDSegment14.SJ)
 			{
-				using (GraphicsPath graphicsPath12 = GetSegment14(LEDSegment14.SJ, p, size))
+				using (IGraphicsPath graphicsPath12 = GetSegment14(resourceFactory, LEDSegment14.SJ, p, size))
 				{
 					if (graphicsPath12.PointCount > 0)
 					{
@@ -544,7 +565,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SM) == LEDSegment14.SM)
 			{
-				using (GraphicsPath graphicsPath13 = GetSegment14(LEDSegment14.SM, p, size))
+				using (IGraphicsPath graphicsPath13 = GetSegment14(resourceFactory, LEDSegment14.SM, p, size))
 				{
 					if (graphicsPath13.PointCount > 0)
 					{
@@ -554,7 +575,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SH) == LEDSegment14.SH)
 			{
-				using (GraphicsPath graphicsPath14 = GetSegment14(LEDSegment14.SH, p, size))
+				using (IGraphicsPath graphicsPath14 = GetSegment14(resourceFactory, LEDSegment14.SH, p, size))
 				{
 					if (graphicsPath14.PointCount > 0)
 					{
@@ -564,7 +585,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SK) == LEDSegment14.SK)
 			{
-				using (GraphicsPath graphicsPath15 = GetSegment14(LEDSegment14.SK, p, size))
+				using (IGraphicsPath graphicsPath15 = GetSegment14(resourceFactory, LEDSegment14.SK, p, size))
 				{
 					if (graphicsPath15.PointCount > 0)
 					{
@@ -574,7 +595,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SL) == LEDSegment14.SL)
 			{
-				using (GraphicsPath graphicsPath16 = GetSegment14(LEDSegment14.SL, p, size))
+				using (IGraphicsPath graphicsPath16 = GetSegment14(resourceFactory, LEDSegment14.SL, p, size))
 				{
 					if (graphicsPath16.PointCount > 0)
 					{
@@ -584,7 +605,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if ((segments & LEDSegment14.SN) == LEDSegment14.SN)
 			{
-				using (GraphicsPath graphicsPath17 = GetSegment14(LEDSegment14.SN, p, size))
+				using (IGraphicsPath graphicsPath17 = GetSegment14(resourceFactory, LEDSegment14.SN, p, size))
 				{
 					if (graphicsPath17.PointCount <= 0)
 					{
@@ -597,27 +618,27 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return graphicsPath;
 		}
 
-		internal static GraphicsPath GetOrientedSegments(LEDSegment14 segments, PointF point, float size, SegmentsCache cache)
+		internal static IGraphicsPath GetOrientedSegments(IGaugeDrawingResourceFactory resourceFactory, LEDSegment14 segments, PointF point, float size, SegmentsCache cache)
 		{
-			GraphicsPath graphicsPath = cache.GetSegment(segments, point, size);
+			IGraphicsPath graphicsPath = cache.GetSegment(resourceFactory, segments, point, size);
 			if (graphicsPath == null)
 			{
-				graphicsPath = GetSegments(segments, point, size);
+				graphicsPath = GetSegments(resourceFactory, segments, point, size);
 				using (Matrix matrix = new Matrix())
 				{
 					matrix.Shear(-0.0618034f, 0f);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					matrix.Reset();
 					matrix.Translate(point.X, point.Y);
-					graphicsPath.Transform(matrix);
+					graphicsPath.Transform(ToMatrix3x2(matrix));
 					matrix.Reset();
 				}
-				cache.SetSegment(segments, graphicsPath, point, size);
+				cache.SetSegment(resourceFactory, segments, graphicsPath, point, size);
 			}
 			return graphicsPath;
 		}
 
-		internal static GraphicsPath GetSymbol7(char symbol, PointF point, float size, bool decDot, bool comma, bool sepDots, SegmentsCache cache)
+		internal static IGraphicsPath GetSymbol7(IGaugeDrawingResourceFactory resourceFactory, char symbol, PointF point, float size, bool decDot, bool comma, bool sepDots, SegmentsCache cache)
 		{
 			LEDSegment7 lEDSegment = LEDSegment7.Empty;
 			if (char.IsDigit(symbol))
@@ -657,10 +678,10 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				lEDSegment |= LEDSegment7.SComma;
 			}
-			return GetOrientedSegments(lEDSegment, point, size, cache);
+			return GetOrientedSegments(resourceFactory, lEDSegment, point, size, cache);
 		}
 
-		internal static GraphicsPath GetSymbol14(char symbol, PointF point, float size, bool decDot, bool comma, bool sepDots, SegmentsCache cache)
+		internal static IGraphicsPath GetSymbol14(IGaugeDrawingResourceFactory resourceFactory, char symbol, PointF point, float size, bool decDot, bool comma, bool sepDots, SegmentsCache cache)
 		{
 			LEDSegment14 lEDSegment = LEDSegment14.Empty;
 			if (char.IsDigit(symbol))
@@ -703,7 +724,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				lEDSegment |= LEDSegment14.SComma;
 			}
-			return GetOrientedSegments(lEDSegment, point, size, cache);
+			return GetOrientedSegments(resourceFactory, lEDSegment, point, size, cache);
 		}
 	}
 }

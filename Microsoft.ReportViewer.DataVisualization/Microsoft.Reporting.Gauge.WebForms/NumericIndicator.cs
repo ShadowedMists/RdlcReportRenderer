@@ -1266,17 +1266,17 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					using (Brush brush2 = GetFontBrush(g, LedDimColor))
 					{
-						using (GraphicsPath path = DigitalSegment.GetOrientedSegments(LEDSegment7.All, pointF, num, segmentsCache))
+						using (IGraphicsPath path = DigitalSegment.GetOrientedSegments(g.ResourceFactory, LEDSegment7.All, pointF, num, segmentsCache))
 						{
-							g.FillPath(brush2, path);
+							g.FillPath(brush2, g.ResourceFactory.UnwrapPath(path));
 						}
 					}
 				}
 				else
 				{
-					using (GraphicsPath path2 = DigitalSegment.GetSymbol7(symbol[0], pointF, num, decDot, comma, sepDots: false, segmentsCache))
+					using (IGraphicsPath path2 = DigitalSegment.GetSymbol7(g.ResourceFactory, symbol[0], pointF, num, decDot, comma, sepDots: false, segmentsCache))
 					{
-						g.FillPath(brush, path2);
+						g.FillPath(brush, g.ResourceFactory.UnwrapPath(path2));
 					}
 				}
 			}
@@ -1296,17 +1296,17 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					using (Brush brush3 = GetFontBrush(g, LedDimColor))
 					{
-						using (GraphicsPath path3 = DigitalSegment.GetOrientedSegments(LEDSegment14.All, pointF, num2, segmentsCache))
+						using (IGraphicsPath path3 = DigitalSegment.GetOrientedSegments(g.ResourceFactory, LEDSegment14.All, pointF, num2, segmentsCache))
 						{
-							g.FillPath(brush3, path3);
+							g.FillPath(brush3, g.ResourceFactory.UnwrapPath(path3));
 						}
 					}
 				}
 				else
 				{
-					using (GraphicsPath path4 = DigitalSegment.GetSymbol14(symbol[0], pointF, num2, decDot, comma, sepDots: false, segmentsCache))
+					using (IGraphicsPath path4 = DigitalSegment.GetSymbol14(g.ResourceFactory, symbol[0], pointF, num2, decDot, comma, sepDots: false, segmentsCache))
 					{
-						g.FillPath(brush, path4);
+						g.FillPath(brush, g.ResourceFactory.UnwrapPath(path4));
 					}
 				}
 			}
