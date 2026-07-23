@@ -11,9 +11,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 	{
 		protected bool gradientFill;
 
-		protected GraphicsPath areaBottomPath = new GraphicsPath();
+		protected IGraphicsPath areaBottomPath;
 
-		protected GraphicsPath areaPath;
+		protected IGraphicsPath areaPath;
 
 		protected Series series;
 
@@ -60,16 +60,18 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		{
 			if (areaPath != null)
 			{
-				areaPath.AddLine(areaPath.GetLastPoint().X, areaPath.GetLastPoint().Y, areaPath.GetLastPoint().X, areaBottomPath.GetLastPoint().Y);
+				PointF lastAreaPoint = areaPath.PathPoints[areaPath.PathPoints.Length - 1];
+				PointF lastBottomPoint = areaBottomPath.PathPoints[areaBottomPath.PathPoints.Length - 1];
+				areaPath.AddLine(lastAreaPoint.X, lastAreaPoint.Y, lastAreaPoint.X, lastBottomPoint.Y);
 			}
 			if (gradientFill && areaPath != null)
 			{
 				graph.SetClip(area.PlotAreaPosition.ToRectangleF());
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddPath(areaPath, connect: true);
 				areaBottomPath.Reverse();
 				graphicsPath.AddPath(areaBottomPath, connect: true);
-				Brush gradientBrush = graph.GetGradientBrush(graphicsPath.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
+				IBrush gradientBrush = graph.GetGradientBrushResource(graphicsPath.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
 				graph.FillPath(gradientBrush, graphicsPath);
 				gradientFill = false;
 				graph.ResetClip();
@@ -87,6 +89,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			gradientFill = false;
 			lowPoints = null;
 			indexedBasedX = area.IndexedSeries((string[])area.GetSeriesFromChartType(Name).ToArray(typeof(string)));
+			if (areaBottomPath == null)
+			{
+				areaBottomPath = graph.ResourceFactory.CreatePath();
+			}
 			base.ProcessChartType(selection, graph, common, area, seriesToDraw);
 			FillLastSeriesGradient(graph);
 		}
@@ -281,7 +287,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 			if (areaPath == null)
 			{
-				areaPath = new GraphicsPath();
+				areaPath = graph.ResourceFactory.CreatePath();
 				areaPath.AddLine(pointF.X, pointF3.Y, pointF.X, pointF.Y);
 			}
 			if (lineTension == 0f)
