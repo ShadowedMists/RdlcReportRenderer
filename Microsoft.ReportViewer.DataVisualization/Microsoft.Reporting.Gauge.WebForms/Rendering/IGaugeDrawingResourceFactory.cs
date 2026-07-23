@@ -64,9 +64,10 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering
 
 		/// <summary>
 		/// Reverse of <see cref="WrapPath"/> — unwraps an interface-typed path back to its native
-		/// <see cref="GraphicsPath"/>, for bridging into still-concrete-only consumers (e.g.
-		/// <c>HotRegionList.SetHotRegion</c>, which mutates paths in place via a live GDI+ <c>Matrix</c> and
-		/// is out of scope for this pass — see tasks/gauge-gdi-type-abstraction.md Milestone B3).
+		/// <see cref="GraphicsPath"/>, for bridging into still-concrete-only consumers. <c>HotRegionList</c>
+		/// now has an <see cref="IGraphicsPath"/>-typed <c>SetHotRegion</c> overload (item 1 —
+		/// see tasks/gauge-gdi-type-abstraction.md) that bridges internally via <c>PathPoints</c>/<c>PathTypes</c>,
+		/// so callers holding an interface-typed path no longer need to unwrap it themselves for that call.
 		/// </summary>
 		GraphicsPath UnwrapPath(IGraphicsPath path);
 

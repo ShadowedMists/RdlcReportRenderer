@@ -50,7 +50,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private bool selected;
 
-		private GraphicsPath[] hotRegions = new GraphicsPath[2];
+		private IGraphicsPath[] hotRegions = new IGraphicsPath[2];
 
 		[SRCategory("CategoryTypeSpecific")]
 		[SRDescription("DescriptionAttributeCircularPointer_Type")]
@@ -1250,11 +1250,11 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (needleStyleAttrib.primaryPath != null && Image == string.Empty)
 					{
-						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(needleStyleAttrib.primaryPath).Clone(), primary: true);
+						AddHotRegion(g.ResourceFactory.CreatePath(needleStyleAttrib.primaryPath.PathPoints, needleStyleAttrib.primaryPath.PathTypes), primary: true);
 					}
 					if (needleStyleAttrib.secondaryPath != null && CapImage == string.Empty)
 					{
-						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(needleStyleAttrib.secondaryPath).Clone(), primary: false);
+						AddHotRegion(g.ResourceFactory.CreatePath(needleStyleAttrib.secondaryPath.PathPoints, needleStyleAttrib.secondaryPath.PathTypes), primary: false);
 					}
 				}
 				finally
@@ -1290,7 +1290,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (barStyleAttrib.primaryPath != null)
 					{
-						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(barStyleAttrib.primaryPath).Clone(), primary: true);
+						AddHotRegion(g.ResourceFactory.CreatePath(barStyleAttrib.primaryPath.PathPoints, barStyleAttrib.primaryPath.PathTypes), primary: true);
 					}
 				}
 				finally
@@ -1314,7 +1314,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 					if (markerStyleAttrib.path != null)
 					{
-						AddHotRegion((GraphicsPath)g.ResourceFactory.UnwrapPath(markerStyleAttrib.path).Clone(), primary: true);
+						AddHotRegion(g.ResourceFactory.CreatePath(markerStyleAttrib.path.PathPoints, markerStyleAttrib.path.PathTypes), primary: true);
 					}
 				}
 				finally
@@ -1434,7 +1434,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				GraphicsPath graphicsPath = new GraphicsPath();
 				graphicsPath.AddRectangle(rectangle);
 				graphicsPath.Transform(matrix);
-				AddHotRegion(graphicsPath, primary);
+				AddHotRegion(g.ResourceFactory.WrapPath(graphicsPath), primary);
 			}
 		}
 
@@ -1534,7 +1534,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
-		internal void AddHotRegion(GraphicsPath path, bool primary)
+		internal void AddHotRegion(IGraphicsPath path, bool primary)
 		{
 			if (primary)
 			{
@@ -1549,6 +1549,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		internal void SetAllHotRegions(GaugeGraphics g)
 		{
 			Common.GaugeCore.HotRegionList.SetHotRegion(this, g.GetAbsolutePoint(GetScale().GetPivotPoint()), hotRegions[0], hotRegions[1]);
+			hotRegions[0]?.Dispose();
+			hotRegions[1]?.Dispose();
 			hotRegions[0] = null;
 			hotRegions[1] = null;
 		}
