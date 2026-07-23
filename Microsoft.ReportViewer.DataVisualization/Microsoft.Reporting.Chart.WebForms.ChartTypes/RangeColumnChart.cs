@@ -107,7 +107,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Width += size.Width / (float)text.Length;
 				size.Height += relativeSize2.Height / 8f;
 				empty3 = PointChart.GetLabelPosition(graph, empty2, size, stringFormat, adjustForDrawing: true);
-				graph.DrawPointLabelStringRel(common, text, point.Font, new SolidBrush(point.FontColor), empty2, stringFormat, point.FontAngle, empty3, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex - 1);
+				IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedFormat.Alignment = stringFormat.Alignment;
+				bridgedFormat.LineAlignment = stringFormat.LineAlignment;
+				graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), empty2, bridgedFormat, point.FontAngle, empty3, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex - 1);
 				graph.StopAnimation();
 				graph.EndHotRegion();
 			}
@@ -159,7 +163,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				size.Width += size.Width / (float)text.Length;
 				size.Height += relativeSize.Height / 8f;
 				empty2 = PointChart.GetLabelPosition(graph, empty, size, stringFormat, adjustForDrawing: true);
-				graph.DrawPointLabelStringRel(common, text, dataPoint.Font, new SolidBrush(dataPoint.FontColor), empty, stringFormat, dataPoint.FontAngle, empty2, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, pointIndex);
+				IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
+				ITextFormat bridgedFormat2 = graph.ResourceFactory.CreateTextFormat();
+				bridgedFormat2.Alignment = stringFormat.Alignment;
+				bridgedFormat2.LineAlignment = stringFormat.LineAlignment;
+				graph.DrawPointLabelStringRel(common, text, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), empty, bridgedFormat2, dataPoint.FontAngle, empty2, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, pointIndex);
 				graph.EndHotRegion();
 			}
 			graph.SetClipRegion(clip);
