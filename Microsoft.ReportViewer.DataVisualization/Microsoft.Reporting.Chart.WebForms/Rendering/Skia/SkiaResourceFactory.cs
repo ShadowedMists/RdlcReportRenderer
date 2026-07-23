@@ -37,6 +37,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
+		public ILinearGradientBrush CreateLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2) =>
+			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+
 		/// <summary>Real (E1) — a full-image tiled bitmap shader; GDI+'s <c>TextureBrush(Image, WrapMode)</c> equivalent.</summary>
 		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode)
 		{

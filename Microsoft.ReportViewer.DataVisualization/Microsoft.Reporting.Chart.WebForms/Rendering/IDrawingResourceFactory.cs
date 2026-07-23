@@ -29,6 +29,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle);
 
+		/// <summary>
+		/// Construct a gradient brush along the line between two points — GDI+'s
+		/// <c>LinearGradientBrush(PointF, PointF, Color, Color)</c> constructor, needed by
+		/// <c>ChartGraphics3D.Fill3DRectangleAsCylinder</c>'s cylinder-shading gradient (found
+		/// during Milestone D3), which is measured along a line rather than fit to a rectangle.
+		/// </summary>
+		ILinearGradientBrush CreateLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2);
+
 		ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode);
 
 		/// <summary>
