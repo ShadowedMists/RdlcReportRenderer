@@ -1337,6 +1337,395 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="DrawLabelStringRel(Axis, int, LabelMark, Color, string, string, Color, Font, Brush, RectangleF, StringFormat, int, RectangleF, CustomLabel, bool, bool)"/>
+		/// (E1 — see chart-gdi-type-abstraction.md). <c>ITextFormat</c> has no <c>Clone()</c>, so the
+		/// leading clone-and-mutate is replaced by allocating a fresh <see cref="ITextFormat"/> and copying
+		/// its 4 members. The 2 hot-region <see cref="GraphicsPath"/> locals become <see cref="IGraphicsPath"/>,
+		/// transformed via <c>base.GetTransform()</c> (the <see cref="System.Numerics.Matrix3x2"/> equivalent
+		/// of the still-concrete <c>base.Transform</c> property) instead of <c>GraphicsPath.Transform(Matrix)</c>.
+		/// <c>DrawSecondRowLabelMark</c>/the save-restore <c>matrix</c> local stay concrete <see cref="Matrix"/> —
+		/// they only round-trip through <c>base.Transform</c>, never touch font/brush/format.
+		/// </summary>
+		internal void DrawLabelStringRel(Axis axis, int labelRowIndex, LabelMark labelMark, Color markColor, string text, string image, Color imageTranspColor, IChartFont font, IBrush brush, RectangleF position, ITextFormat format, int angle, RectangleF boundaryRect, CustomLabel label, bool truncatedLeft, bool truncatedRight)
+		{
+			ITextFormat stringFormat = resourceFactory.CreateTextFormat();
+			stringFormat.Alignment = format.Alignment;
+			stringFormat.LineAlignment = format.LineAlignment;
+			stringFormat.FormatFlags = format.FormatFlags;
+			stringFormat.Trimming = format.Trimming;
+			SizeF sizeF = SizeF.Empty;
+			if (position.Width == 0f || position.Height == 0f)
+			{
+				return;
+			}
+			RectangleF rectangleF = GetAbsoluteRectangle(position);
+			if (rectangleF.Width < 1f)
+			{
+				rectangleF.Width = 1f;
+			}
+			if (rectangleF.Height < 1f)
+			{
+				rectangleF.Height = 1f;
+			}
+			CommonElements commonElements = axis.Common;
+			if (commonElements.ProcessModeRegions)
+			{
+				commonElements.HotRegionsList.AddHotRegion(Rectangle.Round(rectangleF), label, ChartElementType.AxisLabels, relativeCoordinates: false, insertAtBeginning: true);
+			}
+			if (labelRowIndex > 0)
+			{
+				stringFormat.LineAlignment = StringAlignment.Center;
+				stringFormat.Alignment = StringAlignment.Center;
+				angle = 0;
+				if (axis.AxisPosition == AxisPosition.Left)
+				{
+					angle = -90;
+				}
+				else if (axis.AxisPosition == AxisPosition.Right)
+				{
+					angle = 90;
+				}
+				else if (axis.AxisPosition != AxisPosition.Top)
+				{
+					_ = axis.AxisPosition;
+					_ = 3;
+				}
+			}
+			PointF empty = PointF.Empty;
+			if (axis.AxisPosition == AxisPosition.Left)
+			{
+				empty.X = rectangleF.Right;
+				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
+			}
+			else if (axis.AxisPosition == AxisPosition.Right)
+			{
+				empty.X = rectangleF.Left;
+				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
+			}
+			else if (axis.AxisPosition == AxisPosition.Top)
+			{
+				empty.X = rectangleF.X + rectangleF.Width / 2f;
+				empty.Y = rectangleF.Bottom;
+			}
+			else if (axis.AxisPosition == AxisPosition.Bottom)
+			{
+				empty.X = rectangleF.X + rectangleF.Width / 2f;
+				empty.Y = rectangleF.Top;
+			}
+			if ((axis.AxisPosition == AxisPosition.Top || axis.AxisPosition == AxisPosition.Bottom) && angle != 0)
+			{
+				empty.X = rectangleF.X + rectangleF.Width / 2f;
+				empty.Y = ((axis.AxisPosition == AxisPosition.Top) ? rectangleF.Bottom : rectangleF.Y);
+				RectangleF empty2 = RectangleF.Empty;
+				empty2.X = rectangleF.X + rectangleF.Width / 2f;
+				empty2.Y = rectangleF.Y - rectangleF.Width / 2f;
+				empty2.Height = rectangleF.Width;
+				empty2.Width = rectangleF.Height;
+				if (axis.AxisPosition == AxisPosition.Bottom)
+				{
+					if (angle < 0)
+					{
+						empty2.X -= empty2.Width;
+					}
+					stringFormat.Alignment = StringAlignment.Near;
+					if (angle < 0)
+					{
+						stringFormat.Alignment = StringAlignment.Far;
+					}
+					stringFormat.LineAlignment = StringAlignment.Center;
+				}
+				if (axis.AxisPosition == AxisPosition.Top)
+				{
+					empty2.Y += rectangleF.Height;
+					if (angle > 0)
+					{
+						empty2.X -= empty2.Width;
+					}
+					stringFormat.Alignment = StringAlignment.Far;
+					if (angle < 0)
+					{
+						stringFormat.Alignment = StringAlignment.Near;
+					}
+					stringFormat.LineAlignment = StringAlignment.Center;
+				}
+				rectangleF = empty2;
+			}
+			if ((axis.AxisPosition == AxisPosition.Left || axis.AxisPosition == AxisPosition.Right) && (angle == 90 || angle == -90))
+			{
+				empty.X = rectangleF.X + rectangleF.Width / 2f;
+				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
+				RectangleF empty3 = RectangleF.Empty;
+				empty3.X = empty.X - rectangleF.Height / 2f;
+				empty3.Y = empty.Y - rectangleF.Width / 2f;
+				empty3.Height = rectangleF.Width;
+				empty3.Width = rectangleF.Height;
+				rectangleF = empty3;
+				StringAlignment alignment = stringFormat.Alignment;
+				stringFormat.Alignment = stringFormat.LineAlignment;
+				stringFormat.LineAlignment = alignment;
+				if (angle == 90)
+				{
+					if (stringFormat.LineAlignment == StringAlignment.Far)
+					{
+						stringFormat.LineAlignment = StringAlignment.Near;
+					}
+					else if (stringFormat.LineAlignment == StringAlignment.Near)
+					{
+						stringFormat.LineAlignment = StringAlignment.Far;
+					}
+				}
+				if (angle == -90)
+				{
+					if (stringFormat.Alignment == StringAlignment.Far)
+					{
+						stringFormat.Alignment = StringAlignment.Near;
+					}
+					else if (stringFormat.Alignment == StringAlignment.Near)
+					{
+						stringFormat.Alignment = StringAlignment.Far;
+					}
+				}
+			}
+			Matrix matrix = null;
+			if (angle != 0)
+			{
+				myMatrix = base.GetTransform().RotateAt(angle, empty);
+				matrix = base.Transform;
+				base.SetTransform(myMatrix);
+			}
+			RectangleF rect = Rectangle.Empty;
+			float num = 0f;
+			float num2 = 0f;
+			if (angle != 0 && angle != 90 && angle != -90)
+			{
+				sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF.Size, stringFormat);
+				rect.Width = sizeF.Width;
+				rect.Height = sizeF.Height;
+				if (stringFormat.Alignment == StringAlignment.Far)
+				{
+					rect.X = rectangleF.Right - sizeF.Width;
+				}
+				else if (stringFormat.Alignment == StringAlignment.Near)
+				{
+					rect.X = rectangleF.X;
+				}
+				else if (stringFormat.Alignment == StringAlignment.Center)
+				{
+					rect.X = rectangleF.X + rectangleF.Width / 2f - sizeF.Width / 2f;
+				}
+				if (stringFormat.LineAlignment == StringAlignment.Far)
+				{
+					rect.Y = rectangleF.Bottom - sizeF.Height;
+				}
+				else if (stringFormat.LineAlignment == StringAlignment.Near)
+				{
+					rect.Y = rectangleF.Y;
+				}
+				else if (stringFormat.LineAlignment == StringAlignment.Center)
+				{
+					rect.Y = rectangleF.Y + rectangleF.Height / 2f - sizeF.Height / 2f;
+				}
+				num = (float)Math.Sin((double)((float)(90 - angle) / 180f) * Math.PI) * rect.Height / 2f;
+				num2 = (float)Math.Sin((double)((float)Math.Abs(angle) / 180f) * Math.PI) * rect.Height / 2f;
+				if (axis.AxisPosition == AxisPosition.Left)
+				{
+					myMatrix = myMatrix.Translate(0f - num2, 0f);
+				}
+				else if (axis.AxisPosition == AxisPosition.Right)
+				{
+					myMatrix = myMatrix.Translate(num2, 0f);
+				}
+				else if (axis.AxisPosition == AxisPosition.Top)
+				{
+					myMatrix = myMatrix.Translate(0f, 0f - num);
+				}
+				else if (axis.AxisPosition == AxisPosition.Bottom)
+				{
+					myMatrix = myMatrix.Translate(0f, num);
+				}
+				if (boundaryRect != RectangleF.Empty)
+				{
+					Rendering.IClipRegion region = resourceFactory.CreateRegion(rect);
+					region.Transform(myMatrix);
+					if (axis.AxisPosition == AxisPosition.Left)
+					{
+						boundaryRect.Width += boundaryRect.X;
+						boundaryRect.X = 0f;
+					}
+					else if (axis.AxisPosition == AxisPosition.Right)
+					{
+						boundaryRect.Width = (float)common.Width - boundaryRect.X;
+					}
+					else if (axis.AxisPosition == AxisPosition.Top)
+					{
+						boundaryRect.Height += boundaryRect.Y;
+						boundaryRect.Y = 0f;
+					}
+					else if (axis.AxisPosition == AxisPosition.Bottom)
+					{
+						boundaryRect.Height = (float)common.Height - boundaryRect.Y;
+					}
+					region.Exclude(GetAbsoluteRectangle(boundaryRect));
+					if (!region.IsEmpty(this))
+					{
+						base.Transform = matrix;
+						float num3 = region.GetBounds(this).Width / (float)Math.Cos((double)((float)Math.Abs(angle) / 180f) * Math.PI);
+						if (axis.AxisPosition == AxisPosition.Left)
+						{
+							num3 -= rect.Height * (float)Math.Tan((double)((float)Math.Abs(angle) / 180f) * Math.PI);
+							rectangleF.Y = rect.Y;
+							rectangleF.X = rect.X + num3;
+							rectangleF.Width = rect.Width - num3;
+							rectangleF.Height = rect.Height;
+						}
+						else if (axis.AxisPosition == AxisPosition.Right)
+						{
+							num3 -= rect.Height * (float)Math.Tan((double)((float)Math.Abs(angle) / 180f) * Math.PI);
+							rectangleF.Y = rect.Y;
+							rectangleF.X = rect.X;
+							rectangleF.Width = rect.Width - num3;
+							rectangleF.Height = rect.Height;
+						}
+						else if (axis.AxisPosition == AxisPosition.Top)
+						{
+							rectangleF.Y = rect.Y;
+							rectangleF.X = rect.X;
+							rectangleF.Width = rect.Width - num3;
+							rectangleF.Height = rect.Height;
+							if (angle > 0)
+							{
+								rectangleF.X += num3;
+							}
+						}
+						else if (axis.AxisPosition == AxisPosition.Bottom)
+						{
+							rectangleF.Y = rect.Y;
+							rectangleF.X = rect.X;
+							rectangleF.Width = rect.Width - num3;
+							rectangleF.Height = rect.Height;
+							if (angle < 0)
+							{
+								rectangleF.X += num3;
+							}
+						}
+					}
+				}
+				base.SetTransform(myMatrix);
+			}
+			RectangleF rectangleF2 = new RectangleF(rectangleF.Location, rectangleF.Size);
+			Image image2 = null;
+			SizeF size = default(SizeF);
+			if (image.Length > 0)
+			{
+				ImageLoader.GetAdjustedImageSize(image2, ref size);
+				rectangleF2.Width -= image2.Size.Width;
+				rectangleF2.X += image2.Size.Width;
+				if (rectangleF2.Width < 1f)
+				{
+					rectangleF2.Width = 1f;
+				}
+			}
+			if (labelRowIndex > 0 && labelMark != 0)
+			{
+				sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF2.Size, stringFormat);
+				SizeF labelSize = new SizeF(sizeF.Width, sizeF.Height);
+				if (image2 != null)
+				{
+					labelSize.Width += image2.Width;
+				}
+				DrawSecondRowLabelMark(axis, markColor, rectangleF, labelSize, labelMark, truncatedLeft, truncatedRight, matrix);
+			}
+			if ((stringFormat.FormatFlags & StringFormatFlags.LineLimit) != 0)
+			{
+				stringFormat.FormatFlags ^= StringFormatFlags.LineLimit;
+				if (MeasureString("I", font, rectangleF.Size, stringFormat).Height < rectangleF.Height)
+				{
+					stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
+				}
+			}
+			else
+			{
+				if ((stringFormat.FormatFlags & StringFormatFlags.NoClip) != 0)
+				{
+					stringFormat.FormatFlags ^= StringFormatFlags.NoClip;
+				}
+				SizeF sizeF2 = MeasureString("I", font, rectangleF.Size, stringFormat);
+				stringFormat.FormatFlags ^= StringFormatFlags.NoClip;
+				if (sizeF2.Height > rectangleF.Height)
+				{
+					float num4 = sizeF2.Height - rectangleF.Height;
+					rectangleF.Y -= num4 / 2f;
+					rectangleF.Height += num4;
+				}
+			}
+			DrawString(text.Replace("\\n", "\n"), font, brush, rectangleF2, stringFormat);
+			if (commonElements.ProcessModeRegions)
+			{
+				IGraphicsPath graphicsPath = resourceFactory.CreatePath();
+				graphicsPath.AddRectangle(rectangleF2);
+				graphicsPath.Transform(base.GetTransform());
+				string empty4 = string.Empty;
+				string empty5 = string.Empty;
+				empty4 = label.Href;
+				empty5 = label.MapAreaAttributes;
+				commonElements.HotRegionsList.AddHotRegion(this, graphicsPath, relativePath: false, label.ToolTip, empty4, empty5, label, ChartElementType.AxisLabels);
+			}
+			if (image2 != null)
+			{
+				if (sizeF.IsEmpty)
+				{
+					sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF2.Size, stringFormat);
+				}
+				RectangleF rectangleF3 = new RectangleF(rectangleF.X + (rectangleF.Width - (float)image2.Size.Width - sizeF.Width) / 2f, rectangleF.Y + (rectangleF.Height - (float)image2.Size.Height) / 2f, image2.Size.Width, image2.Size.Height);
+				if (stringFormat.LineAlignment == StringAlignment.Center)
+				{
+					rectangleF3.Y = rectangleF.Y + (rectangleF.Height - (float)image2.Size.Height) / 2f;
+				}
+				else if (stringFormat.LineAlignment == StringAlignment.Far)
+				{
+					rectangleF3.Y = rectangleF.Bottom - (sizeF.Height + (float)image2.Size.Height) / 2f;
+				}
+				else if (stringFormat.LineAlignment == StringAlignment.Near)
+				{
+					rectangleF3.Y = rectangleF.Top + (sizeF.Height - (float)image2.Size.Height) / 2f;
+				}
+				if (stringFormat.Alignment == StringAlignment.Center)
+				{
+					rectangleF3.X = rectangleF.X + (rectangleF.Width - (float)image2.Size.Width - sizeF.Width) / 2f;
+				}
+				else if (stringFormat.Alignment == StringAlignment.Far)
+				{
+					rectangleF3.X = rectangleF.Right - (float)image2.Size.Width - sizeF.Width;
+				}
+				else if (stringFormat.Alignment == StringAlignment.Near)
+				{
+					rectangleF3.X = rectangleF.X;
+				}
+				IImageDrawOptions imageAttributes = resourceFactory.CreateImageDrawOptions();
+				if (imageTranspColor != Color.Empty)
+				{
+					imageAttributes.SetTransparentColor(imageTranspColor);
+				}
+				DrawImage(resourceFactory.WrapImage(image2), Rectangle.Round(rectangleF3), 0, 0, image2.Width, image2.Height, GraphicsUnit.Pixel, imageAttributes);
+				if (commonElements.ProcessModeRegions)
+				{
+					IGraphicsPath graphicsPath2 = resourceFactory.CreatePath();
+					graphicsPath2.AddRectangle(rectangleF3);
+					graphicsPath2.Transform(base.GetTransform());
+					string empty6 = string.Empty;
+					string empty7 = string.Empty;
+					empty6 = label.ImageHref;
+					empty7 = label.ImageMapAreaAttributes;
+					commonElements.HotRegionsList.AddHotRegion(this, graphicsPath2, relativePath: false, string.Empty, empty6, empty7, label, ChartElementType.AxisLabelImage);
+				}
+			}
+			if (matrix != null)
+			{
+				base.Transform = matrix;
+			}
+		}
+
 		private void DrawSecondRowLabelBoxMark(Axis axis, Color markColor, RectangleF absPosition, SizeF labelSize, bool truncatedLeft, bool truncatedRight, Matrix originalTransform)
 		{
 			Matrix transform = base.Transform;
