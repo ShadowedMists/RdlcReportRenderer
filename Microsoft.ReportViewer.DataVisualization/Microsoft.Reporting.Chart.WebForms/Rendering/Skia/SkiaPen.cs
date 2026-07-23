@@ -6,14 +6,22 @@ using Microsoft.Reporting.Rendering;
 namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 {
 	/// <summary>
-	/// Spike adapter (tasks/chart-cross-platform-implementation.md Phase 0) — wraps an
-	/// <see cref="SKPaint"/> configured for stroking behind <see cref="IPen"/>. Unlike
-	/// <c>GdiPen</c>, this never touches <see cref="System.Drawing"/>, so it can be
-	/// constructed on Linux where GDI+ initialization itself throws (see spike report).
+	/// Adapter behind <see cref="IPen"/>, wrapping an <see cref="SKPaint"/> configured for
+	/// stroking. Unlike <c>GdiPen</c>, this never touches <see cref="System.Drawing"/>, so it
+	/// can be constructed on Linux where GDI+ initialization itself throws (see spike report).
+	/// Dash/cap/join are real (E1) via <see cref="SKPathEffect.CreateDash"/>/<see cref="SkiaConvert"/>;
+	/// <see cref="Alignment"/>/<see cref="DashPattern"/> stay plain properties — Skia strokes are
+	/// always center-aligned (no GDI+ <c>PenAlignment.Inset</c> equivalent) and <c>DashPattern</c>
+	/// is a caller-facing custom-dash escape hatch not yet exercised by any real caller.
 	/// </summary>
 	internal sealed class SkiaPen : IPen
 	{
 		internal SKPaint NativePaint { get; }
+
+		private DashStyle dashStyle;
+		private LineCap startCap;
+		private LineCap endCap;
+		private LineJoin lineJoin = LineJoin.Miter;
 
 		internal SkiaPen(Color color, float width)
 		{
@@ -22,6 +30,21 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 				Style = SKPaintStyle.Stroke,
 				Color = SkiaConvert.ToSKColor(color),
 				StrokeWidth = width,
+				StrokeJoin = SkiaConvert.ToSKStrokeJoin(lineJoin),
+				IsAntialias = true,
+			};
+		}
+
+		/// <summary>Strokes with an arbitrary brush's fill (solid/texture) — GDI+'s <c>Pen(Brush, float)</c> constructor.</summary>
+		internal SkiaPen(SKPaint brushSource, float width)
+		{
+			NativePaint = new SKPaint
+			{
+				Style = SKPaintStyle.Stroke,
+				Color = brushSource.Color,
+				Shader = brushSource.Shader,
+				StrokeWidth = width,
+				StrokeJoin = SkiaConvert.ToSKStrokeJoin(lineJoin),
 				IsAntialias = true,
 			};
 		}
@@ -35,23 +58,70 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public float Width
 		{
 			get => NativePaint.StrokeWidth;
-			set => NativePaint.StrokeWidth = value;
+			set
+			{
+				NativePaint.StrokeWidth = value;
+				ApplyDashStyle();
+			}
 		}
 
-		// Spike scope: the sample scene only needs solid, round-joined strokes.
-		// Dash/cap/join translation is straightforward (SKPathEffect.CreateDash,
-		// SKStrokeCap, SKStrokeJoin) but left for the real Milestone E1 adapter.
-		public DashStyle DashStyle { get; set; }
+		public DashStyle DashStyle
+		{
+			get => dashStyle;
+			set
+			{
+				dashStyle = value;
+				ApplyDashStyle();
+			}
+		}
 
-		public LineCap StartCap { get; set; }
+		public LineCap StartCap
+		{
+			get => startCap;
+			set
+			{
+				startCap = value;
+				// Skia has one stroke cap per paint (no distinct start/end); StartCap is the source of truth,
+				// matching how GDI+ pens are used in this codebase (both caps almost always set identically).
+				NativePaint.StrokeCap = SkiaConvert.ToSKStrokeCap(value);
+			}
+		}
 
-		public LineCap EndCap { get; set; }
+		public LineCap EndCap
+		{
+			get => endCap;
+			set => endCap = value;
+		}
 
-		public LineJoin LineJoin { get; set; }
+		public LineJoin LineJoin
+		{
+			get => lineJoin;
+			set
+			{
+				lineJoin = value;
+				NativePaint.StrokeJoin = SkiaConvert.ToSKStrokeJoin(value);
+			}
+		}
 
+		// No Skia equivalent to GDI+'s PenAlignment.Inset (Skia strokes are always centered on the path);
+		// kept as a plain property so callers that only set/read it don't need special-casing per backend.
 		public PenAlignment Alignment { get; set; }
 
 		public float[] DashPattern { get; set; }
+
+		private void ApplyDashStyle()
+		{
+			NativePaint.PathEffect?.Dispose();
+			float unit = NativePaint.StrokeWidth <= 0f ? 1f : NativePaint.StrokeWidth;
+			NativePaint.PathEffect = dashStyle switch
+			{
+				DashStyle.Dash => SKPathEffect.CreateDash(new[] { 3f * unit, 1f * unit }, 0f),
+				DashStyle.Dot => SKPathEffect.CreateDash(new[] { 1f * unit, 1f * unit }, 0f),
+				DashStyle.DashDot => SKPathEffect.CreateDash(new[] { 3f * unit, 1f * unit, 1f * unit, 1f * unit }, 0f),
+				DashStyle.DashDotDot => SKPathEffect.CreateDash(new[] { 3f * unit, 1f * unit, 1f * unit, 1f * unit, 1f * unit, 1f * unit }, 0f),
+				_ => null,
+			};
+		}
 
 		public IPen Clone()
 		{
@@ -64,6 +134,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			return skiaPen;
 		}
 
-		public void Dispose() => NativePaint.Dispose();
+		public void Dispose()
+		{
+			NativePaint.PathEffect?.Dispose();
+			NativePaint.Dispose();
+		}
 	}
 }

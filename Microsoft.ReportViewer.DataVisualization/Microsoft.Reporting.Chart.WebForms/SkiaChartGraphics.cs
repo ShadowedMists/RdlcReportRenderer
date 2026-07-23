@@ -36,6 +36,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private static SKPaint Native(IBrush brush) => brush switch
 		{
 			SkiaSolidBrush b => b.NativePaint,
+			SkiaTextureBrush b => b.NativePaint,
 			_ => throw new NotSupportedException($"Spike scope: unrecognized IBrush implementation: {brush.GetType()}"),
 		};
 

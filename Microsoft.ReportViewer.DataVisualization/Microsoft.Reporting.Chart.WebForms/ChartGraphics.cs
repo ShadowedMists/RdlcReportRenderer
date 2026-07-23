@@ -4293,6 +4293,39 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
+		/// <summary>Interface-typed counterpart of <see cref="GetLabelBackgroundGraphicsPath"/> (E1 — see chart-gdi-type-abstraction.md). Self-contained (built and consumed only within this method), so it converts without rippling into any other signature.</summary>
+		private IGraphicsPath GetLabelBackgroundGraphicsPathResource(RectangleF backPosition, int rotationAngle)
+		{
+			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
+			PointF point = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
+			myMatrix = base.GetTransform().RotateAt(rotationAngle, point);
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
+			graphicsPath.AddRectangle(rect);
+			graphicsPath.Transform(myMatrix);
+			return graphicsPath;
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="CanLabelFitInSlice(GraphicsPath, RectangleF, int)"/>
+		/// (E1 — see chart-gdi-type-abstraction.md, <c>SunburstChart</c>'s label-fitting residual). The
+		/// original's <c>Region.IsSuperSetOf</c> (union-then-<c>Region.Equals(Region, Graphics)</c>, a
+		/// GDI+-only raster comparison) is replaced by an equivalent, backend-agnostic set identity:
+		/// <c>sliceRegion ⊇ labelPath</c> iff <c>labelPath - sliceRegion</c> is empty, which
+		/// <see cref="IClipRegion.Complement"/> computes directly (updates the region to "the portion of
+		/// the given path that does not intersect it" — exactly <c>path - region</c>).
+		/// </summary>
+		public bool CanLabelFitInSlice(IGraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle)
+		{
+			if (sliceGraphicsPath == null)
+			{
+				return false;
+			}
+			using IGraphicsPath path = GetLabelBackgroundGraphicsPathResource(labelRelativeRect, labelRotationAngle);
+			using Rendering.IClipRegion sliceRegion = resourceFactory.CreateRegion(sliceGraphicsPath);
+			sliceRegion.Complement(path);
+			return sliceRegion.IsEmpty(this);
+		}
+
 		public void DrawLabelBackground(int angle, PointF textPosition, RectangleF backPosition, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle)
 		{
 			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
