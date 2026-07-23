@@ -7,6 +7,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Numerics;
 using System.Windows.Forms;
 using Microsoft.Reporting.Rendering;
 
@@ -787,9 +788,9 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			return null;
 		}
 
-		internal Brush GetLightBrush(GaugeGraphics g, CustomTickMark tickMark, Color fillColor, GraphicsPath path)
+		internal IBrush GetLightBrush(GaugeGraphics g, CustomTickMark tickMark, Color fillColor, IGraphicsPath path)
 		{
-			Brush brush = null;
+			IBrush brush;
 			if (tickMark.EnableGradient)
 			{
 				HSV hsv = ColorHandler.ColorToHSV(fillColor);
@@ -800,48 +801,34 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				float num = 1f - tickMark.GradientDensity / 100f;
 				if (tickMark.Shape == MarkerStyle.Circle)
 				{
-					brush = new PathGradientBrush(path);
-					((PathGradientBrush)brush).CenterColor = fillColor;
-					((PathGradientBrush)brush).CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
-					((PathGradientBrush)brush).SurroundColors = new Color[1]
+					IPathGradientBrush pathGradientBrush = g.ResourceFactory.CreatePathGradientBrush(path);
+					pathGradientBrush.CenterColor = fillColor;
+					pathGradientBrush.CenterPoint = new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+					pathGradientBrush.SurroundColors = new Color[1]
 					{
 						color
 					};
-					Blend blend = new Blend();
-					blend.Factors = new float[2]
+					pathGradientBrush.Blend = new Blend
 					{
-						num,
-						1f
+						Factors = new float[2] { num, 1f },
+						Positions = new float[2] { 0f, 1f },
 					};
-					blend.Positions = new float[2]
-					{
-						0f,
-						1f
-					};
-					((PathGradientBrush)brush).Blend = blend;
+					brush = pathGradientBrush;
 				}
 				else
 				{
-					brush = new LinearGradientBrush(path.GetBounds(), color, fillColor, LinearGradientMode.Vertical);
-					Blend blend2 = new Blend();
-					blend2.Factors = new float[3]
+					ILinearGradientBrush linearGradientBrush = g.ResourceFactory.CreateLinearGradientBrush(bounds, color, fillColor, 90f);
+					linearGradientBrush.Blend = new Blend
 					{
-						num,
-						1f,
-						num
+						Factors = new float[3] { num, 1f, num },
+						Positions = new float[3] { 0f, 0.5f, 1f },
 					};
-					blend2.Positions = new float[3]
-					{
-						0f,
-						0.5f,
-						1f
-					};
-					((LinearGradientBrush)brush).Blend = blend2;
+					brush = linearGradientBrush;
 				}
 			}
 			else
 			{
-				brush = new SolidBrush(fillColor);
+				brush = g.ResourceFactory.CreateSolidBrush(fillColor);
 			}
 			return brush;
 		}
@@ -869,14 +856,20 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			SizeF sizeF = new SizeF(g.GetAbsoluteDimension(tickMark.Width), g.GetAbsoluteDimension(tickMark.Length));
 			Color rangeTickMarkColor = GetRangeTickMarkColor(value, tickMark.FillColor);
-			using (GraphicsPath graphicsPath = g.CreateMarker(absolutePoint, sizeF.Width, sizeF.Height, tickMark.Shape))
+			using (IGraphicsPath graphicsPath = g.ResourceFactory.WrapPath(g.CreateMarker(absolutePoint, sizeF.Width, sizeF.Height, tickMark.Shape)))
 			{
-				using (Brush brush = GetLightBrush(g, tickMark, rangeTickMarkColor, graphicsPath))
+				using (IBrush brush = GetLightBrush(g, tickMark, rangeTickMarkColor, graphicsPath))
 				{
-					graphicsPath.Transform(matrix);
-					if (tickMark.EnableGradient && brush is LinearGradientBrush)
+					graphicsPath.Transform(ToMatrix3x2(matrix));
+					if (tickMark.EnableGradient && brush is ILinearGradientBrush linearGradientBrush)
 					{
-						((LinearGradientBrush)brush).Transform = matrix;
+						// matrix is always a composition of RotateAt(angle, absolutePoint) calls around the
+						// same point (see CircularScale/LinearScale's DrawTickMark overrides), so it's
+						// exactly reproducible via SetRotationTransform once decomposed back to (angle, center) —
+						// not an approximation of an arbitrary matrix, which ILinearGradientBrush deliberately
+						// doesn't support (see docs/decisions.md).
+						DecomposeRotation(matrix, out float rotationAngle, out PointF rotationCenter);
+						linearGradientBrush.SetRotationTransform(rotationAngle, rotationCenter);
 					}
 					if (ShadowOffset != 0f)
 					{
@@ -885,7 +878,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					g.FillPath(brush, graphicsPath, 0f, useBrushOffset: false, circularFill: false);
 					if (tickMark.BorderWidth > 0 && tickMark.BorderStyle != 0)
 					{
-						using (Pen pen = new Pen(tickMark.BorderColor, tickMark.BorderWidth))
+						using (IPen pen = g.ResourceFactory.CreatePen(tickMark.BorderColor, tickMark.BorderWidth))
 						{
 							pen.DashStyle = g.GetPenStyle(tickMark.BorderStyle);
 							pen.Alignment = PenAlignment.Outset;
@@ -894,6 +887,38 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					}
 				}
 			}
+		}
+
+		private static Matrix3x2 ToMatrix3x2(Matrix nativeMatrix)
+		{
+			float[] elements = nativeMatrix.Elements;
+			return new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+		}
+
+		/// <summary>
+		/// Decomposes a matrix known to be a pure rotation about a fixed point (i.e. built only from
+		/// <c>Matrix.RotateAt</c> calls around a single, common point — see this method's one caller)
+		/// back into that (angle, center) pair. Not a generalized arbitrary-matrix decomposition: the
+		/// center is recovered by solving for the matrix's fixed point, which only exists (uniquely) for
+		/// a non-degenerate rotation; callers must not use this on a matrix that also scales/shears/translates
+		/// independently of the rotation.
+		/// </summary>
+		internal static void DecomposeRotation(Matrix matrix, out float angleDegrees, out PointF center)
+		{
+			float[] elements = matrix.Elements;
+			float m11 = elements[0];
+			float m12 = elements[1];
+			float m21 = elements[2];
+			float m22 = elements[3];
+			float dx = elements[4];
+			float dy = elements[5];
+			angleDegrees = (float)(Math.Atan2(m12, m11) * (180.0 / Math.PI));
+			float a = 1f - m11;
+			float b = 0f - m21;
+			float c = 0f - m12;
+			float d = 1f - m22;
+			float det = a * d - b * c;
+			center = (Math.Abs(det) < 1E-06f) ? PointF.Empty : new PointF((dx * d - b * dy) / det, (a * dy - c * dx) / det);
 		}
 
 		internal void DrawTickMarkImage(GaugeGraphics g, CustomTickMark tickMark, Matrix matrix, PointF centerPoint, bool drawShadow)

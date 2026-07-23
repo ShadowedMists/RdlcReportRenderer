@@ -571,6 +571,19 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 		}
 
+		internal void DrawPathShadowAbs(IGraphicsPath path, Color shadowColor, float shadowWidth)
+		{
+			if (shadowWidth != 0f)
+			{
+				path.Transform(Matrix3x2.CreateTranslation(shadowWidth, shadowWidth));
+				using (IBrush brush = ResourceFactory.CreateSolidBrush(shadowColor))
+				{
+					FillPath(brush, path);
+				}
+				path.Transform(Matrix3x2.CreateTranslation(0f - shadowWidth, 0f - shadowWidth));
+			}
+		}
+
 		internal void DrawPathAbs(GraphicsPath path, Color backColor, GaugeHatchStyle backHatchStyle, string backImage, GaugeImageWrapMode backImageMode, Color backImageTranspColor, GaugeImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor, Color borderColor, int borderWidth, GaugeDashStyle borderStyle, PenAlignment penAlignment)
 		{
 			Brush brush = null;
