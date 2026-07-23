@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using Microsoft.Reporting.Chart.WebForms;
 using Microsoft.Reporting.Chart.WebForms.Rendering.Skia;
 using Microsoft.Reporting.Rendering;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -173,6 +174,116 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             using var gradientBrush = new SkiaLinearGradientBrush();
 
             Assert.ThrowsException<System.NotSupportedException>(() => factory.CreatePen(gradientBrush, 1f));
+        }
+
+        [TestMethod]
+        public void DrawPie_DoesNotThrow_AndPaintsSomething()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateSolidBrush(Color.Red);
+
+            graphics.FillPie(brush, 5, 5, 30, 30, 0, 270);
+            canvas.Flush();
+
+            Assert.AreNotEqual(default(SKColor), surfaceBitmap.GetPixel(20, 20));
+        }
+
+        [TestMethod]
+        public void DrawArc_DoesNotThrow()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var pen = Factory.CreatePen(Color.Black, 1f);
+
+            graphics.DrawArc(pen, 5, 5, 30, 30, 0, 180);
+        }
+
+        [TestMethod]
+        public void DrawCurve_ProducesNonEmptyPath()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var pen = Factory.CreatePen(Color.Black, 1f);
+            var points = new[] { new PointF(0, 25), new PointF(15, 5), new PointF(30, 25), new PointF(45, 5) };
+
+            graphics.DrawCurve(pen, points, 0, points.Length - 1, 0.5f);
+            canvas.Flush();
+
+            Assert.AreNotEqual(default(SKColor), surfaceBitmap.GetPixel(15, 5));
+        }
+
+        [TestMethod]
+        public void DrawLines_PaintsOpenPolyline()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var pen = Factory.CreatePen(Color.Black, 1f);
+
+            graphics.DrawLines(pen, new[] { new PointF(0, 0), new PointF(40, 0), new PointF(40, 40) });
+            canvas.Flush();
+
+            Assert.AreNotEqual(default(SKColor), surfaceBitmap.GetPixel(40, 20));
+        }
+
+        [TestMethod]
+        public void FillRegion_PaintsRegionBounds()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateSolidBrush(Color.Blue);
+            using var region = Factory.CreateRegion(new RectangleF(5, 5, 20, 20));
+
+            graphics.FillRegion(brush, region);
+            canvas.Flush();
+
+            Assert.AreEqual(new SKColor(0, 0, 255), surfaceBitmap.GetPixel(10, 10));
+        }
+
+        [TestMethod]
+        public void DrawImage_IChartImage_BlitsBitmapIntoDestRect()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var image = CreateTestImage(4, 4, SKColors.Green);
+
+            graphics.DrawImage(image, new Rectangle(5, 5, 20, 20), 0, 0, 4, 4, GraphicsUnit.Pixel, Factory.CreateImageDrawOptions());
+            canvas.Flush();
+
+            Assert.AreEqual(new SKColor(0, 128, 0), surfaceBitmap.GetPixel(15, 15));
+        }
+
+        [TestMethod]
+        public void DrawImage_IChartImage_WithTransparentColor_SkipsColorKeyedPixels()
+        {
+            using var surfaceBitmap = new SKBitmap(50, 50);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            canvas.Clear(SKColors.White);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var image = CreateTestImage(4, 4, SKColors.Green);
+            var options = Factory.CreateImageDrawOptions();
+            options.SetTransparentColor(Color.FromArgb(0, 128, 0));
+
+            graphics.DrawImage(image, new Rectangle(5, 5, 20, 20), 0, 0, 4, 4, GraphicsUnit.Pixel, options);
+            canvas.Flush();
+
+            Assert.AreEqual(SKColors.White, surfaceBitmap.GetPixel(15, 15));
+        }
+
+        [TestMethod]
+        public void ClipRegion_ToDrawablePath_ReturnsIndependentCopy()
+        {
+            using var region = Factory.CreateRegion(new RectangleF(0, 0, 10, 10)) as SkiaClipRegion;
+            using var path = region.ToDrawablePath();
+            region.Union(new RectangleF(50, 50, 5, 5));
+
+            Assert.AreEqual(10f, path.Bounds.Width, 0.01f, "Path returned by ToDrawablePath must not reflect later mutations to the region.");
         }
     }
 }
