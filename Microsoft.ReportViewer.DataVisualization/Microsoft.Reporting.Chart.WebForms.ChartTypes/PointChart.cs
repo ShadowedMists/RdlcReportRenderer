@@ -595,7 +595,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			};
 			area.matrix3D.TransformPoints(array);
 			PointF pointF = array[0].PointF;
-			GraphicsPath path = null;
+			IGraphicsPath path = null;
 			if ((alwaysDrawMarkers || markerStyle != 0 || markerImage.Length > 0) && pointEx.index % series.MarkerStep == 0)
 			{
 				DrawingOperationTypes drawingOperationTypes = DrawingOperationTypes.DrawElement;
@@ -605,7 +605,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				graph.StartHotRegion(dataPoint);
 				graph.StartAnimation();
-				path = graph.DrawMarker3D(area.matrix3D, area.Area3DStyle.Light, pointEx.zPosition + (middleMarker ? (pointEx.depth / 2f) : pointEx.depth), empty, (markerStyle == MarkerStyle.None) ? MarkerStyle.Circle : markerStyle, (int)markerSize2.Height, (dataPoint.MarkerColor == Color.Empty) ? dataPoint.Color : dataPoint.MarkerColor, (dataPoint.MarkerBorderColor == Color.Empty) ? dataPoint.BorderColor : dataPoint.MarkerBorderColor, GetMarkerBorderSize(dataPoint), markerImage, dataPoint.MarkerImageTransparentColor, (dataPoint.series != null) ? dataPoint.series.ShadowOffset : 0, (dataPoint.series != null) ? dataPoint.series.ShadowColor : Color.Empty, new RectangleF(pointF.X, pointF.Y, markerSize2.Width, markerSize2.Height), drawingOperationTypes);
+				path = graph.DrawMarker3DResource(area.matrix3D, area.Area3DStyle.Light, pointEx.zPosition + (middleMarker ? (pointEx.depth / 2f) : pointEx.depth), empty, (markerStyle == MarkerStyle.None) ? MarkerStyle.Circle : markerStyle, (int)markerSize2.Height, (dataPoint.MarkerColor == Color.Empty) ? dataPoint.Color : dataPoint.MarkerColor, (dataPoint.MarkerBorderColor == Color.Empty) ? dataPoint.BorderColor : dataPoint.MarkerBorderColor, GetMarkerBorderSize(dataPoint), markerImage, dataPoint.MarkerImageTransparentColor, (dataPoint.series != null) ? dataPoint.series.ShadowOffset : 0, (dataPoint.series != null) ? dataPoint.series.ShadowColor : Color.Empty, new RectangleF(pointF.X, pointF.Y, markerSize2.Width, markerSize2.Height), drawingOperationTypes);
 				graph.StopAnimation();
 				graph.EndHotRegion();
 			}

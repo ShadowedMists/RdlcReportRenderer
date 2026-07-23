@@ -193,14 +193,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				positionZ = areaSceneDepth;
 			}
-			graph.Fill3DRectangle(position2, positionZ, width, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
+			graph.Fill3DRectangleResource(position2, positionZ, width, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
 			position2 = new RectangleF(position.Location, position.Size);
 			position2.Width = areaSceneWallWidth.Width;
 			if (!IsSideSceneWallOnLeft())
 			{
 				position2.X = position.Right - areaSceneWallWidth.Width;
 			}
-			graph.Fill3DRectangle(position2, 0f, areaSceneDepth, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
+			graph.Fill3DRectangleResource(position2, 0f, areaSceneDepth, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
 			if (IsBottomSceneWallVisible())
 			{
 				position2 = new RectangleF(position.Location, position.Size);
@@ -212,7 +212,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					position2.X += areaSceneWallWidth.Width;
 				}
 				positionZ = 0f;
-				graph.Fill3DRectangle(position2, 0f, areaSceneDepth, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
+				graph.Fill3DRectangleResource(position2, 0f, areaSceneDepth, matrix3D, chartArea.Area3DStyle.Light, color, chartArea.BackHatchStyle, chartArea.BackImage, chartArea.BackImageMode, chartArea.BackImageTransparentColor, chartArea.BackImageAlign, chartArea.BackGradientType, chartArea.BackGradientEndColor, chartArea.BorderColor, chartArea.BorderWidth, chartArea.BorderStyle, PenAlignment.Outset, DrawingOperationTypes.DrawElement);
 			}
 		}
 

@@ -753,7 +753,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private void Draw3DStrip(ChartGraphics graph, RectangleF rect, bool horizontal)
 		{
 			ChartArea chartArea = axis.chartArea;
-			GraphicsPath graphicsPath = null;
+			IGraphicsPath graphicsPath = null;
 			DrawingOperationTypes drawingOperationTypes = DrawingOperationTypes.DrawElement;
 			if (axis.Common.ProcessModeRegions)
 			{
@@ -761,7 +761,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			InitAnimation3D(graph.common, rect, chartArea.IsMainSceneWallOnFront() ? chartArea.areaSceneDepth : 0f, 0f, chartArea.matrix3D, graph, axis);
 			graph.StartAnimation();
-			graphicsPath = graph.Fill3DRectangle(rect, chartArea.IsMainSceneWallOnFront() ? chartArea.areaSceneDepth : 0f, 0f, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
+			graphicsPath = graph.Fill3DRectangleResource(rect, chartArea.IsMainSceneWallOnFront() ? chartArea.areaSceneDepth : 0f, 0f, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
 			graph.StopAnimation();
 			if (axis.Common.ProcessModeRegions)
 			{
@@ -776,7 +776,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				rect.Width = 0f;
 				InitAnimation3D(graph.common, rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, graph, axis);
 				graph.StartAnimation();
-				graphicsPath = graph.Fill3DRectangle(rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
+				graphicsPath = graph.Fill3DRectangleResource(rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
 				graph.StopAnimation();
 			}
 			else if (chartArea.IsBottomSceneWallVisible())
@@ -785,7 +785,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				rect.Height = 0f;
 				InitAnimation3D(graph.common, rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, graph, axis);
 				graph.StartAnimation();
-				graphicsPath = graph.Fill3DRectangle(rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
+				graphicsPath = graph.Fill3DRectangleResource(rect, 0f, chartArea.areaSceneDepth, chartArea.matrix3D, chartArea.Area3DStyle.Light, BackColor, BackHatchStyle, BackImage, BackImageMode, BackImageTransparentColor, BackImageAlign, BackGradientType, BackGradientEndColor, BorderColor, BorderWidth, BorderStyle, PenAlignment.Outset, drawingOperationTypes);
 				graph.StopAnimation();
 			}
 			if (axis.Common.ProcessModeRegions)
