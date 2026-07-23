@@ -3,6 +3,7 @@ using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 {
@@ -421,7 +422,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					continue;
 				}
-				GraphicsPath graphicsPath = null;
+				IGraphicsPath graphicsPath = null;
 				double yValue2 = item2.indexedSeries ? ((double)item2.index) : dataPoint.XValue;
 				yValue2 = axis2.GetLogValue(yValue2);
 				if (yValue2 < axis2.GetViewMinimum() || yValue2 > axis2.GetViewMaximum())
@@ -456,7 +457,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					graph.StartHotRegion(dataPoint);
 					Init3DAnimation(common, empty, item2.zPosition, item2.depth, area.matrix3D, graph, yValue < axis2.Crossing, dataPoint);
 					graph.StartAnimation();
-					graphicsPath = graph.Fill3DRectangle(empty, item2.zPosition, item2.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: true, drawingOperationTypes);
+					graphicsPath = graph.Fill3DRectangleResource(empty, item2.zPosition, item2.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: true, drawingOperationTypes);
 					graph.StopAnimation();
 					graph.EndHotRegion();
 					if (common.ProcessModeRegions && !labels)

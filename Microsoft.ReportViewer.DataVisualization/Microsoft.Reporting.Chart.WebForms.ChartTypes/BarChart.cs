@@ -717,7 +717,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					continue;
 				}
 				dataPoint.positionRel = new PointF(empty.Right, (float)xPosition);
-				GraphicsPath path = null;
+				IGraphicsPath path = null;
 				if (!dataPoint.Empty)
 				{
 					num = (item2.indexedSeries ? ((double)item2.index) : dataPoint.XValue);
@@ -755,7 +755,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 					graph.StartHotRegion(dataPoint);
 					graph.StartAnimation();
-					path = graph.Fill3DRectangle(empty, item2.zPosition, item2.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num2, num3, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: false, drawingOperationTypes);
+					path = graph.Fill3DRectangleResource(empty, item2.zPosition, item2.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num2, num3, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: false, drawingOperationTypes);
 					graph.StopAnimation();
 					graph.EndHotRegion();
 					if (flag2)
@@ -880,7 +880,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				};
 				area.matrix3D.TransformPoints(array);
 				_ = array[0].PointF;
-				graph.DrawMarker3D(area.matrix3D, area.Area3DStyle.Light, pointEx.zPosition + pointEx.depth / 2f, empty, dataPoint.MarkerStyle, dataPoint.MarkerSize, dataPoint.MarkerColor.IsEmpty ? dataPoint.series.Color : dataPoint.MarkerColor, dataPoint.MarkerBorderColor, dataPoint.MarkerBorderWidth, dataPoint.MarkerImage, dataPoint.MarkerImageTransparentColor, (dataPoint.series != null) ? dataPoint.series.ShadowOffset : 0, (dataPoint.series != null) ? dataPoint.series.ShadowColor : Color.Empty, RectangleF.Empty, DrawingOperationTypes.DrawElement);
+				graph.DrawMarker3DResource(area.matrix3D, area.Area3DStyle.Light, pointEx.zPosition + pointEx.depth / 2f, empty, dataPoint.MarkerStyle, dataPoint.MarkerSize, dataPoint.MarkerColor.IsEmpty ? dataPoint.series.Color : dataPoint.MarkerColor, dataPoint.MarkerBorderColor, dataPoint.MarkerBorderWidth, dataPoint.MarkerImage, dataPoint.MarkerImageTransparentColor, (dataPoint.series != null) ? dataPoint.series.ShadowOffset : 0, (dataPoint.series != null) ? dataPoint.series.ShadowColor : Color.Empty, RectangleF.Empty, DrawingOperationTypes.DrawElement);
 			}
 		}
 

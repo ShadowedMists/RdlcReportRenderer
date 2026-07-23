@@ -660,7 +660,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						continue;
 					}
-					GraphicsPath graphicsPath = null;
+					IGraphicsPath graphicsPath = null;
 					if (yValue3 < axis.GetViewMinimum() || yValue3 > axis.GetViewMaximum() || (yValue < axis2.GetViewMinimum() && yValue2 < axis2.GetViewMinimum()) || (yValue > axis2.GetViewMaximum() && yValue2 > axis2.GetViewMaximum()))
 					{
 						continue;
@@ -692,7 +692,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						graph.StartHotRegion(dataPoint);
 						graph.StartAnimation();
-						graphicsPath = graph.Fill3DRectangle(empty, item.zPosition, item.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: false, drawingOperationTypes);
+						graphicsPath = graph.Fill3DRectangleResource(empty, item.zPosition, item.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: false, drawingOperationTypes);
 						graph.StopAnimation();
 						graph.EndHotRegion();
 						if (flag5)

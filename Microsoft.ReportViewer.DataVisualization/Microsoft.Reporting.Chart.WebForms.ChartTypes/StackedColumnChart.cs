@@ -701,7 +701,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						drawingOperationTypes |= DrawingOperationTypes.CalcElementPath;
 					}
 					graph.StartHotRegion(dataPoint);
-					GraphicsPath path = graph.Fill3DRectangle(empty, item.zPosition, item.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: true, drawingOperationTypes);
+					IGraphicsPath path = graph.Fill3DRectangleResource(empty, item.zPosition, item.depth, area.matrix3D, area.Area3DStyle.Light, dataPoint.Color, num, num2, dataPoint.BackHatchStyle, dataPoint.BackImage, dataPoint.BackImageMode, dataPoint.BackImageTransparentColor, dataPoint.BackImageAlign, dataPoint.BackGradientType, dataPoint.BackGradientEndColor, dataPoint.BorderColor, dataPoint.BorderWidth, dataPoint.BorderStyle, PenAlignment.Inset, barDrawingStyle, veticalOrientation: true, drawingOperationTypes);
 					graph.StopAnimation();
 					graph.EndHotRegion();
 					if (flag6)
