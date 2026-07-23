@@ -47,10 +47,34 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public void Dispose() { }
 	}
 
+	/// <summary>
+	/// Real adapter (E1) — wraps a fill-styled <see cref="SKPaint"/> whose <see cref="SKPaint.Shader"/>
+	/// is a bitmap shader (<see cref="SKShader.CreateBitmap(SKBitmap, SKShaderTileMode, SKShaderTileMode, SKMatrix)"/>),
+	/// built by <see cref="SkiaResourceFactory.CreateTextureBrush(IChartImage, WrapMode)"/>/
+	/// <see cref="SkiaResourceFactory.CreateTextureBrush(IChartImage, RectangleF, IImageDrawOptions)"/>.
+	/// Owns an optional colour-keyed bitmap copy (see <c>CreateTextureBrush(image, rect, options)</c>),
+	/// disposed alongside the paint.
+	/// </summary>
 	internal sealed class SkiaTextureBrush : ITextureBrush
 	{
+		internal SKPaint NativePaint { get; }
+
+		private readonly SKBitmap ownedBitmap;
+
 		public WrapMode WrapMode { get; set; }
-		public void Dispose() { }
+
+		internal SkiaTextureBrush(SKPaint paint, WrapMode wrapMode, SKBitmap ownedBitmap = null)
+		{
+			NativePaint = paint;
+			WrapMode = wrapMode;
+			this.ownedBitmap = ownedBitmap;
+		}
+
+		public void Dispose()
+		{
+			NativePaint.Dispose();
+			ownedBitmap?.Dispose();
+		}
 	}
 
 	internal sealed class SkiaHatchBrush : IHatchBrush

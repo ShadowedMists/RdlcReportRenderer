@@ -185,7 +185,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				DataPointAttributes dataPointAttributes2 = (dataPoint != null) ? dataPoint : dataPointAttributes;
 				float num = (float)(absoluteValue / parentValue * (double)parentSweepAngle);
 				float sweepAngle = num - thresholdAngle;
-				using (GraphicsPath sliceGraphicsPath = RenderSlice(common, graph, node, dataPoint, dataPointAttributes2, rectRelative, startAngle, sweepAngle, centerAbsolute, edgeRadiusAbsolute, level, dataPointIndex))
+				using (IGraphicsPath sliceGraphicsPath = RenderSlice(common, graph, node, dataPoint, dataPointAttributes2, rectRelative, startAngle, sweepAngle, centerAbsolute, edgeRadiusAbsolute, level, dataPointIndex))
 				{
 					RenderLabel(common, graph, node, dataPoint, dataPointAttributes2, GetLabelText(node, dataPoint, series, dataPointAttributes2), startAngle, num, centerAbsolute, centerRadiusAbsolute, dataPointIndex, sliceGraphicsPath);
 				}
@@ -228,10 +228,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return categoryNode.Label;
 		}
 
-		private static GraphicsPath RenderSlice(CommonElements common, ChartGraphics graph, CategoryNode node, DataPoint dataPoint, DataPointAttributes dataPointAttributes, RectangleF rectRelative, float startAngle, float sweepAngle, PointF centerAbsolute, float radiusAbsolute, int level, int dataPointIndex)
+		private static IGraphicsPath RenderSlice(CommonElements common, ChartGraphics graph, CategoryNode node, DataPoint dataPoint, DataPointAttributes dataPointAttributes, RectangleF rectRelative, float startAngle, float sweepAngle, PointF centerAbsolute, float radiusAbsolute, int level, int dataPointIndex)
 		{
 			float doughnutRadius = 1f / (float)(level + 1) * 100f;
-			GraphicsPath controlGraphicsPath = null;
+			IGraphicsPath controlGraphicsPath = null;
 			graph.DrawPieRel(rectRelative, startAngle, sweepAngle, dataPointAttributes.Color, dataPointAttributes.BackHatchStyle, dataPointAttributes.BackImage, dataPointAttributes.BackImageMode, dataPointAttributes.BackImageTransparentColor, dataPointAttributes.BackImageAlign, dataPointAttributes.BackGradientType, dataPointAttributes.BackGradientEndColor, dataPointAttributes.BorderColor, dataPointAttributes.BorderWidth, dataPointAttributes.BorderStyle, PenAlignment.Inset, shadow: false, 0.0, doughnut: true, doughnutRadius, explodedShadow: false, PieDrawingStyle.Default, out controlGraphicsPath);
 			if (dataPoint != null)
 			{
@@ -292,7 +292,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return graph.GetRelativePoint(absolute);
 		}
 
-		private static float FindOptimalWidth(float maxWidth, ChartGraphics graph, GraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle)
+		private static float FindOptimalWidth(float maxWidth, ChartGraphics graph, IGraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle)
 		{
 			RectangleF labelRelativeRect2 = new RectangleF(labelRelativeRect.Location, labelRelativeRect.Size);
 			float width = labelRelativeRect.Width;
@@ -305,7 +305,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return width;
 		}
 
-		private static bool CanFitInResizedArea(string text, Font textFont, SizeF relativeSize, PointF sliceCenterRelative, ChartGraphics graph, GraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle, float radiusAbsolute, out RectangleF resizedRect)
+		private static bool CanFitInResizedArea(string text, Font textFont, SizeF relativeSize, PointF sliceCenterRelative, ChartGraphics graph, IGraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle, float radiusAbsolute, out RectangleF resizedRect)
 		{
 			float num = relativeSize.Width / (float)text.Length;
 			float num2 = relativeSize.Height / 8f;
@@ -334,7 +334,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return false;
 		}
 
-		private static void RenderLabel(CommonElements common, ChartGraphics graph, CategoryNode node, DataPoint dataPoint, DataPointAttributes dataPointAttributes, string text, float startAngle, float sweepAngle, PointF centerAbsolute, float radiusAbsolute, int dataPointIndex, GraphicsPath sliceGraphicsPath)
+		private static void RenderLabel(CommonElements common, ChartGraphics graph, CategoryNode node, DataPoint dataPoint, DataPointAttributes dataPointAttributes, string text, float startAngle, float sweepAngle, PointF centerAbsolute, float radiusAbsolute, int dataPointIndex, IGraphicsPath sliceGraphicsPath)
 		{
 			if (string.IsNullOrEmpty(text))
 			{
