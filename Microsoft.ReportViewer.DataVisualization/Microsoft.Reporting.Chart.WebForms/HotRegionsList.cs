@@ -344,6 +344,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(int, GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>
+		/// (E1 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
+		/// </summary>
+		internal void AddHotRegion(int insertIndex, IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
+		{
+			AddHotRegion(insertIndex, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
+		}
+
+		/// <summary>
 		/// Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, float[], DataPoint, string, int)"/>
 		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
 		/// </summary>

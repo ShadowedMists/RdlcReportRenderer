@@ -3114,6 +3114,25 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return result;
 		}
 
+		/// <summary>Interface-typed sibling of <see cref="CreateBrush"/> for callers that no longer allocate concrete GDI+ resources (E1).</summary>
+		internal IBrush CreateBrushResource(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor)
+		{
+			IBrush result = resourceFactory.CreateSolidBrush(backColor);
+			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
+			{
+				result = GetTextureBrushResource(backImage, backImageTranspColor, backImageMode, backColor);
+			}
+			else if (backHatchStyle != 0)
+			{
+				result = GetHatchBrushResource(backHatchStyle, backColor, backGradientEndColor);
+			}
+			else if (backGradientType != 0)
+			{
+				result = GetGradientBrushResource(rect, backColor, backGradientEndColor, backGradientType);
+			}
+			return result;
+		}
+
 		public RectangleF GetRelativeRectangle(RectangleF absolute)
 		{
 			RectangleF empty = RectangleF.Empty;

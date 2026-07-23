@@ -6,6 +6,7 @@ using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 {
@@ -188,14 +189,12 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						if (left != Color.Transparent && left != Color.Empty && item.ShadowOffset != 0)
 						{
-							GraphicsPath graphicsPath = new GraphicsPath();
+							IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 							graphicsPath.AddLine(graph.GetAbsolutePoint(area.circularCenter), pointsPosition[num]);
 							graphicsPath.AddLine(pointsPosition[num], pointsPosition[num2]);
 							graphicsPath.AddLine(pointsPosition[num2], graph.GetAbsolutePoint(area.circularCenter));
-							Matrix matrix = new Matrix();
-							matrix.Translate(item.ShadowOffset, item.ShadowOffset);
-							graphicsPath.Transform(matrix);
-							graph.FillPath(new SolidBrush(item.ShadowColor), graphicsPath);
+							graphicsPath.Transform(new Matrix3x2(1f, 0f, 0f, 1f, item.ShadowOffset, item.ShadowOffset));
+							graph.FillPath(graph.ResourceFactory.CreateSolidBrush(item.ShadowColor), graphicsPath);
 						}
 						num++;
 					}
@@ -237,7 +236,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						color = Color.Transparent;
 						break;
 					}
-					GraphicsPath graphicsPath2 = new GraphicsPath();
+					IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 					if (num3 == 0 && !RequireClosedFigure() && drawingStyle2 != 0)
 					{
 						if (common.ProcessModeRegions)
@@ -250,13 +249,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 					if (color != Color.Transparent && color != Color.Empty)
 					{
-						GraphicsPath graphicsPath3 = new GraphicsPath();
+						IGraphicsPath graphicsPath3 = graph.ResourceFactory.CreatePath();
 						graphicsPath3.AddLine(graph.GetAbsolutePoint(area.circularCenter), pointsPosition[num]);
 						graphicsPath3.AddLine(pointsPosition[num], pointsPosition[num3]);
 						graphicsPath3.AddLine(pointsPosition[num3], graph.GetAbsolutePoint(area.circularCenter));
 						if (common.ProcessModePaint)
 						{
-							Brush brush = graph.CreateBrush(graphicsPath3.GetBounds(), color, dataPointAttributes2.BackHatchStyle, dataPointAttributes2.BackImage, dataPointAttributes2.BackImageMode, dataPointAttributes2.BackImageTransparentColor, dataPointAttributes2.BackImageAlign, dataPointAttributes2.BackGradientType, dataPointAttributes2.BackGradientEndColor);
+							IBrush brush = graph.CreateBrushResource(graphicsPath3.GetBounds(), color, dataPointAttributes2.BackHatchStyle, dataPointAttributes2.BackImage, dataPointAttributes2.BackImageMode, dataPointAttributes2.BackImageTransparentColor, dataPointAttributes2.BackImageAlign, dataPointAttributes2.BackGradientType, dataPointAttributes2.BackGradientEndColor);
 							graph.StartHotRegion(point2);
 							graph.StartAnimation();
 							graph.FillPath(brush, graphicsPath3);
@@ -362,7 +361,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		internal void AddSelectionPath(ChartGraphics graph, ChartArea area, GraphicsPath selectionPath, PointF[] dataPointPos, int firstPointIndex, int secondPointIndex, PointF centerPoint, int borderWidth)
+		internal void AddSelectionPath(ChartGraphics graph, ChartArea area, IGraphicsPath selectionPath, PointF[] dataPointPos, int firstPointIndex, int secondPointIndex, PointF centerPoint, int borderWidth)
 		{
 			PointF middlePoint = GetMiddlePoint(dataPointPos[firstPointIndex], dataPointPos[secondPointIndex]);
 			PointF pointF = PointF.Empty;
@@ -401,7 +400,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			catch
 			{
 			}
-			selectionPath.AddPath(new GraphicsPath(graphicsPath.PathPoints, graphicsPath.PathTypes), connect: false);
+			selectionPath.AddPath(graphicsPath, connect: false);
 		}
 
 		private PointF GetMiddlePoint(PointF p1, PointF p2)
