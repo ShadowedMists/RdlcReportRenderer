@@ -150,5 +150,42 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             container.SaveAsImage(stream);
             return stream.ToArray();
         }
+
+        /// <summary>
+        /// Exercises <c>XamlRenderer.cs</c>/<c>XamlLayer.cs</c> end to end (see
+        /// tasks/gauge-gdi-type-abstraction.md Milestone B2 open item #2) — a custom XAML-defined
+        /// back frame (<see cref="BackFrameShape.CustomSemiCircularN1"/>, whose XAML resource's
+        /// <c>RadialGradientBrush.RelativeTransform</c> includes a <c>SkewTransform</c>, exercising
+        /// the new <c>ILinearGradientBrush</c>/<c>IPathGradientBrush.MultiplyTransform</c>) and a
+        /// custom XAML needle cap (<see cref="CapStyle.CustomCap1"/>, whose XAML resource's
+        /// <c>Path.Data</c> is a chained multi-segment Bezier StreamGeometry, exercising the new
+        /// <c>IGraphicsPath.AddBeziers</c>, and whose <c>LinearGradientBrush</c> fills use point-pair
+        /// start/end points, exercising the new point-pair
+        /// <c>IGaugeDrawingResourceFactory.CreateLinearGradientBrush</c> overload). Not previously
+        /// exercised by any sample gauge — none of the others set <see cref="BackFrame.FrameShape"/>
+        /// or <see cref="CircularPointer.CapStyle"/> away from their basic/<c>Simple</c> defaults.
+        /// </summary>
+        internal static byte[] RenderCircularGaugeWithCustomXamlFrameAndCap()
+        {
+            using var container = new GaugeContainer();
+            container.Width = 300;
+            container.Height = 300;
+
+            var circularGauge = new CircularGauge();
+            container.CircularGauges.Add(circularGauge);
+            circularGauge.BackFrame.FrameShape = BackFrameShape.CustomSemiCircularN1;
+
+            var scale = new CircularScale();
+            circularGauge.Scales.Add(scale);
+
+            var pointer = new CircularPointer();
+            pointer.Value = 65;
+            pointer.CapStyle = CapStyle.CustomCap1;
+            circularGauge.Pointers.Add(pointer);
+
+            using var stream = new MemoryStream();
+            container.SaveAsImage(stream);
+            return stream.ToArray();
+        }
     }
 }
