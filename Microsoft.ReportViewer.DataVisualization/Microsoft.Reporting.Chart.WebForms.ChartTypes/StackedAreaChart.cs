@@ -13,7 +13,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 	{
 		private ArrayList stackedData = new ArrayList();
 
-		protected GraphicsPath areaBottomPath = new GraphicsPath();
+		protected IGraphicsPath areaBottomPath;
 
 		protected double prevPosY = double.NaN;
 
@@ -63,6 +63,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			bool flag2 = false;
 			bool flag3 = false;
 			int num = -1;
+			if (areaBottomPath == null)
+			{
+				areaBottomPath = graph.ResourceFactory.CreatePath();
+			}
 			foreach (Series item in common.DataManager.Series)
 			{
 				if (string.Compare(item.ChartTypeName, Name, StringComparison.OrdinalIgnoreCase) != 0 || item.ChartArea != area.Name || !item.IsVisible())
@@ -148,7 +152,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					pointF2 = graph.GetAbsolutePoint(pointF2);
 					pointF.X = (float)Math.Round(pointF.X);
 					pointF2.X = (float)Math.Round(pointF2.X);
-					GraphicsPath graphicsPath = new GraphicsPath();
+					IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 					graphicsPath.AddLine(pointF.X, pointF.Y, pointF2.X, pointF2.Y);
 					graphicsPath.AddLine(pointF2.X, pointF2.Y, pointF2.X, y);
 					graphicsPath.AddLine(pointF2.X, y, pointF.X, num3);
@@ -167,14 +171,14 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							num2++;
 							continue;
 						}
-						Brush brush = null;
+						IBrush brush = null;
 						if (point.BackHatchStyle != 0)
 						{
-							brush = graph.GetHatchBrush(point.BackHatchStyle, point.Color, point.BackGradientEndColor);
+							brush = graph.GetHatchBrushResource(point.BackHatchStyle, point.Color, point.BackGradientEndColor);
 						}
 						else if (point.BackGradientType == GradientType.None)
 						{
-							brush = ((point.BackImage.Length > 0 && point.BackImageMode != ChartImageWrapMode.Unscaled && point.BackImageMode != ChartImageWrapMode.Scaled) ? graph.GetTextureBrush(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color) : ((!point.Empty || !(point.Color == Color.Empty)) ? new SolidBrush(point.Color) : new SolidBrush(item.Color)));
+							brush = ((point.BackImage.Length > 0 && point.BackImageMode != ChartImageWrapMode.Unscaled && point.BackImageMode != ChartImageWrapMode.Scaled) ? graph.GetTextureBrushResource(point.BackImage, point.BackImageTransparentColor, point.BackImageMode, point.Color) : ((!point.Empty || !(point.Color == Color.Empty)) ? graph.ResourceFactory.CreateSolidBrush(point.Color) : graph.ResourceFactory.CreateSolidBrush(item.Color)));
 						}
 						else
 						{
@@ -197,7 +201,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							graph.SmoothingMode = SmoothingMode.None;
 							graph.FillPath(brush, graphicsPath);
 							graph.SmoothingMode = smoothingMode;
-							Pen pen = new Pen(brush, 1f);
+							IPen pen = graph.ResourceFactory.CreatePen(brush, 1f);
 							if (pointF.X != pointF2.X && pointF.Y != pointF2.Y)
 							{
 								graph.DrawLine(pen, pointF.X, pointF.Y, pointF2.X, pointF2.Y);
@@ -211,7 +215,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						if (areaPath == null)
 						{
-							areaPath = new GraphicsPath();
+							areaPath = graph.ResourceFactory.CreatePath();
 						}
 						areaPath.AddLine(pointF.X, pointF.Y, pointF2.X, pointF2.Y);
 						areaBottomPath.AddLine(pointF.X, num3, pointF2.X, y);
@@ -250,11 +254,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				if (gradientFill && areaPath != null)
 				{
-					GraphicsPath graphicsPath3 = new GraphicsPath();
+					IGraphicsPath graphicsPath3 = graph.ResourceFactory.CreatePath();
 					graphicsPath3.AddPath(areaPath, connect: true);
 					areaBottomPath.Reverse();
 					graphicsPath3.AddPath(areaBottomPath, connect: true);
-					Brush gradientBrush = graph.GetGradientBrush(graphicsPath3.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
+					IBrush gradientBrush = graph.GetGradientBrushResource(graphicsPath3.GetBounds(), series.Color, series.BackGradientEndColor, series.BackGradientType);
 					graph.FillPath(gradientBrush, graphicsPath3);
 					areaPath.Dispose();
 					areaPath = null;
