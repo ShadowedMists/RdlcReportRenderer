@@ -170,15 +170,55 @@ namespace Microsoft.Reporting.Chart.WebForms
 				"directly (see B1b blocker in chart-gdi-type-abstraction.md); only the Rendering.*-typed overloads are implemented here.");
 
 		public Matrix Transform { get => throw NotReachable(); set => throw NotReachable(); }
-		public SmoothingMode SmoothingMode { get => throw NotReachable(); set => throw NotReachable(); }
-		public TextRenderingHint TextRenderingHint { get => throw NotReachable(); set => throw NotReachable(); }
+
+		private SmoothingMode smoothingMode;
+
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable from the pervasive
+		/// save-set-restore idiom throughout <c>ChartGraphics.cs</c> (e.g. <c>FillRectangleAbsResource</c>:
+		/// <c>var s = base.SmoothingMode; base.SmoothingMode = X; ...; base.SmoothingMode = s;</c>). GDI+'s
+		/// <see cref="System.Drawing.Drawing2D.SmoothingMode"/> has no Skia equivalent (antialiasing is
+		/// controlled per-<see cref="SkiaSharp.SKPaint"/> in the Skia adapters, always on), so this just
+		/// stores the value rather than acting on it — a plain property, not a thrown stub.
+		/// </summary>
+		public SmoothingMode SmoothingMode { get => smoothingMode; set => smoothingMode = value; }
+
+		private TextRenderingHint textRenderingHint;
+
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable from <c>ChartPicture.PaintCore</c>'s
+		/// unconditional <c>chartGraph.TextRenderingHint = GetTextRenderingHint();</c>, for every backend.
+		/// GDI+'s <see cref="System.Drawing.Text.TextRenderingHint"/> has no Skia equivalent (text
+		/// antialiasing/hinting is controlled per-<see cref="SkiaSharp.SKFont"/> in the Skia adapters
+		/// instead), so this just stores the value rather than acting on it — a plain property, not a
+		/// thrown stub, since there is nothing invalid about setting it.
+		/// </summary>
+		public TextRenderingHint TextRenderingHint { get => textRenderingHint; set => textRenderingHint = value; }
 		public Region Clip { get => throw NotReachable(); set => throw NotReachable(); }
-		public Graphics Graphics { get => throw NotReachable(); set => throw NotReachable(); }
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) get-side only — <see cref="ChartGraphics.AntiAliasing"/>'s setter
+		/// (genuinely reachable via <c>ChartPicture.PaintCore</c>) reads this to null-check before syncing
+		/// <see cref="System.Drawing.Drawing2D.SmoothingMode"/>, a GDI+-only concept this backend has no
+		/// equivalent for (antialiasing is already always-on per-<c>SKPaint</c> in the Skia adapters).
+		/// Returning null (rather than throwing) makes that null-check behave the same as "no live Graphics
+		/// bound yet" and skip the sync, rather than treating "this backend has none" as an error.
+		/// </summary>
+		public Graphics Graphics { get => null; set => throw NotReachable(); }
 		public bool IsClipEmpty => throw NotReachable();
 		public CompositingQuality CompositingQuality { get => throw NotReachable(); set => throw NotReachable(); }
 		public InterpolationMode InterpolationMode { get => throw NotReachable(); set => throw NotReachable(); }
-		public float GetDpiX() => throw NotReachable();
-		public void BindSurface(IRenderSurface surface) => throw NotReachable();
+		private float dpiX = 96f;
+
+		/// <summary>Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. <c>LegendCell.PaintCellSeriesSymbol</c>); returns the DPI captured from the bound <see cref="SkiaRenderSurface"/>.</summary>
+		public float GetDpiX() => dpiX;
+
+		/// <summary>Real (Milestone E2, 2026-07-23) — genuinely reachable via <c>ChartRenderingEngine.BindSurface</c> once <see cref="RenderingType.Skia"/> is selected.</summary>
+		public void BindSurface(IRenderSurface surface)
+		{
+			SkiaRenderSurface skiaSurface = (SkiaRenderSurface)surface;
+			canvas = skiaSurface.NativeSurface.Canvas;
+			dpiX = skiaSurface.Dpi;
+		}
 
 		public void DrawLine(Pen pen, PointF pt1, PointF pt2) => throw NotReachable();
 		public void DrawLine(Pen pen, float x1, float y1, float x2, float y2) => throw NotReachable();

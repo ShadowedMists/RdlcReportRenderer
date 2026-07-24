@@ -40,9 +40,54 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			}
 		}
 
-		// GDI+'s PathTypes surfaces per-point verb codes; not needed by the spike scene
-		// (only PathPoints/PointCount/GetBounds are read by chart layout code today).
-		public byte[] PathTypes => Array.Empty<byte>();
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable via <c>HotRegionsList.AddHotRegion(IGraphicsPath,...)</c>,
+		/// which bridges back to a concrete <see cref="GraphicsPath"/> for hit-testing storage (deliberately
+		/// concrete-only regardless of backend, same as the Gauge engine's <c>HotRegionList</c>) by feeding
+		/// <see cref="PathPoints"/>/<see cref="PathTypes"/> straight into <c>new GraphicsPath(points, types)</c> —
+		/// which throws if the two arrays don't line up 1:1. Walks <see cref="SKPath"/>'s verb iterator and maps
+		/// each verb to GDI+'s <see cref="PathPointType"/> byte encoding (Move → Start, Line → Line, Cubic → 3×
+		/// Bezier, Close → OR the CloseSubpath flag onto the previous point, no new point). Quad/Conic segments
+		/// (produced internally by <c>AddEllipse</c>/<c>AddArc</c>) have no direct GDI+ equivalent and aren't hit
+		/// by any current caller of this method — left as a documented gap (throws) rather than silently wrong,
+		/// same precedent as this file's other Appendix A.1 stubs.
+		/// </summary>
+		public byte[] PathTypes
+		{
+			get
+			{
+				var types = new System.Collections.Generic.List<byte>(NativePath.PointCount);
+				var verbPoints = new SKPoint[4];
+				using var iterator = NativePath.CreateRawIterator();
+				SKPathVerb verb;
+				while ((verb = iterator.Next(verbPoints)) != SKPathVerb.Done)
+				{
+					switch (verb)
+					{
+						case SKPathVerb.Move:
+							types.Add((byte)PathPointType.Start);
+							break;
+						case SKPathVerb.Line:
+							types.Add((byte)PathPointType.Line);
+							break;
+						case SKPathVerb.Cubic:
+							types.Add((byte)PathPointType.Bezier);
+							types.Add((byte)PathPointType.Bezier);
+							types.Add((byte)PathPointType.Bezier);
+							break;
+						case SKPathVerb.Close:
+							if (types.Count > 0)
+							{
+								types[types.Count - 1] = (byte)(types[types.Count - 1] | (byte)PathPointType.CloseSubpath);
+							}
+							break;
+						default:
+							throw new NotImplementedException($"SkiaGraphicsPath.PathTypes: {verb} segments (from AddEllipse/AddArc) have no GDI+ PathPointType equivalent implemented yet.");
+					}
+				}
+				return types.ToArray();
+			}
+		}
 
 		public int PointCount => NativePath.PointCount;
 
