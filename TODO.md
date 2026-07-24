@@ -12,8 +12,8 @@
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | MEDIUM |
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2, E1, E2 done; D3 permanently blocked by design; F and D3-real newly scoped, not started) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (all milestones and open items closed) | HIGH |
-| 🔵 **LOW** | PDF Phase 1: SkiaSharp Migration | 📋 NOT STARTED | VERY HIGH |
-| 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF Phase 1 | HIGH |
+| 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 📋 Re-scoped (2026-07-24), not started; P1-P3 bounded, P4 (Uniscribe shaping) open | MEDIUM (P1-P3) / HIGH (P4) |
+| 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF work | HIGH |
 
 > The prior "Chart Library Migration (OxyPlot)" decision was retracted — see `docs/decisions.md`. Charts/gauges are rendered by vendored GDI+ engines this repo owns, not external libraries; the plan re-targets their existing rendering seams to SkiaSharp.
 
@@ -41,13 +41,13 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 
 **Verification convention** (both engines, every increment): `dotnet build` 0 errors + full test suite (`VisualRegressionTests` + `Chart.Rdl.Tests`) passing + zero baseline PNG diffs. See `docs/rendering-abstractions.md` for the git-stash baseline-generation technique used for previously-uncovered render paths.
 
-## PDF Phase 1: SkiaSharp Graphics Migration (LOWER PRIORITY)
+## PDF: cross-platform rendering (LOWER PRIORITY)
 
-**Status:** Analysis complete, not started. **Blocker:** Metafile/EMF generation has no cross-platform equivalent — full graphics-stack replacement required, not incremental fixes.
+**Status (re-scoped 2026-07-24):** the earlier "Metafile/EMF, full graphics-stack replacement" framing was wrong — that machinery belongs to a separate rendering extension (`ImageWriter`, the BMP/GIF/JPEG/PNG/TIFF/EMF output format), not to the PDF path, which writes PDF content-stream operators directly and never touches `Metafile`/`Graphics`/`Pen`/`Brush`/`GraphicsPath`. Its actual remaining dependencies are: (1) two `Bitmap` decode call sites (small, same shape as Excel's already-solved `IImageProvider` pattern), (2) a trivial `FontStyle` enum swap, (3) four bounded Win32 HDC font-metrics call sites, and (4) `RichText.LineBreaker`/`TextBox`'s Uniscribe-based complex-script shaping/line-breaking (~1,375 lines) — a genuinely large, open-ended item needing a HarfBuzzSharp/ICU-based redesign, not a call-by-call port. No hard external-contract wall exists on this path.
 
-**Reference:** `tasks/pdf-render-callstack-analysis.md` (5-phase roadmap), `tasks/pdf-quick-reference.md` (cheat sheet).
+**Reference:** `tasks/pdf-render-callstack-analysis.md` (corrected call-chain trace + phase plan P0-P4), `tasks/pdf-quick-reference.md` (cheat sheet).
 
-**Recommendation:** unchanged — lower priority than Chart/Gauge, since Excel/PDF *bodies* already render cross-platform and PDF's blocker is architecturally the deepest of the three.
+**Recommendation:** items P1-P3 (image decode, font-style enum, HDC metrics) are bounded, Chart/Gauge-scale work independent of P4; P4 (Uniscribe shaping) needs its own spike (prototype one script through HarfBuzzSharp) before it can be estimated. Still lower priority than Chart/Gauge, but no longer believed to be the deepest blocker of the three engines — that assumption drove the old Map-engine deferral-after-PDF ordering and should be revisited if Map is picked up next.
 
 ---
 
