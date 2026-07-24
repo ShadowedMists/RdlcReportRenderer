@@ -138,7 +138,7 @@ Painters (73 Chart files / ~30 Gauge files) ──► ChartGraphics / GaugeGraph
         │                                              │                                                    │
         └── construct resources via ──────── IDrawingResourceFactory / IGaugeDrawingResourceFactory ────────┘   (the PORT)
                                                    ▲                    ▲
-                                            GdiResourceFactory   SkiaResourceFactory (Chart spike only)          (ADAPTERS)
+                                            GdiResourceFactory   SkiaResourceFactory (Chart: real 2D scenes, not yet production-wired)          (ADAPTERS)
 ```
 
 Instead of `new Pen(color, width)`, code calls `factory.CreatePen(color, width)` and receives an `IPen`.

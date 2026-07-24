@@ -27,14 +27,15 @@ There are **three separate, parallel GDI+-coupled rendering engines** in the sol
 
 | Area | Windows | Linux/macOS | Notes |
 | --- | --- | --- | --- |
-| Chart rendering | Yes | No | Full GDI+→interface migration in progress; see `tasks/chart-gdi-type-abstraction.md` |
-| Gauge rendering | Yes | No | Same migration, in progress; see `tasks/gauge-gdi-type-abstraction.md` |
+| Chart rendering (2D) | Yes | Not yet reachable | Skia backend renders every non-3D `SampleCharts.cs` scene correctly (`tasks/chart-gdi-type-abstraction.md` Milestone E2), but no production caller selects it yet — see Milestone F |
+| Chart rendering (3D) | Yes | No | 3D subsystem's concrete-overload removal is permanently blocked by design (D3); actually rendering 3D on Skia is a separate, unblocked-in-principle, not-yet-started conversion — see Milestone D3-real |
+| Gauge rendering | Yes | No | Same migration shape as Chart, not started for Gauge's Skia backend; see `tasks/gauge-gdi-type-abstraction.md` (GDI+→interface abstraction itself is complete) |
 | Map rendering | Yes | No | Deferred, LOW priority (after PDF Phase 1) — see `docs/decisions.md`; Bing Maps tile integration is end-of-lifed regardless, a Google Maps/OpenStreetMap adapter would be a prerequisite decision |
-| Chart/Gauge Skia backend | N/A | Spike only | A hand-built scene renders correctly on both platforms through Skia, validating the design, but no real `Chart`/`Gauge` object can use it yet |
+| Chart Skia backend | N/A | Proven, not wired in | Every non-3D sample scene renders correctly through Skia via `SkiaChartRenderingTests` (39 tests, 2026-07-24), validating the full design end-to-end — but only test code constructs the Skia-backed `ChartGraphics`/`SkiaRenderSurface` pair; real callers (`ChartMapper.GetImage`→`Chart.Save`) still always render Gdi. See `tasks/chart-gdi-type-abstraction.md` Milestone F. |
 
 **Fundamental blocker (confirmed by a Phase 0 spike, 2026-07-18):** GDI+ cannot construct *any* `System.Drawing` object at all on Linux under .NET 10 — not even a bare `Font`/`Pen`/`Bitmap` — even with `libgdiplus` installed. This is deeper than a rendering-seam limitation: it blocks the whole `Chart.Save`/`ChartImage.GetImage` path today on non-Windows, independent of backend selection.
 
-**`ChartImage.GetImage(float) : Bitmap`'s declared return type is itself a hard, external, GDI+-typed public API contract** — even a complete Skia backend must still produce a `System.Drawing.Bitmap` to satisfy it, which the point above makes impossible on Linux today. This is the actual current blocker to any cross-platform Chart rendering, more fundamental than "which backend is selected."
+**`ChartImage.GetImage(float) : Bitmap`'s declared return type is itself a hard, external, GDI+-typed public API contract, permanently unfixable** — even a complete Skia backend must still produce a `System.Drawing.Bitmap` to satisfy it, which the point above makes impossible on Linux today. This is a genuine, separate wall from Milestone F's scope: `GetImage` is not the real production entry point (`ChartMapper.GetImage` calls `Chart.Save(Stream, ChartImageFormat)`, which never returns a `Bitmap` and already routes through `IRenderSurface.Encode`) — so the *reachable* production path has no `Bitmap`-contract wall, only the missing platform-selection wiring Milestone F tracks. Don't conflate the two: `GetImage`'s wall is permanent; `Chart.Save`'s gap is just unwired.
 
 ### Known permanent/architectural gaps (no cross-platform equivalent attempted)
 
@@ -51,6 +52,8 @@ There are **three separate, parallel GDI+-coupled rendering engines** in the sol
 - **`GraphicsPath.Widen(Pen)`** (stroke-to-fill geometry) — has a real Skia equivalent via `SKPaint.GetFillPath` (Skia's own stroke-to-fill primitive), not a hand-rolled algorithm.
 - **`ImageAttributes`/`ColorMatrix` hue-recolor, shadow-alpha, and plain-transparency scaling** — all three recurring shapes are covered by a single `IImageDrawOptions.SetChannelScale(r, g, b, a)` method (a diagonal-only `ColorMatrix`, not a full matrix). A structurally identical, still-unconverted site exists in Chart's `ChartGraphics.cs` (~line 418), confirming the gap and its fix are shared across engines.
 - **Brush rotation/translation transforms** (`LinearGradientBrush.Transform`, `PathGradientBrush.RotateTransform`/`TranslateTransform`) — covered by `SetRotationTransform`/`RotateTransform`/`TranslateTransform` on `ILinearGradientBrush`/`IPathGradientBrush`, deliberately as literal 1:1 ports of specific GDI+ call sequences rather than a generalized settable transform (to avoid unverified matrix-composition-order risk).
+- **Gauge's `ScaleBase.DrawTickMark` wholesale `LinearGradientBrush.Transform = matrix` assignment** — `ILinearGradientBrush` deliberately has no generalized transform setter, but both real call sites always build `matrix` as a pure single rotation about one point, so it decomposes exactly (not an approximation) back to `SetRotationTransform(angle, center)` via `ScaleBase.DecomposeRotation`.
+- **A "conclusion" from an earlier scoping pass is not evidence — always re-derive it from the current code before trusting it.** Gauge's `XamlRenderer.cs`/`XamlLayer.cs` were labeled "architecturally blocked" by one pass, then found on re-investigation to need only the same static-utility-threading pattern already solved elsewhere (`DigitalSegment.cs`) plus one new generalized brush-transform method — not a real blocker at all. Same category of mistake as Chart's D3/D3-real distinction above: a scoping label can outlive the reasoning that produced it, so re-check the reasoning, not just the label, before extending or accepting it.
 
 ## Guidance
 
