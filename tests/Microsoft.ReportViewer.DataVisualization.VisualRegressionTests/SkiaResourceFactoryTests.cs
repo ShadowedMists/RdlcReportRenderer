@@ -171,7 +171,7 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         public void CreatePen_FromUnsupportedBrushKind_Throws()
         {
             var factory = Factory;
-            using var gradientBrush = new SkiaLinearGradientBrush();
+            using var gradientBrush = factory.CreateLinearGradientBrush(new PointF(0, 0), new PointF(1, 1), Color.Red, Color.Blue);
 
             Assert.ThrowsException<System.NotSupportedException>(() => factory.CreatePen(gradientBrush, 1f));
         }
@@ -284,6 +284,95 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             region.Union(new RectangleF(50, 50, 5, 5));
 
             Assert.AreEqual(10f, path.Bounds.Width, 0.01f, "Path returned by ToDrawablePath must not reflect later mutations to the region.");
+        }
+
+        [TestMethod]
+        public void LinearGradientBrush_FillsRect_InterpolatesEndpointColors()
+        {
+            using var surfaceBitmap = new SKBitmap(40, 10);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateLinearGradientBrush(new RectangleF(0, 0, 40, 10), Color.Red, Color.Blue, 0f);
+
+            graphics.FillRectangle(brush, new RectangleF(0, 0, 40, 10));
+            canvas.Flush();
+
+            SKColor left = surfaceBitmap.GetPixel(1, 5);
+            SKColor right = surfaceBitmap.GetPixel(38, 5);
+            Assert.IsTrue(left.Red > right.Red, "Left edge should be closer to red than the right edge.");
+            Assert.IsTrue(right.Blue > left.Blue, "Right edge should be closer to blue than the left edge.");
+        }
+
+        [TestMethod]
+        public void LinearGradientBrush_WithInterpolationColors_UsesColorBlendStops()
+        {
+            using var surfaceBitmap = new SKBitmap(40, 10);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateLinearGradientBrush(new RectangleF(0, 0, 40, 10), Color.Red, Color.Blue, 0f);
+            var colorBlend = new ColorBlend(3)
+            {
+                Colors = new[] { Color.Lime, Color.Lime, Color.Lime },
+                Positions = new[] { 0f, 0.5f, 1f },
+            };
+            brush.InterpolationColors = colorBlend;
+
+            graphics.FillRectangle(brush, new RectangleF(0, 0, 40, 10));
+            canvas.Flush();
+
+            SKColor middle = surfaceBitmap.GetPixel(20, 5);
+            Assert.AreEqual((byte)0, middle.Red, "InterpolationColors should override the plain Red->Blue gradient.");
+            Assert.IsTrue(middle.Green > 200, "Every ColorBlend stop is Lime, so the fill should be solid green.");
+        }
+
+        [TestMethod]
+        public void LinearGradientBrush_PointToPoint_BuildsGradientAlongLine()
+        {
+            using var surfaceBitmap = new SKBitmap(20, 20);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateLinearGradientBrush(new PointF(0, 0), new PointF(20, 0), Color.Red, Color.Blue);
+
+            graphics.FillRectangle(brush, new RectangleF(0, 0, 20, 20));
+            canvas.Flush();
+
+            SKColor left = surfaceBitmap.GetPixel(1, 10);
+            SKColor right = surfaceBitmap.GetPixel(18, 10);
+            Assert.IsTrue(left.Red > right.Red);
+            Assert.IsTrue(right.Blue > left.Blue);
+        }
+
+        [TestMethod]
+        public void PathGradientBrush_FillsEllipse_CenterColorAtCenterSurroundAtEdge()
+        {
+            using var surfaceBitmap = new SKBitmap(40, 40);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            canvas.Clear(SKColors.White);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var path = Factory.CreatePath();
+            path.AddEllipse(0, 0, 40, 40);
+            using var brush = Factory.CreatePathGradientBrush(path);
+            brush.CenterColor = Color.Red;
+            brush.SurroundColors = new[] { Color.Blue };
+
+            graphics.FillPath(brush, path);
+            canvas.Flush();
+
+            SKColor center = surfaceBitmap.GetPixel(20, 20);
+            SKColor nearEdge = surfaceBitmap.GetPixel(20, 2);
+            Assert.IsTrue(center.Red > nearEdge.Red, "Centre should be closer to CenterColor (red) than the boundary.");
+            Assert.IsTrue(nearEdge.Blue > center.Blue, "Boundary should be closer to SurroundColors[0] (blue) than the centre.");
+        }
+
+        [TestMethod]
+        public void PathGradientBrush_CenterPoint_DefaultsToPathBoundsCenter()
+        {
+            using var path = Factory.CreatePath();
+            path.AddRectangle(new RectangleF(10, 20, 30, 40));
+            using var brush = Factory.CreatePathGradientBrush(path) as SkiaPathGradientBrush;
+
+            Assert.AreEqual(25f, brush.CenterPoint.X, 0.01f);
+            Assert.AreEqual(40f, brush.CenterPoint.Y, 0.01f);
         }
     }
 }
