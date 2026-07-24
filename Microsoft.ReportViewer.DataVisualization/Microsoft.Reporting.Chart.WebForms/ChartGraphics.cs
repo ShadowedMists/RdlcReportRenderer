@@ -1851,11 +1851,24 @@ namespace Microsoft.Reporting.Chart.WebForms
 			base.SmoothingMode = smoothingMode;
 		}
 
-		internal SizeF MeasureStringRel(string text, Font font)
+		/// <summary>
+		/// Bridges a concrete <see cref="StringFormat"/> to a fresh <see cref="ITextFormat"/> (Milestone E2,
+		/// 2026-07-23) — same explicit 4-property copy already used at <c>Label.cs</c>'s call site into
+		/// <c>DrawLabelStringRel</c>'s interface-typed sibling, since <see cref="ITextFormat"/> deliberately
+		/// has no <c>Clone()</c>/constructor-from-<see cref="StringFormat"/> equivalent.
+		/// </summary>
+		private ITextFormat WrapTextFormat(StringFormat stringFormat)
 		{
-			SizeF size = MeasureString(text, font);
-			return GetRelativeSize(size);
+			ITextFormat textFormat = resourceFactory.CreateTextFormat();
+			textFormat.Alignment = stringFormat.Alignment;
+			textFormat.LineAlignment = stringFormat.LineAlignment;
+			textFormat.FormatFlags = stringFormat.FormatFlags;
+			textFormat.Trimming = stringFormat.Trimming;
+			return textFormat;
 		}
+
+		/// <summary>Bridges to the <see cref="IChartFont"/>-typed sibling below (Milestone E2, 2026-07-23) — same reasoning as <see cref="MeasureStringAbs(string, Font)"/>.</summary>
+		internal SizeF MeasureStringRel(string text, Font font) => MeasureStringRel(text, resourceFactory.WrapFont(font));
 
 		internal SizeF MeasureStringRel(string text, IChartFont font)
 		{
@@ -1863,12 +1876,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return GetRelativeSize(size);
 		}
 
-		internal SizeF MeasureStringRel(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
-		{
-			SizeF absoluteSize = GetAbsoluteSize(layoutArea);
-			SizeF size = MeasureString(text, font, absoluteSize, stringFormat);
-			return GetRelativeSize(size);
-		}
+		/// <summary>Bridges to the <see cref="IChartFont"/>/<see cref="ITextFormat"/>-typed sibling below (Milestone E2, 2026-07-23) — same reasoning as <see cref="MeasureStringAbs(string, Font)"/>.</summary>
+		internal SizeF MeasureStringRel(string text, Font font, SizeF layoutArea, StringFormat stringFormat) =>
+			MeasureStringRel(text, resourceFactory.WrapFont(font), layoutArea, WrapTextFormat(stringFormat));
 
 		internal SizeF MeasureStringRel(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat)
 		{
@@ -1877,17 +1887,24 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return GetRelativeSize(size);
 		}
 
-		internal Size MeasureStringAbs(string text, Font font)
+		/// <summary>
+		/// Bridges to <see cref="MeasureStringAbs(string, IChartFont)"/> (Milestone E2, 2026-07-23) —
+		/// same one-line-forward pattern as <c>FillRectangleAbs</c>/<c>FillRectangleRel</c>: this was the
+		/// last concrete-`Font`-typed call in <c>Legend.GetOptimalSize</c>'s layout chain, genuinely
+		/// reachable on every backend (not gated behind any GDI+-only feature), so there was no reason to
+		/// keep a separate concrete-only body once the interface-typed sibling below covers it exactly.
+		/// </summary>
+		internal Size MeasureStringAbs(string text, Font font) => MeasureStringAbs(text, resourceFactory.WrapFont(font));
+
+		internal Size MeasureStringAbs(string text, IChartFont font)
 		{
 			SizeF sizeF = MeasureString(text, font);
 			return new Size((int)Math.Ceiling(sizeF.Width), (int)Math.Ceiling(sizeF.Height));
 		}
 
-		internal Size MeasureStringAbs(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
-		{
-			SizeF sizeF = MeasureString(text, font, layoutArea, stringFormat);
-			return new Size((int)Math.Ceiling(sizeF.Width), (int)Math.Ceiling(sizeF.Height));
-		}
+		/// <summary>Bridges to the <see cref="IChartFont"/>/<see cref="ITextFormat"/>-typed sibling below (Milestone E2, 2026-07-23) — same reasoning as <see cref="MeasureStringAbs(string, Font)"/>.</summary>
+		internal Size MeasureStringAbs(string text, Font font, SizeF layoutArea, StringFormat stringFormat) =>
+			MeasureStringAbs(text, resourceFactory.WrapFont(font), layoutArea, WrapTextFormat(stringFormat));
 
 		internal Size MeasureStringAbs(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat)
 		{

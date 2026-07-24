@@ -20,6 +20,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private GdiGraphics gdiGraphics = new GdiGraphics();
 
+		private readonly SkiaChartGraphics skiaGraphics = new SkiaChartGraphics();
+
 		private string documentTitle = string.Empty;
 
 		internal IChartRenderingEngine RenderingObject
@@ -29,6 +31,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (activeRenderingType == RenderingType.Gdi)
 				{
 					return gdiGraphics;
+				}
+				if (activeRenderingType == RenderingType.Skia)
+				{
+					return skiaGraphics;
 				}
 				return svgGraphics;
 			}

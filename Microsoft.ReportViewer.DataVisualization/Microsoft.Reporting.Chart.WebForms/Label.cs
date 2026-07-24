@@ -787,7 +787,14 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				InitAnimation(graph, axis.CustomLabels.Count, num);
 				graph.StartAnimation();
-				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, (axis.autoLabelFont == null) ? font : axis.autoLabelFont, new SolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, stringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
+				// Bridged to the interface-typed DrawLabelStringRel overload (Milestone E2, 2026-07-23) —
+				// same pattern as this method's other call site (~line 1340).
+				ITextFormat bridgedStringFormat = graph.ResourceFactory.CreateTextFormat();
+				bridgedStringFormat.Alignment = stringFormat.Alignment;
+				bridgedStringFormat.LineAlignment = stringFormat.LineAlignment;
+				bridgedStringFormat.FormatFlags = stringFormat.FormatFlags;
+				bridgedStringFormat.Trimming = stringFormat.Trimming;
+				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont((axis.autoLabelFont == null) ? font : axis.autoLabelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedStringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
 				graph.StopAnimation();
 				axis.ScaleSegments.EnforceSegment(null);
 				axis.ScaleSegments.AllowOutOfScaleValues = false;
