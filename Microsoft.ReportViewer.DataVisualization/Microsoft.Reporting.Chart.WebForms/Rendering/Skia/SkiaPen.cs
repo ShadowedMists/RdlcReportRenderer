@@ -110,17 +110,21 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public float[] DashPattern { get; set; }
 
-		public CustomLineCap CustomStartCap
-		{
-			get => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
-			set => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
-		}
+		private CustomLineCap customStartCap;
+		private CustomLineCap customEndCap;
 
-		public CustomLineCap CustomEndCap
-		{
-			get => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
-			set => throw new NotSupportedException("Custom line caps (AdjustableArrowCap) have no Skia equivalent.");
-		}
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23), documented approximation — genuinely reachable
+		/// (<c>CalloutAnnotation</c>'s line-callout arrow caps, via <c>AdjustableArrowCap</c>). Skia has
+		/// no custom-line-cap primitive (<see cref="SKPaint"/> only has <see cref="SKStrokeCap"/>'s fixed
+		/// Butt/Round/Square set), so the value is stored but not rendered — strokes on this backend keep
+		/// whatever <see cref="StartCap"/>/<see cref="EndCap"/> already produced, same "approximate but
+		/// honest" precedent as <c>SkiaHatchBrush</c>'s pattern tiles.
+		/// </summary>
+		public CustomLineCap CustomStartCap { get => customStartCap; set => customStartCap = value; }
+
+		/// <summary>See <see cref="CustomStartCap"/> — same documented no-op approximation.</summary>
+		public CustomLineCap CustomEndCap { get => customEndCap; set => customEndCap = value; }
 
 		private void ApplyDashStyle()
 		{

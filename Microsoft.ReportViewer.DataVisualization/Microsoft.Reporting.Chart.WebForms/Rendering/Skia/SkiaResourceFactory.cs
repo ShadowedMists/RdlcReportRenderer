@@ -159,7 +159,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public IGraphicsPath CreatePath() => new SkiaGraphicsPath();
 
-		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		/// <summary>Real (Milestone E2, 2026-07-23) — genuinely reachable (<c>CalloutAnnotation.SplitAtMarkers</c>/<c>DrawCloudCallout</c>); see <see cref="SkiaGraphicsPath.SkiaGraphicsPath(PointF[], byte[])"/>.</summary>
+		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => new SkiaGraphicsPath(points, types);
 
 		public IClipRegion CreateRegion() => new SkiaClipRegion();
 

@@ -137,7 +137,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Borders3D
 			val = Math.Min(val, rect.Width / 2f);
 			val = Math.Min(val, rect.Height / 2f);
 			val = (float)Math.Ceiling(val);
-			graph.FillRectangle(new SolidBrush(borderSkin.PageColor), rect);
+			// Bridged to the interface-typed FillRectangle(IBrush,...) overload (Milestone E2, 2026-07-23) —
+			// same pattern as this file's other resourceFactory-built brushes/pens.
+			graph.FillRectangle(graph.ResourceFactory.CreateSolidBrush(borderSkin.PageColor), rect);
 			if (drawOutsideTopLeftShadow)
 			{
 				rectangleF2 = rectangleF;

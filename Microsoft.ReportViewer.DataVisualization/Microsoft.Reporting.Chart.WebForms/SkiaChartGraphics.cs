@@ -114,15 +114,45 @@ namespace Microsoft.Reporting.Chart.WebForms
 			// Spike scope: the sample scene never clips (see SkiaClipRegion); no-op.
 		}
 
-		public Matrix3x2 GetTransform() => Matrix3x2.Identity;
-
-		public void SetTransform(Matrix3x2 matrix)
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. <c>ChartGraphics.DrawStringAbs</c>'s
+		/// rotated-text path: <c>myMatrix = base.GetTransform().RotateAt(angle, absPosition); ...;
+		/// base.SetTransform(myMatrix);</c>). Was a no-op pair on the theory the spike scene never rotates;
+		/// real rotated-label/title scenes (<c>RotatedLabelsChart</c>) need this to actually apply. Backed by
+		/// <see cref="SKCanvas.TotalMatrix"/>/<see cref="SKCanvas.SetMatrix"/>, same as the <see cref="Transform"/>
+		/// property above (that property round-trips through GDI+'s concrete <c>Matrix</c> for a different,
+		/// non-interface-typed set of callers; this pair is the Matrix3x2-typed sibling for interface-typed ones).
+		/// </summary>
+		public Matrix3x2 GetTransform()
 		{
-			// Spike scope: the sample scene draws in device space directly; no-op.
+			SKMatrix m = canvas.TotalMatrix;
+			return new Matrix3x2(m.ScaleX, m.SkewY, m.SkewX, m.ScaleY, m.TransX, m.TransY);
 		}
 
+		public void SetTransform(Matrix3x2 matrix) =>
+			canvas.SetMatrix(new SKMatrix(matrix.M11, matrix.M21, matrix.M31, matrix.M12, matrix.M22, matrix.M32, 0, 0, 1));
+
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23), documented approximation for the <c>DirectionVertical</c> branch —
+		/// genuinely reachable via <c>Title</c>/<c>Axis</c>'s <c>TextOrientation.Rotated90</c> path, which (on
+		/// GDI+) sets <see cref="StringFormatFlags.DirectionVertical"/> rather than rotating a transform (only
+		/// <c>Rotated270</c> additionally rotates 180° on top of it — see <c>Title.Paint</c>). This backend has
+		/// no vertical-text-layout primitive, so it approximates the flag as "rotate this whole string 90°
+		/// about its layout rectangle's center" instead of GDI+'s true per-glyph vertical stacking — visually
+		/// close for the single-line Latin-text case every real caller here uses, not a faithful port of
+		/// GDI+'s general vertical-text-layout engine.
+		/// </summary>
 		private void DrawAlignedString(string s, SKFont font, SKPaint paint, RectangleF layoutRectangle, ITextFormat format)
 		{
+			bool vertical = format != null && (format.FormatFlags & StringFormatFlags.DirectionVertical) != 0;
+			RectangleF effectiveRect = layoutRectangle;
+			float centerX = layoutRectangle.X + layoutRectangle.Width / 2f;
+			float centerY = layoutRectangle.Y + layoutRectangle.Height / 2f;
+			if (vertical)
+			{
+				effectiveRect = new RectangleF(centerX - layoutRectangle.Height / 2f, centerY - layoutRectangle.Width / 2f, layoutRectangle.Height, layoutRectangle.Width);
+			}
+
 			var width = font.MeasureText(s);
 			font.GetFontMetrics(out var metrics);
 			var textHeight = metrics.Descent - metrics.Ascent;
@@ -132,20 +162,30 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 			float x = alignment switch
 			{
-				StringAlignment.Center => layoutRectangle.X + (layoutRectangle.Width - width) / 2f,
-				StringAlignment.Far => layoutRectangle.X + layoutRectangle.Width - width,
-				_ => layoutRectangle.X,
+				StringAlignment.Center => effectiveRect.X + (effectiveRect.Width - width) / 2f,
+				StringAlignment.Far => effectiveRect.X + effectiveRect.Width - width,
+				_ => effectiveRect.X,
 			};
 
 			float top = lineAlignment switch
 			{
-				StringAlignment.Center => layoutRectangle.Y + (layoutRectangle.Height - textHeight) / 2f,
-				StringAlignment.Far => layoutRectangle.Y + layoutRectangle.Height - textHeight,
-				_ => layoutRectangle.Y,
+				StringAlignment.Center => effectiveRect.Y + (effectiveRect.Height - textHeight) / 2f,
+				StringAlignment.Far => effectiveRect.Y + effectiveRect.Height - textHeight,
+				_ => effectiveRect.Y,
 			};
 
 			var baselineY = top - metrics.Ascent;
+
+			if (vertical)
+			{
+				canvas.Save();
+				canvas.RotateDegrees(90, centerX, centerY);
+			}
 			canvas.DrawText(s, x, baselineY, SKTextAlign.Left, font, paint);
+			if (vertical)
+			{
+				canvas.Restore();
+			}
 		}
 
 		private static SKPath ToClosedSKPath(PointF[] points)
@@ -169,7 +209,27 @@ namespace Microsoft.Reporting.Chart.WebForms
 			new($"{member}: unreachable in the spike — ChartGraphics still calls the GDI+-typed IChartRenderingEngine surface " +
 				"directly (see B1b blocker in chart-gdi-type-abstraction.md); only the Rendering.*-typed overloads are implemented here.");
 
-		public Matrix Transform { get => throw NotReachable(); set => throw NotReachable(); }
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. rotated-label/title painting in
+		/// <c>ChartGraphics.cs</c>, which reads/writes <c>base.Transform</c> directly around a rotation).
+		/// <see cref="System.Drawing.Drawing2D.Matrix"/> is pure math (no live GDI+ device context needed
+		/// to construct one, unlike <see cref="Graphics"/>/<see cref="GraphicsState"/>), so this can
+		/// genuinely round-trip through <see cref="SKCanvas.TotalMatrix"/>/<see cref="SKCanvas.SetMatrix"/>
+		/// rather than being a thrown stub.
+		/// </summary>
+		public Matrix Transform
+		{
+			get
+			{
+				SKMatrix m = canvas.TotalMatrix;
+				return new Matrix(m.ScaleX, m.SkewY, m.SkewX, m.ScaleY, m.TransX, m.TransY);
+			}
+			set
+			{
+				float[] e = value.Elements;
+				canvas.SetMatrix(new SKMatrix(e[0], e[2], e[4], e[1], e[3], e[5], 0, 0, 1));
+			}
+		}
 
 		private SmoothingMode smoothingMode;
 
@@ -204,7 +264,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		/// bound yet" and skip the sync, rather than treating "this backend has none" as an error.
 		/// </summary>
 		public Graphics Graphics { get => null; set => throw NotReachable(); }
-		public bool IsClipEmpty => throw NotReachable();
+		/// <summary>Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. <c>AreaChart</c>/<c>RangeChart</c>'s shadow-drawing blocks check this before restoring). <see cref="SKCanvas.LocalClipBounds"/> is Skia's direct equivalent of GDI+'s clip region bookkeeping.</summary>
+		public bool IsClipEmpty => canvas.LocalClipBounds.IsEmpty;
 		public CompositingQuality CompositingQuality { get => throw NotReachable(); set => throw NotReachable(); }
 		public InterpolationMode InterpolationMode { get => throw NotReachable(); set => throw NotReachable(); }
 		private float dpiX = 96f;
@@ -244,15 +305,70 @@ namespace Microsoft.Reporting.Chart.WebForms
 		public void FillRectangle(Brush brush, float x, float y, float width, float height) => throw NotReachable();
 		public void FillPolygon(Brush brush, PointF[] points) => throw NotReachable();
 		public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle) => throw NotReachable();
-		public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat) => throw NotReachable();
-		public SizeF MeasureString(string text, Font font) => throw NotReachable();
-		public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat, out int charactersFitted, out int linesFilled) => throw NotReachable();
-		public GraphicsState Save() => throw NotReachable();
-		public void Restore(GraphicsState gstate) => throw NotReachable();
-		public void ResetClip() => throw NotReachable();
-		public void SetClip(RectangleF rect) => throw NotReachable();
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable from real callers that go through
+		/// <c>ChartRenderingEngine.MeasureString(string, Font)</c> directly rather than via
+		/// <see cref="ChartGraphics.MeasureStringRel"/>/<c>MeasureStringAbs</c>'s already-bridged
+		/// <c>IChartFont</c>-typed siblings (e.g. <c>ChartArea.GetCircularLabelsSize</c>). Bridges the
+		/// same way, wrapping the concrete <see cref="Font"/> into a <see cref="SkiaChartFont"/> inline —
+		/// this backend has no <c>IDrawingResourceFactory</c> reference of its own to call
+		/// <c>WrapFont</c> on, so it mirrors <c>SkiaResourceFactory.WrapFont</c>'s construction directly.
+		/// </summary>
+		public SizeF MeasureString(string text, Font font) => MeasureString(text, WrapFont(font));
+		public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat) =>
+			MeasureString(text, WrapFont(font), layoutArea, WrapTextFormat(stringFormat));
+		public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat, out int charactersFitted, out int linesFilled) =>
+			MeasureString(text, WrapFont(font), layoutArea, WrapTextFormat(stringFormat), out charactersFitted, out linesFilled);
+
+		private static IChartFont WrapFont(Font font) => new SkiaChartFont(font.FontFamily.Name, font.Size, font.Style);
+
+		private static ITextFormat WrapTextFormat(StringFormat stringFormat) => new SkiaTextFormat
+		{
+			Alignment = stringFormat.Alignment,
+			LineAlignment = stringFormat.LineAlignment,
+			FormatFlags = stringFormat.FormatFlags,
+			Trimming = stringFormat.Trimming,
+		};
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable via <c>ChartGraphics.cs</c>'s pervasive
+		/// <c>var gstate = Save(); ...; Restore(gstate);</c> idiom (every real caller in this codebase
+		/// nests these properly — verified by inspection, none skip or reorder a Restore). <see cref="GraphicsState"/>
+		/// is a sealed GDI+ type with no public constructor reachable without a live <see cref="Graphics"/>
+		/// (which this backend has none of), so unlike <c>Transform</c> above there is no way to hand back
+		/// a real one — instead this treats the token as opaque (always null) and pushes/pops
+		/// <see cref="SKCanvas"/>'s own save stack directly, which already snapshots matrix + clip together,
+		/// the same two things a GDI+ <see cref="GraphicsState"/> captures.
+		/// </summary>
+		public GraphicsState Save()
+		{
+			canvas.Save();
+			return null;
+		}
+
+		public void Restore(GraphicsState gstate) => canvas.Restore();
+
+		/// <summary>
+		/// Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. <c>TreeMapChart</c>/<c>AreaChart</c>/
+		/// <c>RangeChart</c>'s plot-area clip bracket: <c>SetClip(rect); ...; ResetClip();</c>, unpaired with
+		/// any explicit <c>Save()</c>). Since <see cref="SetClip(RectangleF)"/> below pushes its own
+		/// <see cref="SKCanvas.Save"/> frame, popping it back here is equivalent to GDI+'s
+		/// <c>Graphics.ResetClip()</c> for every real caller (none nest a second clip inside the bracket
+		/// this undoes), not a generic "reset to infinite clip regardless of nesting" — a documented,
+		/// narrower approximation of the GDI+ semantics that holds for this codebase's actual call shape.
+		/// </summary>
+		public void ResetClip() => canvas.Restore();
+
+		/// <summary>See <see cref="ResetClip"/> — paired with it via <see cref="SKCanvas"/>'s save stack rather than a real clip-region diff.</summary>
+		public void SetClip(RectangleF rect)
+		{
+			canvas.Save();
+			canvas.ClipRect(SkiaConvert.ToSKRect(rect));
+		}
+
 		public void SetClip(GraphicsPath path, CombineMode combineMode) => throw NotReachable();
-		public void TranslateTransform(float dx, float dy) => throw NotReachable();
+
+		/// <summary>Real (Milestone E2, 2026-07-23) — genuinely reachable (e.g. shadow-drawing blocks in <c>AreaChart</c>/<c>RangeChart</c>). <see cref="SKCanvas.Translate(float, float)"/> composes onto the current matrix, matching GDI+'s <c>Graphics.TranslateTransform</c>.</summary>
+		public void TranslateTransform(float dx, float dy) => canvas.Translate(dx, dy);
 		public void BeginSelection(string hRef, string title) { }
 		public void EndSelection() { }
 		public void DrawImage(IChartImage image, Rectangle destRect, int srcX, int srcY, int srcWidth, int srcHeight, GraphicsUnit srcUnit, IImageDrawOptions imageAttr) =>

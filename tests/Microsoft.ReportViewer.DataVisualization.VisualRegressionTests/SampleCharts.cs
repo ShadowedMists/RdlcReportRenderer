@@ -8,12 +8,16 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
     /// Builds small, self-contained <see cref="Chart"/> instances directly against the internal
     /// chart engine API (no .rdlc report or host required) and rasterizes them to PNG, so a
     /// refactor of the GDI+ call sites underneath can be checked against a pixel baseline.
+    /// Each scene is exposed as a <c>Build*</c> method (returns the configured <see cref="Chart"/>,
+    /// no rendering) plus a <c>Render*</c> wrapper (Build + <see cref="Chart.Save"/> to PNG via the
+    /// GDI+ path) — Skia tests (Milestone E2) reuse the <c>Build*</c> methods directly instead of
+    /// duplicating scene construction.
     /// </summary>
     internal static class SampleCharts
     {
-        internal static byte[] RenderSimpleBarChart()
+        internal static Chart BuildSimpleBarChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -26,14 +30,20 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderSimpleBarChart()
+        {
+            using var chart = BuildSimpleBarChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
-        internal static byte[] RenderSimpleLineChart()
+        internal static Chart BuildSimpleLineChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -47,6 +57,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(4, 19);
             series.Points.AddXY(5, 15);
 
+            return chart;
+        }
+
+        internal static byte[] RenderSimpleLineChart()
+        {
+            using var chart = BuildSimpleLineChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -58,9 +74,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// go through ChartGraphics.DrawStringAbs/DrawLabelBackground's RotateAt path, which the
         /// other two sample charts (angle == 0 everywhere) never reach.
         /// </summary>
-        internal static byte[] RenderRotatedLabelsChart()
+        internal static Chart BuildRotatedLabelsChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -77,6 +93,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("March", 9);
             series.Points.AddXY("April", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderRotatedLabelsChart()
+        {
+            using var chart = BuildRotatedLabelsChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -88,9 +110,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// that cluster (tasks/chart-gdi-type-abstraction.md, Milestone B2) isn't reached by any
         /// of the other sample charts, which are all 2D.
         /// </summary>
-        internal static byte[] RenderPie3DChart()
+        internal static Chart BuildPie3DChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -104,15 +126,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderPie3DChart()
+        {
+            using var chart = BuildPie3DChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
         /// <summary>Same as <see cref="RenderPie3DChart"/> but doughnut-style, to exercise DrawDoughnutCurves/FillDoughnutSlice specifically.</summary>
-        internal static byte[] RenderDoughnut3DChart()
+        internal static Chart BuildDoughnut3DChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -126,6 +154,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderDoughnut3DChart()
+        {
+            using var chart = BuildDoughnut3DChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -136,9 +170,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Region.Complement-based clip-shadow trick (tasks/chart-gdi-type-abstraction.md,
         /// Milestone B2's Clip/Region conversion) isn't reached by any other sample chart.
         /// </summary>
-        internal static byte[] RenderEmbossBorderChart()
+        internal static Chart BuildEmbossBorderChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
             chart.BorderSkin.SkinStyle = BorderSkinStyle.Emboss;
@@ -152,15 +186,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderEmbossBorderChart()
+        {
+            using var chart = BuildEmbossBorderChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
         /// <summary>Same as <see cref="RenderEmbossBorderChart"/> but for the Sunken border skin (Borders3D/SunkenBorder.cs), which has a more elaborate Complement/Intersect combination.</summary>
-        internal static byte[] RenderSunkenBorderChart()
+        internal static Chart BuildSunkenBorderChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
             chart.BorderSkin.SkinStyle = BorderSkinStyle.Sunken;
@@ -174,6 +214,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderSunkenBorderChart()
+        {
+            using var chart = BuildSunkenBorderChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -184,9 +230,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// per-segment shadow fill) — tasks/chart-gdi-type-abstraction.md's Milestone B2 Clip/Region
         /// conversion. No other sample chart uses an Area series with a shadow.
         /// </summary>
-        internal static byte[] RenderAreaChartWithShadow()
+        internal static Chart BuildAreaChartWithShadow()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -200,6 +246,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderAreaChartWithShadow()
+        {
+            using var chart = BuildAreaChartWithShadow();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -210,9 +262,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// GraphicsPath + SolidBrush that no other sample chart reaches (the default Candlestick
         /// style takes a different, already-interface-typed FillRectangleRel path).
         /// </summary>
-        internal static byte[] RenderStockChartWithTriangleMarks()
+        internal static Chart BuildStockChartWithTriangleMarks()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -226,6 +278,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddY(14, 9, 13, 10);
             series.Points.AddY(18, 12, 10, 16);
 
+            return chart;
+        }
+
+        internal static byte[] RenderStockChartWithTriangleMarks()
+        {
+            using var chart = BuildStockChartWithTriangleMarks();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -236,9 +294,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// locally per marker (bordered Diamond/Cross styles) rather than through any of
         /// ChartGraphics's shared brush-getter helpers.
         /// </summary>
-        internal static byte[] RenderFastPointChartWithMarkers()
+        internal static Chart BuildFastPointChartWithMarkers()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -265,6 +323,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series2.Points.AddXY(2, 18);
             series2.Points.AddXY(3, 15);
 
+            return chart;
+        }
+
+        internal static byte[] RenderFastPointChartWithMarkers()
+        {
+            using var chart = BuildFastPointChartWithMarkers();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -275,9 +339,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// (not through any of ChartGraphics's shared brush/pen-getter helpers) and also builds a
         /// hit-region GraphicsPath in the same method.
         /// </summary>
-        internal static byte[] RenderFastLineChart()
+        internal static Chart BuildFastLineChart()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -292,6 +356,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(4, 19);
             series.Points.AddXY(5, 15);
 
+            return chart;
+        }
+
+        internal static byte[] RenderFastLineChart()
+        {
+            using var chart = BuildFastLineChart();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -302,9 +372,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// local Pen (independent of the shared linePen field) only when ShadowOffset is set —
         /// not reached by RenderSimpleLineChart, which has no shadow.
         /// </summary>
-        internal static byte[] RenderLineChartWithShadow()
+        internal static Chart BuildLineChartWithShadow()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -320,6 +390,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(4, 19);
             series.Points.AddXY(5, 15);
 
+            return chart;
+        }
+
+        internal static byte[] RenderLineChartWithShadow()
+        {
+            using var chart = BuildLineChartWithShadow();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -331,9 +407,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// DrawPointLabelStringRel call site (C5/C6 real-caller migration) — not reached by any
         /// other sample chart, none of which enable point labels.
         /// </summary>
-        internal static byte[] RenderPointChartWithLabels()
+        internal static Chart BuildPointChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -348,6 +424,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(2, 14);
             series.Points.AddXY(3, 11);
 
+            return chart;
+        }
+
+        internal static byte[] RenderPointChartWithLabels()
+        {
+            using var chart = BuildPointChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -357,9 +439,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises BarChart.DrawLabelsAndMarkers (BarChart.cs) with the same
         /// Font/StringFormat -> IChartFont/ITextFormat bridge at its DrawPointLabelStringRel call.
         /// </summary>
-        internal static byte[] RenderBarChartWithLabels()
+        internal static Chart BuildBarChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -372,6 +454,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q2", 18);
             series.Points.AddXY("Q3", 9);
 
+            return chart;
+        }
+
+        internal static byte[] RenderBarChartWithLabels()
+        {
+            using var chart = BuildBarChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -381,9 +469,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises BarChart.DrawLabels3D (BarChart.cs), the 3D counterpart of the label call
         /// converted above, using a PointF (not RectangleF) DrawPointLabelStringRel overload.
         /// </summary>
-        internal static byte[] RenderBarChart3DWithLabels()
+        internal static Chart BuildBarChart3DWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -397,6 +485,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q2", 18);
             series.Points.AddXY("Q3", 9);
 
+            return chart;
+        }
+
+        internal static byte[] RenderBarChart3DWithLabels()
+        {
+            using var chart = BuildBarChart3DWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -405,9 +499,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// <summary>
         /// Exercises ErrorBarChart.DrawLabel (ErrorBarChart.cs) with the same bridge pattern.
         /// </summary>
-        internal static byte[] RenderErrorBarChartWithLabels()
+        internal static Chart BuildErrorBarChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -420,6 +514,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(2, 14, 11, 17);
             series.Points.AddXY(3, 11, 9, 13);
 
+            return chart;
+        }
+
+        internal static byte[] RenderErrorBarChartWithLabels()
+        {
+            using var chart = BuildErrorBarChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -428,9 +528,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// <summary>
         /// Exercises BoxPlotChart.DrawLabel (BoxPlotChart.cs) with the same bridge pattern.
         /// </summary>
-        internal static byte[] RenderBoxPlotChartWithLabels()
+        internal static Chart BuildBoxPlotChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -451,6 +551,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             valuesSeries.Points.AddY(10);
             series.Points.AddY(0, 0, 0, 0, 0, 0);
 
+            return chart;
+        }
+
+        internal static byte[] RenderBoxPlotChartWithLabels()
+        {
+            using var chart = BuildBoxPlotChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -461,9 +567,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// existing StockChartWithTriangleMarks baseline never enables ShowLabelAsValue, so its
         /// DrawPointLabelStringRel call site was never actually exercised before now.
         /// </summary>
-        internal static byte[] RenderStockChartWithLabels()
+        internal static Chart BuildStockChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -476,6 +582,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddY(15, 10, 11, 13);
             series.Points.AddY(14, 9, 13, 10);
 
+            return chart;
+        }
+
+        internal static byte[] RenderStockChartWithLabels()
+        {
+            using var chart = BuildStockChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -485,9 +597,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises TreeMapChart's RenderSeriesLabel/RenderDataPointLabel (TreeMapChart.cs),
         /// which use DrawStringRel/DrawPointLabelStringRel with the same bridge pattern.
         /// </summary>
-        internal static byte[] RenderTreeMapChartWithLabels()
+        internal static Chart BuildTreeMapChartWithLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -502,6 +614,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points[1].Label = "B";
             series.Points[2].Label = "C";
 
+            return chart;
+        }
+
+        internal static byte[] RenderTreeMapChartWithLabels()
+        {
+            using var chart = BuildTreeMapChartWithLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -513,9 +631,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// solid-brush hairline pen at the fill-region edges, plus the `brush is ISolidBrush`
         /// forced-border redraw right after.
         /// </summary>
-        internal static byte[] RenderRangeChartWithShadow()
+        internal static Chart BuildRangeChartWithShadow()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -530,6 +648,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(3, 3, 18);
             series.Points.AddXY(4, 10, 22);
 
+            return chart;
+        }
+
+        internal static byte[] RenderRangeChartWithShadow()
+        {
+            using var chart = BuildRangeChartWithShadow();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -540,9 +664,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// GetHatchBrushResource, FillPath(IBrush, IGraphicsPath), and the hairline pen built
         /// from the hatch brush's ForegroundColor via CreatePen(IBrush, float).
         /// </summary>
-        internal static byte[] RenderRangeChartWithHatch()
+        internal static Chart BuildRangeChartWithHatch()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -556,6 +680,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(3, 3, 18);
             series.Points.AddXY(4, 10, 22);
 
+            return chart;
+        }
+
+        internal static byte[] RenderRangeChartWithHatch()
+        {
+            using var chart = BuildRangeChartWithHatch();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -567,9 +697,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// per-segment fill/shadow blocks entirely, deferring to the series-level gradient
         /// fill built once the whole series has been walked.
         /// </summary>
-        internal static byte[] RenderRangeChartWithGradient()
+        internal static Chart BuildRangeChartWithGradient()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -584,14 +714,20 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(3, 3, 18);
             series.Points.AddXY(4, 10, 22);
 
+            return chart;
+        }
+
+        internal static byte[] RenderRangeChartWithGradient()
+        {
+            using var chart = BuildRangeChartWithGradient();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
-        private static byte[] RenderCallout(CalloutStyle style, double anchorX, double anchorY)
+        private static Chart BuildCallout(CalloutStyle style, double anchorX, double anchorY)
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -617,6 +753,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             };
             chart.Annotations.Add(annotation);
 
+            return chart;
+        }
+
+        private static byte[] RenderCallout(CalloutStyle style, double anchorX, double anchorY)
+        {
+            using var chart = BuildCallout(style, anchorX, anchorY);
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -626,12 +768,16 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises CalloutAnnotation's DrawRoundedRectCallout (non-ellipse branch:
         /// CreateRoundedRectPath, then re-pointing the nearest path vertex at the anchor).
         /// </summary>
+        internal static Chart BuildCalloutRoundedRectangle() => BuildCallout(CalloutStyle.RoundedRectangle, 10, 10);
+
         internal static byte[] RenderCalloutRoundedRectangle() =>
             RenderCallout(CalloutStyle.RoundedRectangle, 10, 10);
 
         /// <summary>
         /// Exercises CalloutAnnotation's DrawRoundedRectCallout (ellipse branch).
         /// </summary>
+        internal static Chart BuildCalloutEllipse() => BuildCallout(CalloutStyle.Ellipse, 10, 10);
+
         internal static byte[] RenderCalloutEllipse() =>
             RenderCallout(CalloutStyle.Ellipse, 10, 10);
 
@@ -639,6 +785,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises CalloutAnnotation's DrawRectangleCallout with the anchor point outside the
         /// callout rectangle (builds the 7-point custom polygon, one of 8 direction cases).
         /// </summary>
+        internal static Chart BuildCalloutRectangle() => BuildCallout(CalloutStyle.Rectangle, 10, 10);
+
         internal static byte[] RenderCalloutRectangle() =>
             RenderCallout(CalloutStyle.Rectangle, 10, 10);
 
@@ -647,6 +795,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// (bridged from their still-concrete cached GDI+ geometry) plus the decorative
         /// anchor-line ellipse chain.
         /// </summary>
+        internal static Chart BuildCalloutCloud() => BuildCallout(CalloutStyle.Cloud, 10, 10);
+
         internal static byte[] RenderCalloutCloud() =>
             RenderCallout(CalloutStyle.Cloud, 10, 10);
 
@@ -655,6 +805,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// into the main rectangle via SetMarkers/AddPath, which SplitAtMarkers later has to
         /// carve back apart for hot-region generation.
         /// </summary>
+        internal static Chart BuildCalloutPerspective() => BuildCallout(CalloutStyle.Perspective, 10, 10);
+
         internal static byte[] RenderCalloutPerspective() =>
             RenderCallout(CalloutStyle.Perspective, 10, 10);
 
@@ -663,6 +815,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// (Borderline style) — the anchor-line stroke widened via
         /// ChartGraphics.Widen(IGraphicsPath, IPen) and merged via SetMarkers/AddPath.
         /// </summary>
+        internal static Chart BuildCalloutBorderline() => BuildCallout(CalloutStyle.Borderline, 10, 10);
+
         internal static byte[] RenderCalloutBorderline() =>
             RenderCallout(CalloutStyle.Borderline, 10, 10);
 
@@ -670,6 +824,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// Exercises CalloutAnnotation's DrawRectangleLineCallout with drawRectangle: false
         /// (SimpleLine style) — no filled rectangle, just the widened anchor-line stroke(s).
         /// </summary>
+        internal static Chart BuildCalloutSimpleLine() => BuildCallout(CalloutStyle.SimpleLine, 10, 10);
+
         internal static byte[] RenderCalloutSimpleLine() =>
             RenderCallout(CalloutStyle.SimpleLine, 10, 10);
 
@@ -680,9 +836,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// carrying the pen across calls via the frontLinePen/frontLinePoint1/frontLinePoint2
         /// fields. Multiple points ensure the carry-over path actually executes more than once.
         /// </summary>
-        internal static byte[] RenderLineChart3D()
+        internal static Chart BuildLineChart3D()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -697,6 +853,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderLineChart3D()
+        {
+            using var chart = BuildLineChart3D();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -707,9 +869,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// TitleFont/TitleColor Font/Brush-to-IChartFont/IBrush bridge added during the B2 sweep
         /// (tasks/chart-gdi-type-abstraction.md) was previously unverified against real pixels.
         /// </summary>
-        internal static byte[] RenderChartWithAxisTitles()
+        internal static Chart BuildChartWithAxisTitles()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -724,6 +886,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderChartWithAxisTitles()
+        {
+            using var chart = BuildChartWithAxisTitles();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -734,9 +902,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// non-circular 3D chart area) — same TitleFont/TitleColor bridge, different call site,
         /// previously unverified for the same reason as RenderChartWithAxisTitles.
         /// </summary>
-        internal static byte[] RenderChart3DWithAxisTitles()
+        internal static Chart BuildChart3DWithAxisTitles()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -752,6 +920,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderChart3DWithAxisTitles()
+        {
+            using var chart = BuildChart3DWithAxisTitles();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -763,9 +937,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// bridge (added in the annotations B2 sweep) was previously unverified. TextStyle.Frame
         /// in particular exercises the new IGraphicsPath.AddString(RectangleF) overload.
         /// </summary>
-        private static byte[] RenderTextAnnotation(TextStyle style, bool ellipse = false)
+        private static Chart BuildTextAnnotation(TextStyle style, bool ellipse = false)
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -787,21 +961,33 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             annotation.Height = 15;
             chart.Annotations.Add(annotation);
 
+            return chart;
+        }
+
+        private static byte[] RenderTextAnnotation(TextStyle style, bool ellipse = false)
+        {
+            using var chart = BuildTextAnnotation(style, ellipse);
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
+        internal static Chart BuildTextAnnotationDefault() => BuildTextAnnotation(TextStyle.Default);
         internal static byte[] RenderTextAnnotationDefault() => RenderTextAnnotation(TextStyle.Default);
 
+        internal static Chart BuildTextAnnotationFrame() => BuildTextAnnotation(TextStyle.Frame);
         internal static byte[] RenderTextAnnotationFrame() => RenderTextAnnotation(TextStyle.Frame);
 
+        internal static Chart BuildTextAnnotationEmbed() => BuildTextAnnotation(TextStyle.Embed);
         internal static byte[] RenderTextAnnotationEmbed() => RenderTextAnnotation(TextStyle.Embed);
 
+        internal static Chart BuildTextAnnotationEmboss() => BuildTextAnnotation(TextStyle.Emboss);
         internal static byte[] RenderTextAnnotationEmboss() => RenderTextAnnotation(TextStyle.Emboss);
 
+        internal static Chart BuildTextAnnotationShadow() => BuildTextAnnotation(TextStyle.Shadow);
         internal static byte[] RenderTextAnnotationShadow() => RenderTextAnnotation(TextStyle.Shadow);
 
+        internal static Chart BuildTextAnnotationEllipse() => BuildTextAnnotation(TextStyle.Default, ellipse: true);
         internal static byte[] RenderTextAnnotationEllipse() => RenderTextAnnotation(TextStyle.Default, ellipse: true);
 
         /// <summary>
@@ -809,9 +995,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// series makes the chart area circular (RadarChart.CircularChartArea), and each point's
         /// AxisLabel becomes a circular axis title (ChartArea.GetCircularAxisList).
         /// </summary>
-        internal static byte[] RenderRadarChartWithAxisLabels()
+        internal static Chart BuildRadarChartWithAxisLabels()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 400;
 
@@ -828,6 +1014,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY(4, 24);
             series.Points[3].AxisLabel = "West";
 
+            return chart;
+        }
+
+        internal static byte[] RenderRadarChartWithAxisLabels()
+        {
+            using var chart = BuildRadarChartWithAxisLabels();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -838,9 +1030,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// so its StringFormat/Font/Brush-to-ITextFormat/IChartFont/IBrush bridge (annotations/
         /// axis/label sweep) was previously unverified.
         /// </summary>
-        internal static byte[] RenderStripLineWithTitle()
+        internal static Chart BuildStripLineWithTitle()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -859,6 +1051,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        internal static byte[] RenderStripLineWithTitle()
+        {
+            using var chart = BuildStripLineWithTitle();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
@@ -871,9 +1069,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// particular exercises the new IGraphicsPath.AddString(RectangleF) overload from a
         /// second, independent call site.
         /// </summary>
-        private static byte[] RenderTitleWithStyle(TextStyle style)
+        private static Chart BuildTitleWithStyle(TextStyle style)
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -889,17 +1087,27 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             series.Points.AddXY("Q3", 9);
             series.Points.AddXY("Q4", 24);
 
+            return chart;
+        }
+
+        private static byte[] RenderTitleWithStyle(TextStyle style)
+        {
+            using var chart = BuildTitleWithStyle(style);
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
         }
 
+        internal static Chart BuildTitleFrame() => BuildTitleWithStyle(TextStyle.Frame);
         internal static byte[] RenderTitleFrame() => RenderTitleWithStyle(TextStyle.Frame);
 
+        internal static Chart BuildTitleEmbed() => BuildTitleWithStyle(TextStyle.Embed);
         internal static byte[] RenderTitleEmbed() => RenderTitleWithStyle(TextStyle.Embed);
 
+        internal static Chart BuildTitleEmboss() => BuildTitleWithStyle(TextStyle.Emboss);
         internal static byte[] RenderTitleEmboss() => RenderTitleWithStyle(TextStyle.Emboss);
 
+        internal static Chart BuildTitleShadow() => BuildTitleWithStyle(TextStyle.Shadow);
         internal static byte[] RenderTitleShadow() => RenderTitleWithStyle(TextStyle.Shadow);
 
         /// <summary>
@@ -909,9 +1117,9 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         /// PaintCellText itself is already exercised by every other baseline, since a default
         /// "Default" legend with a text cell is always present.)
         /// </summary>
-        internal static byte[] RenderLegendWithTitleAndHeader()
+        internal static Chart BuildLegendWithTitleAndHeader()
         {
-            using var chart = new Chart();
+            var chart = new Chart();
             chart.Width = 400;
             chart.Height = 300;
 
@@ -929,6 +1137,12 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             legend.TitleAlignment = StringAlignment.Center;
             legend.CellColumns.Add("Name", LegendCellColumnType.Text, "#LEGENDTEXT", ContentAlignment.MiddleCenter);
 
+            return chart;
+        }
+
+        internal static byte[] RenderLegendWithTitleAndHeader()
+        {
+            using var chart = BuildLegendWithTitleAndHeader();
             using var stream = new MemoryStream();
             chart.Save(stream, ChartImageFormat.Png);
             return stream.ToArray();
