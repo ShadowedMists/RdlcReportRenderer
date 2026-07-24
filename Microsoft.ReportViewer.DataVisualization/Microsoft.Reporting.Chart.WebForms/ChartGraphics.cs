@@ -2289,7 +2289,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				absoluteRectangle.Height = 1f;
 			}
 			absoluteRectangle = Round(absoluteRectangle);
-			RectangleF rectangleF = (penAlignment != PenAlignment.Inset || borderWidth <= 0) ? absoluteRectangle : ((base.ActiveRenderingType != RenderingType.Svg && !IsMetafile) ? ((Graphics.Transform.Elements[0] == 1f && Graphics.Transform.Elements[3] == 1f) ? new RectangleF(absoluteRectangle.X + (float)borderWidth, absoluteRectangle.Y + (float)borderWidth, absoluteRectangle.Width - (float)borderWidth * 2f + 1f, absoluteRectangle.Height - (float)borderWidth * 2f + 1f) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height)) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height));
+			// Bridged to the interface-typed GetTransform() (Milestone E2, 2026-07-23) — the concrete
+			// Graphics.Transform this line previously read is null on the Skia backend (SkiaChartGraphics.Graphics),
+			// while GetTransform() is real on every backend (identity on Skia, matching "no active transform").
+			System.Numerics.Matrix3x2 currentTransform = base.GetTransform();
+			RectangleF rectangleF = (penAlignment != PenAlignment.Inset || borderWidth <= 0) ? absoluteRectangle : ((base.ActiveRenderingType != RenderingType.Svg && !IsMetafile) ? ((currentTransform.M11 == 1f && currentTransform.M22 == 1f) ? new RectangleF(absoluteRectangle.X + (float)borderWidth, absoluteRectangle.Y + (float)borderWidth, absoluteRectangle.Width - (float)borderWidth * 2f + 1f, absoluteRectangle.Height - (float)borderWidth * 2f + 1f) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height)) : new RectangleF(absoluteRectangle.X, absoluteRectangle.Y, absoluteRectangle.Width, absoluteRectangle.Height));
 			if (rectangleF.Width > 2f * (float)width)
 			{
 				rectangleF.Width = 2f * (float)width;
@@ -3268,18 +3272,28 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return graphicsPath;
 		}
 
+		/// <summary>
+		/// Bridged to the interface-typed path/brush/FillPath overloads (Milestone E2, 2026-07-23) — was a
+		/// concrete-only <c>PathGradientBrush</c>/<c>GraphicsPath</c>/<c>FillPath(Brush,GraphicsPath)</c>
+		/// call chain, unreachable on the Skia backend (no live GDI+ <c>Graphics</c> to construct a
+		/// <c>PathGradientBrush</c> against). Uses <see cref="CreateRoundedRectPathResource"/> (already
+		/// interface-typed, same geometry as the old concrete <c>CreateRoundedRectPath</c>) and
+		/// <see cref="IDrawingResourceFactory.CreatePathGradientBrush(IGraphicsPath)"/>, same pattern as
+		/// this class's other resourceFactory-built brushes.
+		/// </summary>
 		internal void DrawRoundedRectShadowAbs(RectangleF rect, float[] cornerRadius, float radius, Color centerColor, Color surroundColor, float shadowScale)
 		{
-			GraphicsPath graphicsPath = CreateRoundedRectPath(rect, cornerRadius);
-			PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
+			IGraphicsPath graphicsPath = CreateRoundedRectPathResource(rect, cornerRadius);
+			IPathGradientBrush pathGradientBrush = resourceFactory.CreatePathGradientBrush(graphicsPath);
 			pathGradientBrush.CenterColor = centerColor;
-			Color[] array2 = pathGradientBrush.SurroundColors = new Color[1]
+			pathGradientBrush.SurroundColors = new Color[1]
 			{
 				surroundColor
 			};
 			pathGradientBrush.CenterPoint = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
-			PointF pointF2 = pathGradientBrush.FocusScales = new PointF(1f - shadowScale * radius / rect.Width, 1f - shadowScale * radius / rect.Height);
+			pathGradientBrush.FocusScales = new PointF(1f - shadowScale * radius / rect.Width, 1f - shadowScale * radius / rect.Height);
 			FillPath(pathGradientBrush, graphicsPath);
+			pathGradientBrush.Dispose();
 			graphicsPath?.Dispose();
 		}
 
