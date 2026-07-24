@@ -168,12 +168,18 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         }
 
         [TestMethod]
-        public void CreatePen_FromUnsupportedBrushKind_Throws()
+        public void CreatePen_FromGradientOrHatchBrush_BuildsPenFromBrushShader()
         {
             var factory = Factory;
             using var gradientBrush = factory.CreateLinearGradientBrush(new PointF(0, 0), new PointF(1, 1), Color.Red, Color.Blue);
+            using var gradientPen = factory.CreatePen(gradientBrush, 1f) as SkiaPen;
+            Assert.IsNotNull(gradientPen);
+            Assert.IsNotNull(gradientPen.NativePaint.Shader);
 
-            Assert.ThrowsException<System.NotSupportedException>(() => factory.CreatePen(gradientBrush, 1f));
+            using var hatchBrush = factory.CreateHatchBrush(HatchStyle.Horizontal, Color.Black, Color.White);
+            using var hatchPen = factory.CreatePen(hatchBrush, 1f) as SkiaPen;
+            Assert.IsNotNull(hatchPen);
+            Assert.IsNotNull(hatchPen.NativePaint.Shader);
         }
 
         [TestMethod]
@@ -373,6 +379,76 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
 
             Assert.AreEqual(25f, brush.CenterPoint.X, 0.01f);
             Assert.AreEqual(40f, brush.CenterPoint.Y, 0.01f);
+        }
+
+        [TestMethod]
+        public void HatchBrush_ExposesStyleAndColors()
+        {
+            using var brush = Factory.CreateHatchBrush(HatchStyle.Percent50, Color.Black, Color.White) as SkiaHatchBrush;
+
+            Assert.IsNotNull(brush);
+            Assert.AreEqual(HatchStyle.Percent50, brush.HatchStyle);
+            Assert.AreEqual(Color.Black, brush.ForegroundColor);
+            Assert.AreEqual(Color.White, brush.BackgroundColor);
+            Assert.IsNotNull(brush.NativePaint.Shader);
+        }
+
+        [TestMethod]
+        public void HatchBrush_Horizontal_FillsWithHorizontalStripes()
+        {
+            using var surfaceBitmap = new SKBitmap(48, 48);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateHatchBrush(HatchStyle.Horizontal, Color.Black, Color.White);
+
+            graphics.FillRectangle(brush, new RectangleF(0, 0, 48, 48));
+            canvas.Flush();
+
+            // Horizontal stripes: colour only varies moving down a column, not across a row within a stripe.
+            Assert.AreEqual(surfaceBitmap.GetPixel(0, 0), surfaceBitmap.GetPixel(40, 0));
+            bool sawBlack = false, sawWhite = false;
+            for (int y = 0; y < 24; y++)
+            {
+                SKColor pixel = surfaceBitmap.GetPixel(5, y);
+                if (pixel == SKColors.Black) sawBlack = true;
+                if (pixel == SKColors.White) sawWhite = true;
+            }
+            Assert.IsTrue(sawBlack, "Horizontal hatch should paint some foreground rows.");
+            Assert.IsTrue(sawWhite, "Horizontal hatch should paint some background rows.");
+        }
+
+        [TestMethod]
+        public void HatchBrush_Percent50_ProducesRoughlyBalancedForeAndBackgroundPixels()
+        {
+            using var surfaceBitmap = new SKBitmap(48, 48);
+            using var canvas = new SKCanvas(surfaceBitmap);
+            var graphics = new SkiaChartGraphics { Canvas = canvas };
+            using var brush = Factory.CreateHatchBrush(HatchStyle.Percent50, Color.Black, Color.White);
+
+            graphics.FillRectangle(brush, new RectangleF(0, 0, 48, 48));
+            canvas.Flush();
+
+            int foreCount = 0;
+            for (int y = 0; y < 48; y++)
+            {
+                for (int x = 0; x < 48; x++)
+                {
+                    if (surfaceBitmap.GetPixel(x, y) == SKColors.Black) foreCount++;
+                }
+            }
+            double fraction = foreCount / (48.0 * 48.0);
+            Assert.IsTrue(fraction > 0.3 && fraction < 0.7, $"Percent50 hatch should paint roughly half the area in foreground; got {fraction:P0}.");
+        }
+
+        [TestMethod]
+        public void CreatePen_FromHatchBrush_UsesForegroundColor()
+        {
+            var factory = Factory;
+            using var hatchBrush = factory.CreateHatchBrush(HatchStyle.Horizontal, Color.Red, Color.White) as SkiaHatchBrush;
+            using var pen = factory.CreatePen(hatchBrush, 1f) as SkiaPen;
+
+            Assert.IsNotNull(pen);
+            Assert.IsNotNull(pen.NativePaint.Shader);
         }
     }
 }

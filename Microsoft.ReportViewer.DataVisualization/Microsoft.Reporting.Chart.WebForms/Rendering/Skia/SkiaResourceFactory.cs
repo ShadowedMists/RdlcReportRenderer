@@ -20,14 +20,17 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 	{
 		public IPen CreatePen(Color color, float width) => new SkiaPen(color, width);
 
-		/// <summary>Real (E1) for the brush kinds this backend can produce a native <see cref="SKPaint"/> for (solid/texture); gradient/hatch pens are still not implemented (see <see cref="CreateLinearGradientBrush"/>/<see cref="CreateHatchBrush"/>).</summary>
+		/// <summary>Real (E1) for every brush kind this backend can produce a native <see cref="SKPaint"/> for.</summary>
 		public IPen CreatePen(IBrush brush, float width)
 		{
 			SKPaint source = brush switch
 			{
 				SkiaSolidBrush b => b.NativePaint,
 				SkiaTextureBrush b => b.NativePaint,
-				_ => throw new NotSupportedException($"CreatePen(IBrush, float): unsupported brush kind {brush.GetType().Name} — gradient/hatch pen sources aren't implemented on the Skia backend yet."),
+				SkiaLinearGradientBrush b => b.NativePaint,
+				SkiaPathGradientBrush b => b.NativePaint,
+				SkiaHatchBrush b => b.NativePaint,
+				_ => throw new NotSupportedException($"CreatePen(IBrush, float): unsupported brush kind {brush.GetType().Name}."),
 			};
 			return new SkiaPen(source, width);
 		}
@@ -112,8 +115,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			_ => (SKShaderTileMode.Clamp, SKShaderTileMode.Clamp),
 		};
 
+		/// <summary>Real (Milestone E1, 2026-07-23) — see <see cref="SkiaHatchBrush"/>/<see cref="SkiaHatchPatterns"/>.</summary>
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
-			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+			new SkiaHatchBrush(style, foreColor, backColor);
 
 		/// <summary>Real (Milestone E1, 2026-07-23) — see <see cref="SkiaPathGradientBrush"/>.</summary>
 		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new SkiaPathGradientBrush(path);

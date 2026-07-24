@@ -39,6 +39,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			SkiaTextureBrush b => b.NativePaint,
 			SkiaLinearGradientBrush b => b.NativePaint,
 			SkiaPathGradientBrush b => b.NativePaint,
+			SkiaHatchBrush b => b.NativePaint,
 			_ => throw new NotSupportedException($"Spike scope: unrecognized IBrush implementation: {brush.GetType()}"),
 		};
 
