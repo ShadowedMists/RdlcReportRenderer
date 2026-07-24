@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 using SkiaSharp;
 using Microsoft.Reporting.Rendering;
 
@@ -34,5 +35,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			LineJoin.Bevel => SKStrokeJoin.Bevel,
 			_ => SKStrokeJoin.Miter,
 		};
+
+		/// <summary>Bridges a brush's <c>Matrix3x2</c> transform (see <c>IBrush.MultiplyTransform</c>) into an <see cref="SKMatrix"/>.</summary>
+		internal static SKMatrix ToSKMatrix(Matrix3x2 m) => new SKMatrix(m.M11, m.M21, m.M31, m.M12, m.M22, m.M32, 0f, 0f, 1f);
 	}
 }

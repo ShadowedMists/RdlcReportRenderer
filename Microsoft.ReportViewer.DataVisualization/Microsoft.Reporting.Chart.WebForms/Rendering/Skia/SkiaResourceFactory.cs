@@ -34,11 +34,13 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public ISolidBrush CreateSolidBrush(Color color) => new SkiaSolidBrush(color);
 
+		/// <summary>Real (Milestone E1, 2026-07-23) — see <see cref="SkiaLinearGradientBrush"/>.</summary>
 		public ILinearGradientBrush CreateLinearGradientBrush(RectangleF rect, Color startColor, Color endColor, float angle) =>
-			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+			new SkiaLinearGradientBrush(rect, startColor, endColor, angle);
 
+		/// <summary>Real (Milestone E1, 2026-07-23) — see <see cref="SkiaLinearGradientBrush"/>.</summary>
 		public ILinearGradientBrush CreateLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2) =>
-			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+			new SkiaLinearGradientBrush(point1, point2, color1, color2);
 
 		/// <summary>Real (E1) — a full-image tiled bitmap shader; GDI+'s <c>TextureBrush(Image, WrapMode)</c> equivalent.</summary>
 		public ITextureBrush CreateTextureBrush(IChartImage image, WrapMode wrapMode)
@@ -113,8 +115,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		public IHatchBrush CreateHatchBrush(HatchStyle style, Color foreColor, Color backColor) =>
 			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
 
-		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) =>
-			throw new NotImplementedException("Spike scope: not exercised by the sample scene.");
+		/// <summary>Real (Milestone E1, 2026-07-23) — see <see cref="SkiaPathGradientBrush"/>.</summary>
+		public IPathGradientBrush CreatePathGradientBrush(IGraphicsPath path) => new SkiaPathGradientBrush(path);
 
 		public IChartImage LoadImage(Stream stream) => new SkiaChartImage(SKBitmap.Decode(stream));
 
