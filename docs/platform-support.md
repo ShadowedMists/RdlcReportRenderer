@@ -74,6 +74,8 @@ This is the real RDL PDF rendering path (`LocalReport.Render("PDF")`), distinct 
 - The same pipeline is shared by the Windows-only `ImageWriter` (EMF/TIFF) renderer, the WinForms on-screen viewer (`RichTextRenderer.cs`/`RenderingTextBox.cs`), and the shared `HPBProcessing`/`SPBProcessing` pagination engine that computes page breaks for *all* renderers — fixing it is not PDF-scoped work, and PDF cannot route around it with a renderer-specific shortcut.
 - This is real, new-logic work (a HarfBuzzSharp-based shaper + a bidi/line-break implementation), not a resource-type port like the Chart/Gauge migrations — expect it to need its own visual-verification infrastructure (there is currently none for text shaping) before any increment can be trusted, per this repo's own "compiles and runs" ≠ "renders correctly" lesson from the Chart Skia migration.
 
+**Progress on the replacement (2026-07-26):** working prototypes exist for the font-metrics layer (`SkiaCachedFont`), shaping (`HarfBuzzTextShaper`, via `SkiaSharp.HarfBuzz.SKShaper` — see `docs/decisions.md`'s `SKShaper` entry for why not a hand-rolled HarfBuzzSharp `Face`/`Font`), itemization (`UnicodeTextItemizer`, coarse Unicode-range script/direction splitting), and line-breaking (`UnicodeLineBreakAnalyzer`, a hand-rolled soft-break heuristic, not UAX #14-compliant), composed into one per-paragraph pipeline (`UnicodeParagraphShaper`). All scoped to plain LTR non-reordering text; none of it is wired into `FontCache`/`TextRun`/`LineBreaker`/`Paragraph` yet — see `tasks/pdf-text-shaping-abstraction.md` for what production wiring still needs.
+
 ## Guidance
 
 When introducing a new renderer implementation, prefer:

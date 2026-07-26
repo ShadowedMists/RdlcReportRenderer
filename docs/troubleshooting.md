@@ -42,6 +42,10 @@ Fixed: `SunburstChart.cs`'s `Name` property incorrectly returned `"TreeMap"` ins
 
 `AxisScrollBar.Paint()`'s scroll-button drawing and `ImageAnnotation`'s design-mode "(no image)" text are permanently unreachable in this vendored/stripped build — `AxisScrollBar.IsVisible()` and `Chart.IsDesignMode()` are hardcoded to return `false`. Their conversions are complete and behavior-preserving but have no possible regression test; this is expected, not a gap to fix.
 
+### HarfBuzzSharp shaping crashes the process with `0xC0000005` (access violation in `hb_shape_full`), only after many shape calls
+
+Not reproducible within a single isolated test — only appears once enough shaping calls have accumulated across a test run (or process). Root cause: hand-building a `HarfBuzzSharp.Blob`/`Face`/`Font` from a raw font-stream blob has a native lifetime/memory bug, regardless of whether the `Face`/`Font` is rebuilt per call or cached once per font instance. Fix: use `SkiaSharp.HarfBuzz.SKShaper` (the official HarfBuzzSharp+SkiaSharp integration package) instead of hand-rolling the native objects — see `docs/decisions.md`'s 2026-07-26 `SKShaper` entry. If you hit this crash signature anywhere else in this codebase, suspect the same hand-rolled-native-object pattern first.
+
 ### A chart baseline shows visibly clipped or unusual text
 
 `TextStyle.Frame`'s title-text baseline shows visible clipping in some cases — confirmed via `git stash` to be pre-existing GDI+ behavior, unrelated to the rendering-abstraction migration. Not a regression; don't "fix" it as part of unrelated conversion work.
