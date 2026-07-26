@@ -56,6 +56,33 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Windows
 			return Image.FromStream(imageStream);
 		}
 
+		/// <summary>
+		/// Decode into a tightly-packed top-down BGRA32 buffer via System.Drawing/GDI+.
+		/// </summary>
+		public byte[] DecodeToBgra32(Stream imageStream, int width, int height)
+		{
+			byte[] buffer = new byte[width * height * 4];
+			using (Bitmap bitmap = new Bitmap(Image.FromStream(imageStream)))
+			{
+				System.Drawing.Rectangle rect = new System.Drawing.Rectangle(0, 0, width, height);
+				System.Drawing.Imaging.BitmapData bitmapData = bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+				try
+				{
+					int rowBytes = width * 4;
+					for (int row = 0; row < height; row++)
+					{
+						IntPtr rowStart = IntPtr.Add(bitmapData.Scan0, row * bitmapData.Stride);
+						System.Runtime.InteropServices.Marshal.Copy(rowStart, buffer, row * rowBytes, rowBytes);
+					}
+				}
+				finally
+				{
+					bitmap.UnlockBits(bitmapData);
+				}
+			}
+			return buffer;
+		}
+
 		private static ImageFormatType DetermineFormat(System.Drawing.Imaging.ImageFormat rawFormat)
 		{
 			if (rawFormat == null)

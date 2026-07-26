@@ -1,7 +1,6 @@
 using Microsoft.ReportingServices.Rendering.RichText;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 {
@@ -55,7 +54,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal string Supplement;
 
-		internal readonly FontStyle GDIFontStyle;
+		internal readonly PdfFontStyle Style;
 
 		internal readonly int EMHeight;
 
@@ -73,7 +72,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal bool IsComposite => !string.IsNullOrEmpty(FontCMap);
 
-		internal PDFFont(CachedFont cachedFont, string fontFamily, string pdfFontFamily, string fontCMap, string registry, string ordering, string supplement, FontStyle gdiFontStyle, int emHeight, float gridHeight, bool internalFont, bool simulateItalic, bool simulateBold)
+		internal PDFFont(CachedFont cachedFont, string fontFamily, string pdfFontFamily, string fontCMap, string registry, string ordering, string supplement, PdfFontStyle style, int emHeight, float gridHeight, bool internalFont, bool simulateItalic, bool simulateBold)
 		{
 			CachedFont = cachedFont;
 			FontFamily = fontFamily;
@@ -82,7 +81,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Registry = registry;
 			Ordering = ordering;
 			Supplement = supplement;
-			GDIFontStyle = gdiFontStyle;
+			Style = style;
 			EMHeight = emHeight;
 			GridHeight = gridHeight;
 			InternalFont = internalFont;

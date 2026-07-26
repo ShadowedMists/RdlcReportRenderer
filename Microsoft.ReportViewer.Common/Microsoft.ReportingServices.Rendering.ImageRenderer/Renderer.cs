@@ -39,18 +39,26 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private bool m_beginPage;
 
-		internal static Dictionary<string, Bitmap> ImageResources;
+		// Lazily constructed: these are GDI+ Bitmap objects, which cannot be constructed
+		// at all on non-Windows platforms (see docs/platform-support.md). Deferring
+		// construction to first access means merely loading the Renderer type (which
+		// happens for every renderer, including PDF) doesn't require GDI+; only the
+		// Windows-only ImageWriter path that actually reads ImageResources does.
+		private static Dictionary<string, Bitmap> s_imageResources;
 
-		static Renderer()
+		internal static Dictionary<string, Bitmap> ImageResources => s_imageResources ??= CreateImageResources();
+
+		private static Dictionary<string, Bitmap> CreateImageResources()
 		{
 			var emptyImage = new Bitmap(2, 2);
-			ImageResources = new Dictionary<string, Bitmap>(10);
-			ImageResources.Add("toggleMinus", emptyImage);
-			ImageResources.Add("togglePlus", emptyImage);
-			ImageResources.Add("unsorted", emptyImage);
-			ImageResources.Add("sortAsc", emptyImage);
-			ImageResources.Add("sortDesc", emptyImage);
-			ImageResources.Add("InvalidImage", Microsoft.ReportingServices.InvalidImage.Image);
+			var resources = new Dictionary<string, Bitmap>(10);
+			resources.Add("toggleMinus", emptyImage);
+			resources.Add("togglePlus", emptyImage);
+			resources.Add("unsorted", emptyImage);
+			resources.Add("sortAsc", emptyImage);
+			resources.Add("sortDesc", emptyImage);
+			resources.Add("InvalidImage", Microsoft.ReportingServices.InvalidImage.Image);
+			return resources;
 		}
 
 		internal Renderer(bool physicalPagination)

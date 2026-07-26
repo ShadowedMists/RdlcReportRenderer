@@ -1186,17 +1186,21 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				value = new PDFImage();
 				value.ImageId = ReserveObjectId();
-				Bitmap bitmap = Renderer.ImageResources["InvalidImage"];
-				lock (bitmap)
+				// InvalidImage.ImageData is already a raw, ready-to-embed BMP file (see
+				// Microsoft.ReportingServices.InvalidImage); reading its bytes+metadata
+				// directly avoids constructing a System.Drawing.Bitmap, which cannot be
+				// constructed at all on non-Windows platforms (docs/platform-support.md).
+				byte[] imageData = Microsoft.ReportingServices.InvalidImage.ImageData;
+				Microsoft.ReportingServices.Rendering.ExcelRenderer.ImageMetadata metadata = Microsoft.ReportingServices.Rendering.ExcelRenderer.ImageProviderFactory.CreateProvider().LoadImage(new MemoryStream(imageData));
+				value.ImageData = imageData;
+				value.GdiProperties = new GDIImageProps
 				{
-					GDIImageProps gdiProperties = new GDIImageProps(bitmap);
-					using (MemoryStream memoryStream = new MemoryStream())
-					{
-						bitmap.Save(memoryStream, ImageFormat.Bmp);
-						value.ImageData = memoryStream.GetBuffer();
-					}
-					value.GdiProperties = gdiProperties;
-				}
+					Width = metadata.Width,
+					Height = metadata.Height,
+					HorizontalResolution = metadata.HorizontalResolution,
+					VerticalResolution = metadata.VerticalResolution,
+					RawFormat = ImageFormat.Bmp
+				};
 				m_images.Add(key, value);
 			}
 			if (!m_imagesUsedInCurrentPage.Contains(value.ImageId))
@@ -1375,7 +1379,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					ordering = "Identity";
 					supplement = "0";
 				}
-				value2 = new PDFFont(run.CachedFont, font.FontFamily.Name, text2, fontCMap, registry, ordering, supplement, style, emHeight, gridHeight, flag2, simulateItalic, simulateBold);
+				value2 = new PDFFont(run.CachedFont, font.FontFamily.Name, text2, fontCMap, registry, ordering, supplement, PdfFontStyleConverter.FromGdiFontStyle(style), emHeight, gridHeight, flag2, simulateItalic, simulateBold);
 				value2.FontId = ReserveObjectId();
 				m_fonts.Add(text, value2);
 			}
@@ -1523,14 +1527,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			MemoryStream memoryStream = new MemoryStream();
 			int i = 0;
 			bool flag = false;
-			using (Bitmap bitmap = new Bitmap(System.Drawing.Image.FromStream(new MemoryStream(image.ImageData))))
+			byte[] pixelBuffer = Microsoft.ReportingServices.Rendering.ExcelRenderer.ImageProviderFactory.CreateProvider().DecodeToBgra32(new MemoryStream(image.ImageData), image.GdiProperties.Width, image.GdiProperties.Height);
+			fixed (byte* pixelBufferPtr = pixelBuffer)
 			{
-				System.Drawing.Rectangle rect = new System.Drawing.Rectangle(0, 0, image.GdiProperties.Width, image.GdiProperties.Height);
-				BitmapData bitmapData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-				IntPtr scan = bitmapData.Scan0;
-				byte* ptr = null;
-				uint num = (uint)Math.Abs(bitmapData.Stride);
-				ptr = (byte*)((num == 0) ? ((byte*)scan.ToPointer() + bitmapData.Stride * (image.GdiProperties.Height - 1)) : scan.ToPointer());
+				byte* ptr = pixelBufferPtr;
+				uint num = (uint)(image.GdiProperties.Width * 4);
 				bool flag2 = false;
 				bool flag3 = false;
 				for (int j = 0; j < image.GdiProperties.Height; j++)
@@ -1599,7 +1600,6 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						}
 					}
 				}
-				bitmap.UnlockBits(bitmapData);
 			}
 			if (flag)
 			{
@@ -2171,7 +2171,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Win32ObjectSafeHandle win32ObjectSafeHandle2 = Win32ObjectSafeHandle.Zero;
 			try
 			{
-				win32ObjectSafeHandle = new Win32ObjectSafeHandle(new Font(pdfFont.FontFamily, pdfFont.EMHeight, pdfFont.GDIFontStyle, GraphicsUnit.World).ToHfont(), ownsHandle: true);
+				win32ObjectSafeHandle = new Win32ObjectSafeHandle(new Font(pdfFont.FontFamily, pdfFont.EMHeight, PdfFontStyleConverter.ToGdiFontStyle(pdfFont.Style), GraphicsUnit.World).ToHfont(), ownsHandle: true);
 				win32ObjectSafeHandle2 = Microsoft.ReportingServices.Rendering.RichText.Win32.SelectObject(hdc, win32ObjectSafeHandle);
 				if (!string.IsNullOrEmpty(pdfFont.FontCMap))
 				{

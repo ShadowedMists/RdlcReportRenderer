@@ -9,7 +9,8 @@ The new rendering abstractions are intended to support a gradual migration away 
 | Area | Windows | Linux | macOS | Notes |
 | --- | --- | --- | --- | --- |
 | Excel rendering abstraction | Yes | Yes | Planned | Linux path uses ClosedXML |
-| PDF rendering abstraction | Yes | Yes | Planned | Linux path uses PdfSharpCore |
+| PDF rendering abstraction (thin `LinuxPdfRenderer`/PdfSharpCore path) | Yes | Yes | Planned | A separate, simple string-to-PDF renderer (`Renderers/LinuxPdfRenderer.cs`) — not the real RDL PDF engine below |
+| PDF rendering (real RDL engine: `PDFRenderer`→`Renderer`→`PDFWriter`) | Yes | No | No | See "PDF (RDL engine)" section below — blocked on RichText/Uniscribe text shaping, not on Metafile/GDI+ drawing |
 | Embedded resource adaptation | Yes | Yes | Planned | First seam implemented in the HTML path |
 | Factory-based renderer selection | Yes | Yes | Planned | Centralizes platform selection |
 
@@ -54,6 +55,20 @@ There are **three separate, parallel GDI+-coupled rendering engines** in the sol
 - **Brush rotation/translation transforms** (`LinearGradientBrush.Transform`, `PathGradientBrush.RotateTransform`/`TranslateTransform`) — covered by `SetRotationTransform`/`RotateTransform`/`TranslateTransform` on `ILinearGradientBrush`/`IPathGradientBrush`, deliberately as literal 1:1 ports of specific GDI+ call sequences rather than a generalized settable transform (to avoid unverified matrix-composition-order risk).
 - **Gauge's `ScaleBase.DrawTickMark` wholesale `LinearGradientBrush.Transform = matrix` assignment** — `ILinearGradientBrush` deliberately has no generalized transform setter, but both real call sites always build `matrix` as a pure single rotation about one point, so it decomposes exactly (not an approximation) back to `SetRotationTransform(angle, center)` via `ScaleBase.DecomposeRotation`.
 - **A "conclusion" from an earlier scoping pass is not evidence — always re-derive it from the current code before trusting it.** Gauge's `XamlRenderer.cs`/`XamlLayer.cs` were labeled "architecturally blocked" by one pass, then found on re-investigation to need only the same static-utility-threading pattern already solved elsewhere (`DigitalSegment.cs`) plus one new generalized brush-transform method — not a real blocker at all. Same category of mistake as Chart's D3/D3-real distinction above: a scoping label can outlive the reasoning that produced it, so re-check the reasoning, not just the label, before extending or accepting it.
+
+## PDF (RDL engine): `PDFRenderer` → `Renderer` → `PDFWriter`
+
+This is the real RDL PDF rendering path (`LocalReport.Render("PDF")`), distinct from the small standalone `LinuxPdfRenderer`/PdfSharpCore renderer in the row above. Full analysis: `tasks/pdf-render-callstack-analysis.md`; text-shaping scope: `tasks/pdf-text-shaping-abstraction.md`.
+
+**Done (2026-07-26):** `PDFWriter`'s own dependencies are now cross-platform —
+- Embedded-image decode (`Process32bppArgbImage`/`GetDefaultImage`) routes through `IImageProvider.DecodeToBgra32` (Excel's existing `ImageProviderFactory` pattern), not `System.Drawing.Bitmap`/`LockBits`.
+- `PDFFont`'s font-style field is `PdfFontStyle`, a local `[Flags]` enum (`PdfFontStyle.cs`), not `System.Drawing.FontStyle`.
+- `Renderer.ImageResources` (static, previously built at type-load time) and `GraphicsBase`'s `Bitmap`/`Graphics` pair (previously built in its constructor, called unconditionally by `WriterBase.BeginReport` — i.e. every PDF render) are both now lazily constructed on first real use. Loading the `Renderer`/`PDFWriter` types, and rendering a PDF with no text (lines/rectangles/images only), no longer requires GDI+ at all.
+
+**Not done — the actual blocker:** `Microsoft.ReportingServices.Rendering.RichText`'s text-shaping pipeline (`FontCache`/`CachedFont`/`TextRun`/`LineBreaker`/`TextBox`, backed by `Win32.cs`'s Uniscribe P/Invokes) constructs live `System.Drawing.Font` objects and calls Win32 `ScriptShape`/`ScriptPlace`/`ScriptBreak`/`ScriptItemize` **unconditionally for every text run, in every script** — there is no Latin/simple-script fast path in this codebase (verified by reading `TextRun.ShapeAndPlace`, `RichText/TextRun.cs:356-451`). This means:
+- Any PDF containing text hits both the "GDI+ can't construct `Font` on Linux" wall (Phase 0 spike, same as Chart/Gauge) and the "no Uniscribe on Linux" wall, for every run, regardless of language.
+- The same pipeline is shared by the Windows-only `ImageWriter` (EMF/TIFF) renderer, the WinForms on-screen viewer (`RichTextRenderer.cs`/`RenderingTextBox.cs`), and the shared `HPBProcessing`/`SPBProcessing` pagination engine that computes page breaks for *all* renderers — fixing it is not PDF-scoped work, and PDF cannot route around it with a renderer-specific shortcut.
+- This is real, new-logic work (a HarfBuzzSharp-based shaper + a bidi/line-break implementation), not a resource-type port like the Chart/Gauge migrations — expect it to need its own visual-verification infrastructure (there is currently none for text shaping) before any increment can be trusted, per this repo's own "compiles and runs" ≠ "renders correctly" lesson from the Chart Skia migration.
 
 ## Guidance
 

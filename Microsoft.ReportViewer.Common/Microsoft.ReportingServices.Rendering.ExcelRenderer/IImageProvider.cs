@@ -19,5 +19,14 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 		/// For future cross-platform charts, would return platform-appropriate type.
 		/// </summary>
 		object GetImageForChart(Stream imageStream);
+
+		/// <summary>
+		/// Decode an arbitrary image (BMP/GIF/TIFF/etc.) into a tightly-packed
+		/// top-down pixel buffer (stride = width * 4, byte order B,G,R,A per pixel
+		/// - the same in-memory layout as System.Drawing's PixelFormat.Format32bppArgb).
+		/// Used by renderers (e.g. PDF) that need raw pixel access rather than a
+		/// decoded Image/Bitmap object.
+		/// </summary>
+		byte[] DecodeToBgra32(Stream imageStream, int width, int height);
 	}
 }

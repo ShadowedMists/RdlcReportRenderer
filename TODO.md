@@ -2,7 +2,7 @@
 
 ## Project Status Summary
 
-**Overall Progress:** Infrastructure complete, Excel Phases 4-5 complete, Chart/Gauge GDI+ abstraction substantially complete (Chart) / complete (Gauge), PDF cross-platform not started.
+**Overall Progress:** Infrastructure complete, Excel Phases 4-5 complete, Chart/Gauge GDI+ abstraction substantially complete (Chart) / complete (Gauge), PDF cross-platform P1-P3 done / P4 (text shaping, the real blocker) scoped but not started.
 
 ### Current Priorities
 
@@ -12,7 +12,7 @@
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | MEDIUM |
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2, E1, E2, D3-real, F all done; D3 [concrete-overload removal] permanently blocked by design) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (all milestones and open items closed) | HIGH |
-| 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 📋 Re-scoped (2026-07-24), not started; P1-P3 bounded, P4 (Uniscribe shaping) open | MEDIUM (P1-P3) / HIGH (P4) |
+| 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 🔄 P1-P3 done (2026-07-26); P4 (text shaping) re-scoped, much larger than estimated — see `tasks/pdf-text-shaping-abstraction.md` | LOW (P1-P3, done) / HIGH (P4) |
 | 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | 📋 Documented (2026-07-26), not started — scheduled after PDF work, before Map engine | MEDIUM |
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Documented (2026-07-26), not started — RDL/RML schema validator redesign | MEDIUM |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF work | HIGH |
@@ -49,11 +49,19 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 
 ## PDF: cross-platform rendering (LOWER PRIORITY)
 
-**Status (re-scoped 2026-07-24):** the earlier "Metafile/EMF, full graphics-stack replacement" framing was wrong — that machinery belongs to a separate rendering extension (`ImageWriter`, the BMP/GIF/JPEG/PNG/TIFF/EMF output format), not to the PDF path, which writes PDF content-stream operators directly and never touches `Metafile`/`Graphics`/`Pen`/`Brush`/`GraphicsPath`. Its actual remaining dependencies are: (1) two `Bitmap` decode call sites (small, same shape as Excel's already-solved `IImageProvider` pattern), (2) a trivial `FontStyle` enum swap, (3) four bounded Win32 HDC font-metrics call sites, and (4) `RichText.LineBreaker`/`TextBox`'s Uniscribe-based complex-script shaping/line-breaking (~1,375 lines) — a genuinely large, open-ended item needing a HarfBuzzSharp/ICU-based redesign, not a call-by-call port. No hard external-contract wall exists on this path.
+**Status (2026-07-26): P1-P3 done, P4 re-scoped and much larger than previously estimated.** The 2026-07-24 re-scoping correctly found PDF's own path (`PDFRenderer`→`Renderer`→`PDFWriter`) never touches `Metafile`/`Graphics`/`Pen`/`Brush`/`GraphicsPath` — that machinery belongs to the separate `ImageWriter` (BMP/GIF/JPEG/PNG/TIFF/EMF) extension. What it under-scoped: P4 ("Uniscribe complex-script shaping, ~1,375 lines") is not an RTL/CJK-only concern — `RichText.TextRun.ShapeAndPlace` calls Uniscribe and constructs live GDI+ `Font` objects **unconditionally for every text run, in every script**, with no simple/Latin fast path anywhere in the pipeline. This is PDF's actual, singular remaining blocker, and it's shared infrastructure — the same pipeline backs the Windows-only `ImageWriter`, the WinForms on-screen viewer, and the shared `HPBProcessing`/`SPBProcessing` pagination engines used by every renderer.
 
-**Reference:** `tasks/pdf-render-callstack-analysis.md` (corrected call-chain trace + phase plan P0-P4), `tasks/pdf-quick-reference.md` (cheat sheet).
+**Done (2026-07-26):**
+- P1: embedded-image decode now goes through `IImageProvider.DecodeToBgra32` (Excel's `ImageProviderFactory` pattern), not `System.Drawing.Bitmap`/`LockBits`.
+- P2: `PDFFont.Style` is `PdfFontStyle`, a local enum, not `System.Drawing.FontStyle`.
+- Two extra eager-GDI+-construction bugs found while implementing P1/P3, both fixed: `Renderer.ImageResources` (built at type-load) and `GraphicsBase`'s `Bitmap`/`Graphics` pair (built in its constructor, called by every PDF render's `WriterBase.BeginReport`) are now lazy — a text-free PDF (lines/rectangles/images only) no longer crashes at construction on a GDI+-less platform.
+- Verified: `dotnet build` 0 errors, full test suite passing (137 + 2 + 5), a new end-to-end `SunburstChartWithCategoryHierarchy_RendersToPdf` test exercising the real PDF path.
 
-**Recommendation:** items P1-P3 (image decode, font-style enum, HDC metrics) are bounded, Chart/Gauge-scale work independent of P4; P4 (Uniscribe shaping) needs its own spike (prototype one script through HarfBuzzSharp) before it can be estimated. Still lower priority than Chart/Gauge, but no longer believed to be the deepest blocker of the three engines — that assumption drove the old Map-engine deferral-after-PDF ordering and should be revisited if Map is picked up next.
+**Not done — P4 (text shaping):** genuinely large, new-logic work (a HarfBuzzSharp-based shaper + bidi/line-break implementation), not a resource-type port like Chart/Gauge's migration. Full P/Invoke inventory, blast-radius trace, and a phased plan (spike → font-layer port → shaping-layer port → new visual-verification tooling, since none exists for text today) are in `tasks/pdf-text-shaping-abstraction.md`.
+
+**Reference:** `tasks/pdf-render-callstack-analysis.md` (historical call-chain trace, now a pointer doc), `tasks/pdf-quick-reference.md` (cheat sheet), `tasks/pdf-text-shaping-abstraction.md` (what's left), `docs/platform-support.md`'s "PDF (RDL engine)" section (current state), `docs/decisions.md` (the 2026-07-24 and 2026-07-26 correction entries).
+
+**Recommendation:** P4 is not a "spike it and estimate" item anymore — it's confirmed as PDF's only remaining blocker and confirmed large. Still lower priority than Chart/Gauge (which are further along and higher-traffic), but it's no longer credible to treat it as smaller than the Map engine's deferred migration — revisit relative prioritization between PDF-P4 and Map next time either is picked up.
 
 ---
 
@@ -66,7 +74,7 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 | ✅ **Excel image/format abstraction** | COMPLETE | See `docs/rendering-abstractions.md` |
 | ✅ **Chart engine GDI+ abstraction** | Substantially COMPLETE | See `tasks/chart-gdi-type-abstraction.md` |
 | ✅ **Gauge engine GDI+ abstraction** | COMPLETE | See `tasks/gauge-gdi-type-abstraction.md` |
-| 📋 **PDF cross-platform migration** | NOT STARTED | See `tasks/pdf-render-callstack-analysis.md` |
+| 🔄 **PDF cross-platform migration** | P1-P3 DONE, P4 IN SCOPE | See `tasks/pdf-text-shaping-abstraction.md` |
 
 ---
 
@@ -79,7 +87,7 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 - `docs/architecture-map.md` / `docs/build-and-test.md` / `docs/renderer-extension-guide.md` / `docs/examples.md` — supporting reference docs
 - `tasks/chart-gdi-type-abstraction.md` / `tasks/gauge-gdi-type-abstraction.md` — active migration progress + open items
 - `tasks/chart-cross-platform-implementation.md` — overall Chart/Gauge phase plan
-- `tasks/pdf-render-callstack-analysis.md` / `tasks/pdf-quick-reference.md` — PDF migration roadmap (not started)
+- `tasks/pdf-render-callstack-analysis.md` / `tasks/pdf-quick-reference.md` — PDF migration history (P1-P3 done); `tasks/pdf-text-shaping-abstraction.md` — what's left (P4, the real blocker)
 - `tasks/adapter-layer-refactor.md` — broader adapter-layer scope and README compatibility-gap follow-ups
 - `tasks/webrequest-httpclient-migration.md` — SYSLIB0014 `WebRequest`/`HttpWebRequest` → `HttpClient` migration scope (not started)
 - `tasks/xmlvalidatingreader-migration.md` — CS0618 `XmlValidatingReader` → `XmlReader`/`XmlReaderSettings` migration scope for the RDL/RML schema validator (not started)

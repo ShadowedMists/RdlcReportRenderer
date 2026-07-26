@@ -14,6 +14,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		protected Bitmap m_imageBase;
 
+		private readonly float m_constructedDpiX;
+
+		private readonly float m_constructedDpiY;
+
 		private int m_dpiX = 96;
 
 		private int m_dpiY = 96;
@@ -56,20 +60,39 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			}
 		}
 
-		internal System.Drawing.Graphics SystemGraphics => m_graphicsBase;
+		internal System.Drawing.Graphics SystemGraphics => EnsureGraphics();
 
 		internal GraphicsBase(float dpiX, float dpiY)
 		{
+			// Deliberately does not construct the underlying System.Drawing.Bitmap/Graphics
+			// here: GDI+ cannot construct any System.Drawing object at all on non-Windows
+			// platforms (see docs/platform-support.md's Phase 0 spike finding), and every
+			// PDF render calls this constructor unconditionally via WriterBase.BeginReport.
+			// Deferring construction to first real use (GetHdc/SystemGraphics) means
+			// reports with no text and no Win32 HDC-dependent font metrics can render on
+			// Linux; text rendering still requires the Windows-only HDC path below until
+			// the RichText/Uniscribe text-shaping pipeline gets its own cross-platform
+			// abstraction (tasks/pdf-render-callstack-analysis.md).
 			m_dpiX = (int)dpiX;
 			m_dpiY = (int)dpiY;
-			m_imageBase = new Bitmap(2, 2);
-			m_imageBase.SetResolution(dpiX, dpiY);
-			m_graphicsBase = System.Drawing.Graphics.FromImage(m_imageBase);
-			m_graphicsBase.CompositingMode = CompositingMode.SourceOver;
-			m_graphicsBase.PageUnit = GraphicsUnit.Millimeter;
-			m_graphicsBase.PixelOffsetMode = PixelOffsetMode.Default;
-			m_graphicsBase.SmoothingMode = SmoothingMode.Default;
-			m_graphicsBase.TextRenderingHint = TextRenderingHint.SystemDefault;
+			m_constructedDpiX = dpiX;
+			m_constructedDpiY = dpiY;
+		}
+
+		private System.Drawing.Graphics EnsureGraphics()
+		{
+			if (m_graphicsBase == null)
+			{
+				m_imageBase = new Bitmap(2, 2);
+				m_imageBase.SetResolution(m_constructedDpiX, m_constructedDpiY);
+				m_graphicsBase = System.Drawing.Graphics.FromImage(m_imageBase);
+				m_graphicsBase.CompositingMode = CompositingMode.SourceOver;
+				m_graphicsBase.PageUnit = GraphicsUnit.Millimeter;
+				m_graphicsBase.PixelOffsetMode = PixelOffsetMode.Default;
+				m_graphicsBase.SmoothingMode = SmoothingMode.Default;
+				m_graphicsBase.TextRenderingHint = TextRenderingHint.SystemDefault;
+			}
+			return m_graphicsBase;
 		}
 
 		protected virtual void Dispose(bool disposing)
@@ -125,7 +148,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		internal Win32DCSafeHandle GetHdc()
 		{
 			ReleaseHdc();
-			Hdc = new Win32DCSafeHandle(m_graphicsBase.GetHdc(), ownsHandle: false);
+			Hdc = new Win32DCSafeHandle(EnsureGraphics().GetHdc(), ownsHandle: false);
 			return Hdc;
 		}
 
@@ -133,7 +156,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		{
 			if (!Hdc.IsInvalid)
 			{
-				m_graphicsBase.ReleaseHdc();
+				EnsureGraphics().ReleaseHdc();
 				Hdc = Win32DCSafeHandle.Zero;
 			}
 		}

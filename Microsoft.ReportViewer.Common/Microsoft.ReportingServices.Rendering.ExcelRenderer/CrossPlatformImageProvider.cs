@@ -1,6 +1,9 @@
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 {
@@ -54,6 +57,33 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 		public object GetImageForChart(Stream imageStream)
 		{
 			return null;
+		}
+
+		/// <summary>
+		/// Decode into a tightly-packed top-down BGRA32 buffer via ImageSharp.
+		/// SixLabors.ImageSharp.PixelFormats.Bgra32 has the same in-memory byte
+		/// order (B,G,R,A) as System.Drawing's Format32bppArgb, so the pixel
+		/// buffer can be copied out directly with no channel reordering.
+		/// </summary>
+		public byte[] DecodeToBgra32(Stream imageStream, int width, int height)
+		{
+			imageStream.Position = 0;
+			using (Image<Bgra32> image = Image.Load<Bgra32>(imageStream))
+			{
+				byte[] buffer = new byte[width * height * 4];
+				int rowBytes = width * 4;
+				image.ProcessPixelRows(accessor =>
+				{
+					for (int row = 0; row < height && row < accessor.Height; row++)
+					{
+						Span<Bgra32> pixelRow = accessor.GetRowSpan(row);
+						Span<byte> rowBytesSpan = MemoryMarshal.AsBytes(pixelRow);
+						int copyBytes = Math.Min(rowBytes, rowBytesSpan.Length);
+						rowBytesSpan.Slice(0, copyBytes).CopyTo(buffer.AsSpan(row * rowBytes, copyBytes));
+					}
+				});
+				return buffer;
+			}
 		}
 
 		private static ImageFormatType DetermineFormat(SixLabors.ImageSharp.Formats.IImageFormat format)
