@@ -1,5 +1,6 @@
 using System;
 using SkiaSharp;
+using SkiaSharp.HarfBuzz;
 
 namespace Microsoft.ReportingServices.Rendering.RichText
 {
@@ -28,11 +29,31 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		private readonly SKFontMetrics m_metrics;
 
+		private readonly SKShaper m_shaper;
+
 		private float m_scaleFactor = 1f;
 
 		internal SKTypeface Typeface => m_typeface;
 
 		internal SKFont Font => m_font;
+
+		/// <summary>
+		/// The shaper used by <see cref="HarfBuzzTextShaper"/> - owned and cached here
+		/// (one per <see cref="SkiaCachedFont"/> instance, matching this class's whole
+		/// purpose) rather than constructed per shape call. Uses
+		/// <see cref="SkiaSharp.HarfBuzz.SKShaper"/> - the official HarfBuzzSharp+SkiaSharp
+		/// integration package already proven stable by this repo's visual-verification
+		/// harness (<c>ShapedTextRasterizer</c> in <c>ReportViewerCore.LinuxRenderers.Tests</c>)
+		/// - rather than hand-building a <c>HarfBuzzSharp.Face</c>/<c>Font</c> from a raw
+		/// font blob: an earlier version of this class did exactly that, and hit an
+		/// intermittent native access violation (0xC0000005 in <c>hb_shape_full</c>) once
+		/// enough <see cref="SkiaCachedFont"/> instances had been constructed/disposed
+		/// across a test run - never within a single test, only cumulatively, which
+		/// pointed at a native lifetime/memory issue in the hand-rolled blob path rather
+		/// than anything specific to this class's own logic. Switching to the
+		/// already-battle-tested <c>SKShaper</c> wrapper resolved it.
+		/// </summary>
+		internal SKShaper Shaper => m_shaper;
 
 		internal float ScaleFactor
 		{
@@ -52,6 +73,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			m_typeface = SKTypeface.FromFamilyName(fontFamily, style) ?? SKTypeface.Default;
 			m_font = new SKFont(m_typeface, fontSizePixels);
 			m_metrics = m_font.Metrics;
+			m_shaper = new SKShaper(m_typeface);
 		}
 
 		/// <summary>Mirrors <see cref="CachedFont.GetHeight"/> (GDI TEXTMETRIC's tmHeight): ascent + descent + internal leading.</summary>
@@ -89,6 +111,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		public void Dispose()
 		{
+			m_shaper?.Dispose();
 			m_font?.Dispose();
 			m_typeface?.Dispose();
 		}
