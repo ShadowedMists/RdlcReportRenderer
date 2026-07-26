@@ -4,12 +4,16 @@ using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Net;
+using System.Net.Http;
 
 namespace Microsoft.Reporting.Gauge.WebForms
 {
 	internal class ImageLoader : IDisposable, IServiceProvider
 	{
+		private static readonly HttpClient httpClient = new HttpClient();
+
 		private Hashtable imageData;
 
 		private IServiceContainer serviceContainer;
@@ -132,7 +136,14 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				{
 					try
 					{
-						image = Image.FromStream(WebRequest.Create(uri).GetResponse().GetResponseStream());
+						using HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
+						MemoryStream memoryStream = new MemoryStream();
+						using (Stream responseStream = response.Content.ReadAsStream())
+						{
+							responseStream.CopyTo(memoryStream);
+						}
+						memoryStream.Position = 0;
+						image = Image.FromStream(memoryStream);
 					}
 					catch (Exception)
 					{

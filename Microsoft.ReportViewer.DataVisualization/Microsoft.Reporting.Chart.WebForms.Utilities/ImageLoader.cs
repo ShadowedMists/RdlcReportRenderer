@@ -3,7 +3,9 @@ using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design;
 using System.Drawing;
+using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Resources;
 
@@ -11,6 +13,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 {
 	internal class ImageLoader : IDisposable, IServiceProvider
 	{
+		private static readonly HttpClient httpClient = new HttpClient();
+
 		private Hashtable imageData;
 
 		private IServiceContainer serviceContainer;
@@ -112,7 +116,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 				{
 					try
 					{
-						image = Image.FromStream(WebRequest.Create(uri).GetResponse().GetResponseStream());
+						using HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri));
+						MemoryStream memoryStream = new MemoryStream();
+						using (Stream responseStream = response.Content.ReadAsStream())
+						{
+							responseStream.CopyTo(memoryStream);
+						}
+						memoryStream.Position = 0;
+						image = Image.FromStream(memoryStream);
 					}
 					catch (Exception)
 					{

@@ -1,21 +1,26 @@
 # WebRequest → HttpClient migration (SYSLIB0014)
 
-**Status: NOT STARTED.** Documented 2026-07-26 during an obsolete-warning cleanup pass. Priority: LOW — scheduled after the PDF cross-platform work (`tasks/pdf-render-callstack-analysis.md`) but before the Map engine GDI+ abstraction (`tasks/gauge-gdi-type-abstraction.md`-style effort for Map).
+**Status: PARTIALLY DONE.** Documented 2026-07-26 during an obsolete-warning cleanup pass; the 3 simple GET-and-decode sites were fixed the same day once reviewed individually (see "Sites fixed" below). Priority for the remainder: LOW — scheduled after the PDF cross-platform work (`tasks/pdf-render-callstack-analysis.md`) but before the Map engine GDI+ abstraction (`tasks/gauge-gdi-type-abstraction.md`-style effort for Map).
 
-## Why this wasn't fixed inline
+## Why the remaining sites weren't fixed inline
 
-The obsolete-warning cleanup (2026-07-26) fixed the other ~470 obsolete warnings found in a full rebuild directly (DtdProcessing, CaseInsensitiveHashCodeProvider, Enum.ToString(IFormatProvider), XmlConvert date overloads, legacy exception serialization members, etc.). The `SYSLIB0014` (`WebRequest.Create` obsolete) warnings were deliberately left out of that pass and documented here instead, because a real fix isn't a call-by-call swap — it's a rewrite of this codebase's whole synchronous HTTP request/response pipeline.
+The obsolete-warning cleanup (2026-07-26) fixed the other ~470 obsolete warnings found in a full rebuild directly (DtdProcessing, CaseInsensitiveHashCodeProvider, Enum.ToString(IFormatProvider), XmlConvert date overloads, legacy exception serialization members, etc.), plus — on closer inspection — 3 of the 10 `SYSLIB0014` sites turned out to be simple enough to fix the same way: a bare `WebRequest.Create(uri).GetResponse().GetResponseStream()` GET-and-decode, already wrapped in a swallow-all `try/catch(Exception)`. The remaining 7 sites are a real rewrite of this codebase's synchronous HTTP request/response pipeline (cookies, credentials, POST bodies, custom `IAsyncResult`-based async APIs, hand-rolled cache/timeout/cancellation plumbing) — not a call-by-call swap.
 
-## Scope
+## Sites fixed (2026-07-26)
 
-`WebRequest.Create(...)` / `HttpWebRequest` call sites (10 total):
+- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Chart.WebForms.Utilities/ImageLoader.cs`
+- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Gauge.WebForms/ImageLoader.cs`
+- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms/ImageLoader.cs`
 
-- `Microsoft.ReportViewer.Common/Microsoft.ReportingServices.Diagnostics/ExternalResourceLoader.cs:16` (x2)
-- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Chart.WebForms.Utilities/ImageLoader.cs:115`
-- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Gauge.WebForms/ImageLoader.cs:135`
-- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms.BingMaps/BingMapsService.cs:33,38`
-- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms/ImageLoader.cs:131`
-- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms/MapCore.cs:3133`
+All three had the identical pattern: `image = Image.FromStream(WebRequest.Create(uri).GetResponse().GetResponseStream());`. Converted to a shared `static readonly HttpClient`, `HttpClient.Send(...)` (a genuine synchronous API since .NET 5 — no async propagation needed), and the response body buffered into a `MemoryStream` before calling `Image.FromStream`. The buffering step matters: `Image.FromStream` requires its backing stream to stay open for the image's lifetime (a documented GDI+ gotcha), which is exactly why the original code never disposed the network response/stream. Disposing the `HttpResponseMessage` right after decoding — the naive one-line translation — would have reintroduced a real bug (the image throwing once its backing stream closes). Buffering into a `MemoryStream` first lets the network response be disposed cleanly while the image keeps a safe, undisposed in-memory backing store, which is strictly better than the original (no leaked live socket).
+
+## Remaining scope
+
+`WebRequest.Create(...)` / `HttpWebRequest` call sites (7 remaining):
+
+- `Microsoft.ReportViewer.Common/Microsoft.ReportingServices.Diagnostics/ExternalResourceLoader.cs:16` (x2) — also handles `file://` URIs via `FileWebRequest` (no `HttpClient` equivalent, needs a separate `File.ReadAllBytes` branch), impersonation/`NetworkCredential`, and a hand-rolled `BeginGetResponse`/polling abort loop — a real redesign, not just the simple GET case.
+- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms.BingMaps/BingMapsService.cs:33,38` — exposes a public `IAsyncResult`-based async API (`BeginGetResponse`/`EndGetResponse`); migrating changes the async contract, not just the transport. Also part of the already-deferred Map engine (Bing Maps is EOL per `TODO.md`) — don't fix in isolation ahead of that decision.
+- `Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Map.WebForms/MapCore.cs:3133` — tile-loading with `KeepAlive`, `RequestCachePolicy`, and a `ThreadPool.RegisterWaitForSingleObject`-based timeout/cancellation state machine; deep Map-engine infrastructure, not a simple swap.
 - `Microsoft.ReportViewer.NETCore/Microsoft.Reporting.NETCore/WebRequestHelper.cs:24`
 - `Microsoft.ReportViewer.WinForms/Microsoft.Reporting.WinForms/WebRequestHelper.cs:24`
 
