@@ -1210,6 +1210,102 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			return value;
 		}
 
+		/// <summary>
+		/// Resolves (family, bold, italic) to one of the PDF standard 14 fonts, reusing
+		/// the exact m_internalFonts mapping ProcessDrawStringFont already uses for its
+		/// own "InternalFont" fast path. Unknown family names fall back to the Helvetica
+		/// family. The returned PDFFont has CachedFont = null and InternalFont = true,
+		/// which is safe: WriteFont and ProcessFontForFontEmbedding both short-circuit
+		/// before touching CachedFont whenever InternalFont is true and IsComposite is
+		/// false (verified: PDFWriter.cs's WriteFont/ProcessFontForFontEmbedding).
+		/// </summary>
+		private PDFFont GetOrCreateBase14Font(string fontFamily, bool bold, bool italic)
+		{
+			string styleSuffix = (bold && italic) ? ",BoldItalic" : (bold ? ",Bold" : (italic ? ",Italic" : ""));
+			string requestedKey = fontFamily + styleSuffix;
+			if (!m_internalFonts.TryGetValue(requestedKey, out string basePdfFontName))
+			{
+				basePdfFontName = "Helvetica" + styleSuffix.Replace("Italic", "Oblique");
+				requestedKey = "__base14__" + basePdfFontName;
+			}
+
+			if (!m_fonts.TryGetValue(requestedKey, out PDFFont pdfFont))
+			{
+				PdfFontStyle style = PdfFontStyle.Regular;
+				if (bold)
+				{
+					style |= PdfFontStyle.Bold;
+				}
+				if (italic)
+				{
+					style |= PdfFontStyle.Italic;
+				}
+				pdfFont = new PDFFont(cachedFont: null, fontFamily: basePdfFontName, pdfFontFamily: basePdfFontName, fontCMap: null, registry: null, ordering: null, supplement: null, style: style, emHeight: 1000, gridHeight: 0f, internalFont: true, simulateItalic: false, simulateBold: false);
+				pdfFont.FontId = ReserveObjectId();
+				m_fonts.Add(requestedKey, pdfFont);
+			}
+			if (!m_fontsUsedInCurrentPage.Contains(pdfFont.FontId))
+			{
+				m_fontsUsedInCurrentPage.Add(pdfFont.FontId);
+			}
+			return pdfFont;
+		}
+
+		/// <summary>
+		/// Cross-platform DrawWrappedText implementation (see WriterBase.DrawWrappedText
+		/// and tasks/pdf-text-shaping-abstraction.md). Left-aligned only - center/right
+		/// alignment is a documented gap for this path, not attempted here to avoid an
+		/// unverified per-line positioning scheme (AGENTS.md: "document a genuine gap
+		/// honestly rather than risk a subtly wrong port"). Reuses WriteText's existing
+		/// non-composite/InternalFont Tj-writing branch directly (that branch never reads
+		/// its TextRun parameter, verified by reading WriteText/MapGlyphToUnicodeChar), so
+		/// no RichText.TextRun instance is needed at all.
+		/// </summary>
+		internal override void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style)
+		{
+			if (string.IsNullOrEmpty(text) || textPosition.Width <= 0f || textPosition.Height <= 0f)
+			{
+				return;
+			}
+
+			PDFFont pdfFont = GetOrCreateBase14Font(style.FontFamily, style.Bold, style.Italic);
+			float fontSizePoints = style.FontSize;
+			float maxWidthPoints = textPosition.Width * 2.834646f;
+			List<string> lines = SimpleTextWrapper.Wrap(text, fontSizePoints, maxWidthPoints);
+			float lineHeightPoints = fontSizePoints * 1.2f;
+			float ascentPoints = fontSizePoints * 0.75f;
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("\r\nBT ");
+			stringBuilder.Append("/F");
+			Write(stringBuilder, pdfFont.FontId);
+			stringBuilder.Append(" ");
+			Write(stringBuilder, fontSizePoints);
+			stringBuilder.Append(" Tf ");
+			WriteColor(stringBuilder, style.Color, isStroke: false);
+			Write(stringBuilder, lineHeightPoints);
+			stringBuilder.Append(" TL ");
+
+			float startXPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
+			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
+			Write(stringBuilder, startXPoints);
+			stringBuilder.Append(" ");
+			Write(stringBuilder, startYPoints);
+			stringBuilder.Append(" Td ");
+
+			for (int i = 0; i < lines.Count; i++)
+			{
+				if (i > 0)
+				{
+					stringBuilder.Append("T* ");
+				}
+				string escaped = EscapeString(lines[i]);
+				WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+			}
+			stringBuilder.Append("ET");
+			m_pageContentsSection.Add(stringBuilder.ToString());
+		}
+
 		private PDFImage GetImage(string imageName, byte[] imageData, long imageDataOffset, GDIImageProps gdiImageProps)
 		{
 			if (string.IsNullOrEmpty(imageName) && imageData != null)

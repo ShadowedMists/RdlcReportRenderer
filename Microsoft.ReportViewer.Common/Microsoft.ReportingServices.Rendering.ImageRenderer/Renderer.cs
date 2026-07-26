@@ -1094,6 +1094,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		protected virtual void ProcessSimpleTextBox(string value, RectangleF textPosition, ReportTextBox rptTextBox, ReportParagraph reportParagraph, ReportTextRun reportTextRun, PointF offset)
 		{
+			// RichText's LineBreaker/TextBox/FontCache/CachedFont pipeline requires a real
+			// Win32 HDC and GDI+ Font construction at every step (Uniscribe ScriptItemize/
+			// ScriptShape/ScriptPlace, CreateFont, GetTextMetrics, SetTextAlign/SetBkMode),
+			// none of which can run at all on non-Windows platforms - see
+			// tasks/pdf-text-shaping-abstraction.md for the full trace. On non-Windows,
+			// route simple (single-style) text boxes through DrawWrappedText instead, which
+			// bypasses this pipeline entirely; rich (multi-run) text boxes remain a
+			// documented gap for now (ProcessRichTextBox is unchanged).
+			if (!System.OperatingSystem.IsWindows())
+			{
+				Writer.DrawWrappedText(textPosition, offset, value, reportTextRun);
+				return;
+			}
 			Microsoft.ReportingServices.Rendering.RichText.Paragraph paragraph = new Microsoft.ReportingServices.Rendering.RichText.Paragraph(reportParagraph, 1);
 			Microsoft.ReportingServices.Rendering.RichText.TextBox richTextBox = new Microsoft.ReportingServices.Rendering.RichText.TextBox(rptTextBox);
 			bool flag = true;

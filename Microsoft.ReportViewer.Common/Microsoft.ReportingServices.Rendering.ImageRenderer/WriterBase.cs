@@ -156,6 +156,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		{
 		}
 
+		/// <summary>
+		/// Cross-platform text drawing hook: renders a plain, single-style, left-to-right
+		/// text box without going through RichText's LineBreaker/TextBox/FontCache/Win32
+		/// Uniscribe pipeline at all (see tasks/pdf-text-shaping-abstraction.md - that
+		/// pipeline cannot run at all on non-Windows platforms, not even for HDC-free
+		/// measurement). Only meaningfully implemented by PDFWriter; no-op by default
+		/// (the Windows-only ImageWriter/EMF path is unaffected and keeps using
+		/// DrawTextRun above via the existing LineBreaker/TextBox path).
+		/// </summary>
+		internal virtual void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style)
+		{
+		}
+
 		internal virtual void EndPageSection()
 		{
 		}

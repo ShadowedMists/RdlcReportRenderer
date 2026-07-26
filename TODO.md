@@ -2,7 +2,7 @@
 
 ## Project Status Summary
 
-**Overall Progress:** Infrastructure complete, Excel Phases 4-5 complete, Chart/Gauge GDI+ abstraction substantially complete (Chart) / complete (Gauge), PDF cross-platform P1-P3 done / P4 (text shaping, the real blocker) scoped but not started.
+**Overall Progress:** Infrastructure complete, Excel Phases 4-5 complete, Chart/Gauge GDI+ abstraction substantially complete (Chart) / complete (Gauge), PDF cross-platform: P1-P3 done, simple-textbox MVP done (real Linux text rendering), rich-text/full-fidelity (P4) scoped but not started.
 
 ### Current Priorities
 
@@ -12,7 +12,7 @@
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | MEDIUM |
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2, E1, E2, D3-real, F all done; D3 [concrete-overload removal] permanently blocked by design) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (all milestones and open items closed) | HIGH |
-| 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 🔄 P1-P3 done (2026-07-26); P4 (text shaping) re-scoped, much larger than estimated — see `tasks/pdf-text-shaping-abstraction.md` | LOW (P1-P3, done) / HIGH (P4) |
+| 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 🔄 P1-P3 done; simple-textbox MVP done (2026-07-26, real text renders on Linux); rich-text/full-fidelity (P4) re-scoped, much larger — see `tasks/pdf-text-shaping-abstraction.md` | LOW (done items) / HIGH (rich text, P4) |
 | 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | 📋 Documented (2026-07-26), not started — scheduled after PDF work, before Map engine | MEDIUM |
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Documented (2026-07-26), not started — RDL/RML schema validator redesign | MEDIUM |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF work | HIGH |
@@ -57,7 +57,9 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 - Two extra eager-GDI+-construction bugs found while implementing P1/P3, both fixed: `Renderer.ImageResources` (built at type-load) and `GraphicsBase`'s `Bitmap`/`Graphics` pair (built in its constructor, called by every PDF render's `WriterBase.BeginReport`) are now lazy — a text-free PDF (lines/rectangles/images only) no longer crashes at construction on a GDI+-less platform.
 - Verified: `dotnet build` 0 errors, full test suite passing (137 + 2 + 5), a new end-to-end `SunburstChartWithCategoryHierarchy_RendersToPdf` test exercising the real PDF path.
 
-**Not done — P4 (text shaping):** genuinely large, new-logic work (a HarfBuzzSharp-based shaper + bidi/line-break implementation), not a resource-type port like Chart/Gauge's migration. Full P/Invoke inventory, blast-radius trace, and a phased plan are in `tasks/pdf-text-shaping-abstraction.md`. Of that plan: the HarfBuzzSharp/SkiaSharp spike and a behavioral (not golden-image) verification harness (`ShapedTextRasterizer`/`TextRasterAssertions`/`TextRenderingVisualTests` in `tests/ReportViewerCore.LinuxRenderers.Tests`) are done (2026-07-26, 154 tests passing); the font-layer port and shaping-layer port (wiring a Skia-backed `CachedFont`/shaper into production `RichText` code) are not started.
+**Done (2026-07-26): simple PDF text boxes render real text on non-Windows.** Tracing "P3"'s font-metrics call sites found they were never independently reachable (gated by P4's blocked RichText pipeline the whole time) — but that same trace found PDF's standard 14 fonts need no embedded data/`/Widths` array at all, unlocking a small, dependency-free MVP: `Renderer.ProcessSimpleTextBox` now branches on `!OperatingSystem.IsWindows()` to a new `WriterBase.DrawWrappedText`/`PDFWriter` path (base-14 font resolution + approximate word-wrap + direct `Tj` content-stream writing), bypassing RichText/Uniscribe/GDI+ entirely for single-style text boxes. Verified end-to-end (temporarily forced on this Windows dev box, rendered a real correct PDF). Gaps: multi-run "rich text" boxes still need the Windows-only path; font family beyond Arial/Times New Roman/Courier New falls back to Helvetica; WinAnsi-only (no arbitrary Unicode); left-align only. Full detail: `tasks/pdf-text-shaping-abstraction.md`'s "MVP" section.
+
+**Not done — full-fidelity text (rich/multi-run boxes, custom/embedded fonts, RTL/complex scripts) and the Image/WinForms-viewer/pagination engines that share the RichText/Uniscribe pipeline:** genuinely large, new-logic work (a HarfBuzzSharp-based shaper + bidi/line-break implementation), not a resource-type port like Chart/Gauge's migration. Full P/Invoke inventory, blast-radius trace, and a phased plan are in `tasks/pdf-text-shaping-abstraction.md`. Of that plan: the HarfBuzzSharp/SkiaSharp spike and a behavioral (not golden-image) verification harness (`ShapedTextRasterizer`/`TextRasterAssertions`/`TextRenderingVisualTests` in `tests/ReportViewerCore.LinuxRenderers.Tests`) are done (2026-07-26, 154 tests passing); the font-layer port and shaping-layer port (wiring a Skia-backed `CachedFont`/shaper into production `RichText` code) are not started.
 
 **Reference:** `tasks/pdf-render-callstack-analysis.md` (historical call-chain trace, now a pointer doc), `tasks/pdf-quick-reference.md` (cheat sheet), `tasks/pdf-text-shaping-abstraction.md` (what's left), `docs/platform-support.md`'s "PDF (RDL engine)" section (current state), `docs/decisions.md` (the 2026-07-24 and 2026-07-26 correction entries).
 
