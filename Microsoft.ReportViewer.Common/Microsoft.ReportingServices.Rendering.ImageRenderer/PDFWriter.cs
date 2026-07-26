@@ -55,6 +55,17 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private Dictionary<string, PDFFont> m_fonts = new Dictionary<string, PDFFont>();
 
+		/// <summary>
+		/// Per-render cache of <see cref="SkiaCachedFont"/> instances backing the real
+		/// shaped-width measurement (<see cref="ShapedTextMetrics"/>) used by
+		/// <see cref="DrawWrappedText"/>/<see cref="DrawWrappedRichText"/>'s word-wrap and
+		/// decoration-sizing decisions. Created lazily since it's only needed on the
+		/// cross-platform text path; disposed alongside this writer.
+		/// </summary>
+		private ShapedFontCache m_shapedFontCache;
+
+		private ShapedFontCache ShapedFontCache => m_shapedFontCache ??= new ShapedFontCache();
+
 		private int m_nextObjectId = 1;
 
 		private List<long> m_objectOffsets = new List<long>();
@@ -976,6 +987,8 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_images = null;
 			m_pageContentsSection = null;
 			DocumentMapLabelPoints = null;
+			m_shapedFontCache?.Dispose();
+			m_shapedFontCache = null;
 			base.Dispose(disposing);
 		}
 
@@ -1254,13 +1267,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Cross-platform DrawWrappedText implementation (see WriterBase.DrawWrappedText
 		/// and tasks/pdf-text-shaping-abstraction.md). Supports left/center/right alignment
-		/// by computing each wrapped line's approximate width (same ApproximateTextMetrics
-		/// used for word-wrap) and moving to each line via an explicit relative Td (dx, dy)
+		/// by computing each wrapped line's real shaped width (via ShapedTextMetrics -
+		/// HarfBuzzSharp shaping through the P4 prototype pipeline, not the character-class
+		/// approximation table) and moving to each line via an explicit relative Td (dx, dy)
 		/// rather than TL/T*, since different lines can need different start-x under
 		/// center/right alignment. Reuses WriteText's existing non-composite/InternalFont
 		/// Tj-writing branch directly (that branch never reads its TextRun parameter,
 		/// verified by reading WriteText/MapGlyphToUnicodeChar), so no RichText.TextRun
-		/// instance is needed at all.
+		/// instance is needed at all - drawing is still through the base-14 font, only the
+		/// wrap/measurement decisions use real shaped glyph widths.
 		/// </summary>
 		internal override void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style, RPLFormat.TextAlignments alignment)
 		{
@@ -1272,7 +1287,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			PDFFont pdfFont = GetOrCreateBase14Font(style.FontFamily, style.Bold, style.Italic);
 			float fontSizePoints = style.FontSize;
 			float maxWidthPoints = textPosition.Width * 2.834646f;
-			List<string> lines = SimpleTextWrapper.Wrap(text, fontSizePoints, maxWidthPoints);
+			List<string> lines = ShapedTextWrapper.Wrap(text, style.FontFamily, fontSizePoints, style.Bold, style.Italic, maxWidthPoints, ShapedFontCache);
 			float lineHeightPoints = fontSizePoints * 1.2f;
 			float ascentPoints = fontSizePoints * 0.75f;
 
@@ -1292,7 +1307,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 			for (int i = 0; i < lines.Count; i++)
 			{
-				float lineWidthPoints = ApproximateTextMetrics.EstimateStringWidthPoints(lines[i], fontSizePoints);
+				float lineWidthPoints = ShapedTextMetrics.MeasureTotalWidthPoints(lines[i], style.FontFamily, fontSizePoints, style.Bold, style.Italic, ShapedFontCache);
 				float lineX = ComputeLineStartX(alignment, boxLeftPoints, maxWidthPoints, lineWidthPoints);
 
 				if (i == 0)
@@ -1331,8 +1346,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Cross-platform DrawWrappedRichText implementation (see WriterBase and
 		/// tasks/pdf-text-shaping-abstraction.md). Wraps each paragraph independently via
-		/// StyledTextWrapper (using that paragraph's own resolved alignment), then draws
-		/// each line as a sequence of Tf/color/Tj operators - one per style-run fragment -
+		/// ShapedStyledTextWrapper (using that paragraph's own resolved alignment) - real
+		/// shaped glyph widths and soft-break opportunities per run, via the P4 prototype
+		/// pipeline, in place of the character-class approximation table - then draws each
+		/// line as a sequence of Tf/color/Tj operators - one per style-run fragment -
 		/// relying on the PDF reader's own font-metrics-driven text-position advance after
 		/// each Tj to place subsequent fragments on the same line. Line-to-line movement
 		/// uses an explicit relative Td the same way DrawWrappedText does, to support
@@ -1371,13 +1388,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 			foreach ((RPLFormat.TextAlignments alignment, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
 			{
-				List<List<StyledLineFragment>> wrappedLines = StyledTextWrapper.WrapParagraph(paragraphRuns, maxWidthPoints);
+				List<List<StyledLineFragment>> wrappedLines = ShapedStyledTextWrapper.WrapParagraph(paragraphRuns, maxWidthPoints, ShapedFontCache);
 				foreach (List<StyledLineFragment> line in wrappedLines)
 				{
 					float lineWidthPoints = 0f;
 					foreach (StyledLineFragment lineFragment in line)
 					{
-						lineWidthPoints += ApproximateTextMetrics.EstimateStringWidthPoints(lineFragment.Text, lineFragment.Style.FontSize);
+						lineWidthPoints += ShapedTextMetrics.MeasureTotalWidthPoints(lineFragment.Text, lineFragment.Style.FontFamily, lineFragment.Style.FontSize, lineFragment.Style.Bold, lineFragment.Style.Italic, ShapedFontCache);
 					}
 					float lineX = ComputeLineStartX(alignment, boxLeftPoints, maxWidthPoints, lineWidthPoints);
 
@@ -1412,7 +1429,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						string escaped = EscapeString(fragment.Text);
 						WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
 
-						float fragmentWidthPoints = ApproximateTextMetrics.EstimateStringWidthPoints(fragment.Text, fragment.Style.FontSize);
+						float fragmentWidthPoints = ShapedTextMetrics.MeasureTotalWidthPoints(fragment.Text, fragment.Style.FontFamily, fragment.Style.FontSize, fragment.Style.Bold, fragment.Style.Italic, ShapedFontCache);
 						if (fragment.Text.Length > 0)
 						{
 							AppendDecorationRectangle(decorationsBuilder, fragment.Style.Color, currentX, currentBaselineY, fragmentWidthPoints, fragment.Style.FontSize, fragment.Style.TextDecoration);

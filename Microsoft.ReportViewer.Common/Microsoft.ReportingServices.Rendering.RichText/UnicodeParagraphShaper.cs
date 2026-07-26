@@ -41,13 +41,17 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// code.
 	///
 	/// Still NOT wired into <see cref="LineBreaker"/>/<see cref="Paragraph"/>/<see cref="TextRun"/>
-	/// - this is one level short of that: it proves the *pieces* compose correctly, not
-	/// that they're safe to splice into the real, Win32-HDC-threaded call graph those
-	/// classes use (61 call sites, see this doc's step-3 scoping note). It also
-	/// deliberately stops at producing shaped run data, not at drawing it - connecting
-	/// this to PDFWriter would need real font embedding (glyph-indexed Tj/TJ output),
-	/// which is separately, explicitly deferred per user direction until PDF rendering
-	/// is otherwise end-to-end (see docs/decisions.md).
+	/// - the real, Win32-HDC-threaded RichText call graph (61 call sites, see this doc's
+	/// step-3 scoping note) is untouched.
+	///
+	/// It IS wired into <see cref="Microsoft.ReportingServices.Rendering.ImageRenderer.PDFWriter"/>'s
+	/// cross-platform text path, but only for measurement: <see cref="Microsoft.ReportingServices.Rendering.ImageRenderer.ShapedTextMetrics"/>
+	/// consumes this pipeline's per-character widths and soft-break flags to decide
+	/// where to word-wrap and how wide to draw decoration rectangles. Drawing itself
+	/// still goes through PDFWriter's base-14-font Tj path (plain text, not glyph
+	/// indices) - real font embedding (glyph-indexed Tj/TJ output against this pipeline's
+	/// shaped glyph ids) remains separately, explicitly deferred per user direction until
+	/// PDF rendering is otherwise end-to-end (see docs/decisions.md).
 	/// </summary>
 	internal static class UnicodeParagraphShaper
 	{

@@ -76,6 +76,8 @@ This is the real RDL PDF rendering path (`LocalReport.Render("PDF")`), distinct 
 
 **Progress on the replacement (2026-07-26):** working prototypes exist for the font-metrics layer (`SkiaCachedFont`), shaping (`HarfBuzzTextShaper`, via `SkiaSharp.HarfBuzz.SKShaper` — see `docs/decisions.md`'s `SKShaper` entry for why not a hand-rolled HarfBuzzSharp `Face`/`Font`), itemization (`UnicodeTextItemizer`, coarse Unicode-range script/direction splitting), and line-breaking (`UnicodeLineBreakAnalyzer`, a hand-rolled soft-break heuristic, not UAX #14-compliant), composed into one per-paragraph pipeline (`UnicodeParagraphShaper`). All scoped to plain LTR non-reordering text; none of it is wired into `FontCache`/`TextRun`/`LineBreaker`/`Paragraph` yet — see `tasks/pdf-text-shaping-abstraction.md` for what production wiring still needs.
 
+This pipeline **is** wired into the base-14 MVP above, but only for measurement: `PDFWriter.DrawWrappedText`/`DrawWrappedRichText` now decide word-wrap points and decoration-rectangle widths from real shaped glyph widths and soft-break opportunities (`ShapedTextMetrics`/`ShapedTextWrapper`/`ShapedStyledTextWrapper`) instead of a fixed character-class approximation table — drawing is unchanged (still base-14 fonts via plain-text `Tj`). See `docs/decisions.md`'s "wire the P4 shaping prototypes into the base-14 MVP" entry.
+
 ## Guidance
 
 When introducing a new renderer implementation, prefer:
