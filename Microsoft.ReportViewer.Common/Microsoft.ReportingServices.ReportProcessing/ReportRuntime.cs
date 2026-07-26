@@ -59,11 +59,11 @@ namespace Microsoft.ReportingServices.ReportProcessing
 						objectModel
 					});
 				}
-				catch (Exception ex)
+				catch (Exception)
 				{
 					if (assembly.GetName().Version >= new Version(8, 0, 700))
 					{
-						throw ex;
+						throw;
 					}
 					return (ReportExprHost)type.GetConstructors()[0].Invoke(new object[1]
 					{

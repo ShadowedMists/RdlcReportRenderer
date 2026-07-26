@@ -21,8 +21,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private ScopeID m_scopeID;
 
-		private ScopeID m_lastScopeID;
-
 		protected InternalStreamingOdpDynamicMemberLogicBase(DataRegionMember memberDef, OnDemandProcessingContext odpContext)
 		{
 			m_memberDef = memberDef;
@@ -106,7 +104,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		internal override ScopeID GetLastScopeID()
 		{
-			return m_lastScopeID;
+			return null;
 		}
 
 		private List<ScopeValue> EvaluateSortAndGroupExpressionValues(List<object> groupExpressionValues)

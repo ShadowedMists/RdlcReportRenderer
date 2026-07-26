@@ -24,10 +24,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			public List<string> CategoryAxesScalar;
 
 			public List<Microsoft.Reporting.Chart.WebForms.Axis> CategoryAxesAutoMargin;
-
-			public bool PrimaryAxisSet;
-
-			public bool SecondaryAxisSet;
 		}
 
 		private class SeriesInfo

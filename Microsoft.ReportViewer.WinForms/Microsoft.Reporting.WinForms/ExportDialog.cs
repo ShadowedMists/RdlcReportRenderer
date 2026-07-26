@@ -14,7 +14,9 @@ namespace Microsoft.Reporting.WinForms
 
 		private Label exportLabel;
 
+#pragma warning disable CS0649 // Standard WinForms designer Dispose(bool) field; stays null unless a future designer-added component needs a container, but the disposal check is intentionally kept regardless.
 		private Container components;
+#pragma warning restore CS0649
 
 		private ReportViewer m_viewerControl;
 

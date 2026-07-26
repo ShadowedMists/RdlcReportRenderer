@@ -18328,7 +18328,7 @@ namespace Microsoft.ReportingServices.ReportProcessing
 					{
 						transactionInfo.RollbackRequired = true;
 					}
-					throw ex2;
+					throw;
 				}
 				finally
 				{

@@ -38,9 +38,9 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return ((Symbol)component)[field.Name];
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				throw ex;
+				throw;
 			}
 		}
 

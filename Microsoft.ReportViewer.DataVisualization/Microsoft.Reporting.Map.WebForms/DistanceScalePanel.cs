@@ -26,8 +26,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private int HorizLabelMargin = 3;
 
-		private int VertLabelMargin;
-
 		private Font font = new Font("Microsoft Sans Serif", 8.25f);
 
 		private Color scaleBorderColor = Color.DarkGray;
@@ -298,7 +296,7 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private RectangleF CreateTextClip(RectangleF textBounds, SizeF textClipSize)
 		{
-			textBounds.Inflate(-HorizLabelMargin, -VertLabelMargin);
+			textBounds.Inflate(-HorizLabelMargin, 0);
 			textClipSize.Width = Math.Max(1f, Math.Min(textClipSize.Width, textBounds.Width));
 			textClipSize.Height = Math.Max(1f, Math.Min(textClipSize.Height, textBounds.Height));
 			return new RectangleF(new PointF(textBounds.X, textBounds.Y + (textBounds.Height - textClipSize.Height) / 2f), textClipSize);

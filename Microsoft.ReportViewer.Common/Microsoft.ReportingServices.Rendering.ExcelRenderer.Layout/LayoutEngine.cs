@@ -1283,8 +1283,6 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 
 		private string m_reportLanguage = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
 
-		private bool m_renderFooterInBody;
-
 		private bool m_renderHeaderInBody = true;
 
 		private HeaderFooterLayout m_headerLayout;
@@ -1333,11 +1331,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 		{
 			get
 			{
-				if (!m_renderFooterInBody)
-				{
-					return !m_onLastSection;
-				}
-				return true;
+				return !m_onLastSection;
 			}
 		}
 
@@ -1636,7 +1630,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			{
 				excel.AddPrintTitle(0, m_rowEdgesMap[m_headerHeight] - 1);
 			}
-			if (!m_renderFooterInBody && m_footerLayout != null)
+			if (m_footerLayout != null)
 			{
 				m_footerLayout.RenderStrings(m_report, excel, out string left2, out string center2, out string right2);
 				excel.AddFooter(left2, center2, right2);

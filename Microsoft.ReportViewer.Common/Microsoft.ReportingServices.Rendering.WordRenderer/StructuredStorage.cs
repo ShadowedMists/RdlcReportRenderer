@@ -278,9 +278,9 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 				array = null;
 				return true;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				throw ex;
+				throw;
 			}
 			finally
 			{

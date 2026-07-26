@@ -440,8 +440,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 
 		internal sealed class OnDemandProcessingManager
 		{
-			private static List<Declaration> m_ChunkDeclarations;
-
 			private OnDemandProcessingContext m_odpContext;
 
 			internal OnDemandProcessingManager()
@@ -674,34 +672,30 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 
 			internal static List<Declaration> GetChunkDeclarations()
 			{
-				if (m_ChunkDeclarations == null)
+				return new List<Declaration>(21)
 				{
-					return new List<Declaration>(21)
-					{
-						ScopeInstance.GetDeclaration(),
-						ReportInstance.GetDeclaration(),
-						DataSetInstance.GetDeclaration(),
-						DataRegionInstance.GetDeclaration(),
-						DataRegionMemberInstance.GetDeclaration(),
-						DataCellInstance.GetDeclaration(),
-						DataAggregateObjResult.GetDeclaration(),
-						SubReportInstance.GetDeclaration(),
-						GroupTreePartition.GetDeclaration(),
-						ReportSnapshot.GetDeclaration(),
-						ParametersImplWrapper.GetDeclaration(),
-						ParameterImplWrapper.GetDeclaration(),
-						SubReportInfo.GetDeclaration(),
-						ParameterInfo.GetNewDeclaration(),
-						ParameterInfoCollection.GetDeclaration(),
-						ParameterBase.GetNewDeclaration(),
-						ValidValue.GetNewDeclaration(),
-						FieldInfo.GetDeclaration(),
-						TreePartitionManager.GetDeclaration(),
-						LookupObjResult.GetDeclaration(),
-						DataCellInstanceList.GetDeclaration()
-					};
-				}
-				return m_ChunkDeclarations;
+					ScopeInstance.GetDeclaration(),
+					ReportInstance.GetDeclaration(),
+					DataSetInstance.GetDeclaration(),
+					DataRegionInstance.GetDeclaration(),
+					DataRegionMemberInstance.GetDeclaration(),
+					DataCellInstance.GetDeclaration(),
+					DataAggregateObjResult.GetDeclaration(),
+					SubReportInstance.GetDeclaration(),
+					GroupTreePartition.GetDeclaration(),
+					ReportSnapshot.GetDeclaration(),
+					ParametersImplWrapper.GetDeclaration(),
+					ParameterImplWrapper.GetDeclaration(),
+					SubReportInfo.GetDeclaration(),
+					ParameterInfo.GetNewDeclaration(),
+					ParameterInfoCollection.GetDeclaration(),
+					ParameterBase.GetNewDeclaration(),
+					ValidValue.GetNewDeclaration(),
+					FieldInfo.GetDeclaration(),
+					TreePartitionManager.GetDeclaration(),
+					LookupObjResult.GetDeclaration(),
+					DataCellInstanceList.GetDeclaration()
+				};
 			}
 
 			internal static Stream OpenExistingDocumentMapStream(OnDemandMetadata odpMetadata, ICatalogItemContext reportContext, IChunkFactory chunkFactory)

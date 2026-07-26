@@ -13,7 +13,9 @@ namespace Microsoft.Reporting.WinForms
 
 		private Stream m_imageStream;
 
+#pragma warning disable CS0649 // Standard WinForms designer Dispose(bool) field; stays null unless a future designer-added component needs a container, but the disposal check is intentionally kept regardless.
 		private IContainer components;
+#pragma warning restore CS0649
 
 		private TableLayoutPanel tableLayoutPanel1;
 

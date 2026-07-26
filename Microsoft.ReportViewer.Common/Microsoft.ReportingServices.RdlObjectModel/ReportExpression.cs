@@ -363,7 +363,7 @@ namespace Microsoft.ReportingServices.RdlObjectModel
 				{
 					throw ex.InnerException;
 				}
-				throw ex;
+				throw;
 			}
 		}
 

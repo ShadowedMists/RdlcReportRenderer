@@ -30,8 +30,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private DateTimeIntervalType smallScrollMinSizeType;
 
-		private bool ignoreValidation;
-
 		[SRCategory("CategoryAttributeAxisView")]
 		[Bindable(true)]
 		[DefaultValue(double.NaN)]
@@ -58,7 +56,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						AreaAlignOrientations orientation = (axis.axisType == AxisName.X || axis.axisType == AxisName.X2) ? AreaAlignOrientations.Vertical : AreaAlignOrientations.Horizontal;
 						axis.Common.ChartPicture.AlignChartAreasAxesView(axis.chartArea, orientation);
 					}
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -92,7 +90,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						AreaAlignOrientations orientation = (axis.axisType == AxisName.X || axis.axisType == AxisName.X2) ? AreaAlignOrientations.Vertical : AreaAlignOrientations.Horizontal;
 						axis.Common.ChartPicture.AlignChartAreasAxesView(axis.chartArea, orientation);
 					}
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -121,7 +119,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						AreaAlignOrientations orientation = (axis.axisType == AxisName.X || axis.axisType == AxisName.X2) ? AreaAlignOrientations.Vertical : AreaAlignOrientations.Horizontal;
 						axis.Common.ChartPicture.AlignChartAreasAxesView(axis.chartArea, orientation);
 					}
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -212,7 +210,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (smallScrollSize != value)
 				{
 					smallScrollSize = value;
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -235,7 +233,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (smallScrollSizeType != value)
 				{
 					smallScrollSizeType = ((value != DateTimeIntervalType.NotSet) ? value : DateTimeIntervalType.Auto);
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -258,7 +256,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (smallScrollMinSize != value)
 				{
 					smallScrollMinSize = value;
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}
@@ -281,7 +279,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				if (smallScrollMinSizeType != value)
 				{
 					smallScrollMinSizeType = ((value != DateTimeIntervalType.NotSet) ? value : DateTimeIntervalType.Auto);
-					if (!ignoreValidation && axis != null)
+					if (axis != null)
 					{
 						axis.Invalidate();
 					}

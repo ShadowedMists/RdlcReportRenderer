@@ -30,8 +30,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal static string productID = "DG-WC";
 
-		private bool pollServer;
-
 		private Color backColor = Color.White;
 
 		private int width = 320;

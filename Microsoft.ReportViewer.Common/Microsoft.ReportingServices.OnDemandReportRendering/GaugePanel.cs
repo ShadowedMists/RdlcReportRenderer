@@ -16,8 +16,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private GaugeMember m_gaugeMember;
 
-		private GaugeMember m_gaugeRowMember;
-
 		private GaugeRowCollection m_gaugeRowCollection;
 
 		private LinearGaugeCollection m_linearGauges;
@@ -251,10 +249,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			if (m_gaugeMember != null)
 			{
 				m_gaugeMember.ResetContext();
-			}
-			if (m_gaugeRowMember != null)
-			{
-				m_gaugeRowMember.ResetContext();
 			}
 			if (m_gaugeRowCollection != null)
 			{

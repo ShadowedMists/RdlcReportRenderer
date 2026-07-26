@@ -261,8 +261,6 @@ namespace Microsoft.Reporting.WinForms.Internal.Soap.ReportingServices2005.Execu
 
 		private SecureMethodsList m_secureMethods;
 
-		private bool m_unsafeHeaderServerIsIIS5;
-
 		internal string UrlForRender => GetServerURL(IsSecureMethod("UrlRender"));
 
 		private bool CanUseKatmaiMethods
@@ -426,7 +424,7 @@ namespace Microsoft.Reporting.WinForms.Internal.Soap.ReportingServices2005.Execu
 			{
 				if (m_alwaysUseSSL)
 				{
-					throw ex;
+					throw;
 				}
 				m_alwaysUseSSL = true;
 				SetConnectionSSL(useSSL: true);

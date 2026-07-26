@@ -1739,8 +1739,6 @@ namespace Microsoft.ReportingServices.RdlExpressions
 
 			internal CodeExpressionCollection ChartStripLines;
 
-			internal CodeExpressionCollection ChartSeriesCollection;
-
 			internal CodeExpressionCollection ChartDerivedSeriesCollection;
 
 			internal CodeExpressionCollection ChartFormulaParameters;

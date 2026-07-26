@@ -11,8 +11,6 @@ namespace Microsoft.ReportingServices.ReportRendering
 
 		private bool m_isCustomControl;
 
-		private bool m_populated;
-
 		private Hashtable m_uniqueNames;
 
 		private IntList m_expressionIndex;
@@ -25,7 +23,7 @@ namespace Microsoft.ReportingServices.ReportRendering
 				{
 					throw new RenderingObjectModelException(ProcessingErrorCode.rsInvalidParameterValue, "name");
 				}
-				if (!m_populated && !m_isCustomControl)
+				if (!m_isCustomControl)
 				{
 					Populate();
 				}
@@ -56,10 +54,7 @@ namespace Microsoft.ReportingServices.ReportRendering
 				}
 				else
 				{
-					if (!m_populated)
-					{
-						Populate();
-					}
+					Populate();
 					Global.Tracer.Assert(m_expressionIndex.Count <= m_expressions.Count && index <= m_expressionIndex.Count);
 					GetNameValue(m_expressionIndex[index], out name, out value);
 				}
@@ -71,7 +66,7 @@ namespace Microsoft.ReportingServices.ReportRendering
 		{
 			get
 			{
-				if (!m_populated && !m_isCustomControl)
+				if (!m_isCustomControl)
 				{
 					Populate();
 				}
