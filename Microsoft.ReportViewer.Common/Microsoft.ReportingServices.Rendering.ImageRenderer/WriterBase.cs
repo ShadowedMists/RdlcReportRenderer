@@ -169,6 +169,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		{
 		}
 
+		/// <summary>
+		/// Cross-platform counterpart to DrawWrappedText for multi-run ("rich text")
+		/// text boxes - see tasks/pdf-text-shaping-abstraction.md. Each inner list is one
+		/// paragraph's runs in order, each run a (text, style) pair. No-op by default.
+		/// </summary>
+		internal virtual void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<List<(string Text, ITextRunProps Style)>> paragraphs)
+		{
+		}
+
 		internal virtual void EndPageSection()
 		{
 		}

@@ -1306,6 +1306,78 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_pageContentsSection.Add(stringBuilder.ToString());
 		}
 
+		/// <summary>
+		/// Cross-platform DrawWrappedRichText implementation (see WriterBase and
+		/// tasks/pdf-text-shaping-abstraction.md). Wraps each paragraph independently via
+		/// StyledTextWrapper, then draws each line as a sequence of Tf/color/Tj operators -
+		/// one per style-run fragment - relying on the PDF reader's own font-metrics-driven
+		/// text-position advance after each Tj to place subsequent fragments on the same
+		/// line, rather than computing per-fragment positions itself. Left-aligned only,
+		/// same documented scope cut as DrawWrappedText.
+		/// </summary>
+		internal override void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<List<(string Text, ITextRunProps Style)>> paragraphs)
+		{
+			if (paragraphs == null || paragraphs.Count == 0 || textPosition.Width <= 0f || textPosition.Height <= 0f)
+			{
+				return;
+			}
+
+			float maxWidthPoints = textPosition.Width * 2.834646f;
+			float maxFontSizePoints = 1f;
+			foreach (List<(string Text, ITextRunProps Style)> paragraphRuns in paragraphs)
+			{
+				foreach ((string _, ITextRunProps style) in paragraphRuns)
+				{
+					if (style.FontSize > maxFontSizePoints)
+					{
+						maxFontSizePoints = style.FontSize;
+					}
+				}
+			}
+			float lineHeightPoints = maxFontSizePoints * 1.2f;
+			float ascentPoints = maxFontSizePoints * 0.75f;
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append("\r\nBT ");
+			Write(stringBuilder, lineHeightPoints);
+			stringBuilder.Append(" TL ");
+			float startXPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
+			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
+			Write(stringBuilder, startXPoints);
+			stringBuilder.Append(" ");
+			Write(stringBuilder, startYPoints);
+			stringBuilder.Append(" Td ");
+
+			bool firstLineOverall = true;
+			foreach (List<(string Text, ITextRunProps Style)> paragraphRuns in paragraphs)
+			{
+				List<List<StyledLineFragment>> wrappedLines = StyledTextWrapper.WrapParagraph(paragraphRuns, maxWidthPoints);
+				foreach (List<StyledLineFragment> line in wrappedLines)
+				{
+					if (!firstLineOverall)
+					{
+						stringBuilder.Append("T* ");
+					}
+					firstLineOverall = false;
+
+					foreach (StyledLineFragment fragment in line)
+					{
+						PDFFont pdfFont = GetOrCreateBase14Font(fragment.Style.FontFamily, fragment.Style.Bold, fragment.Style.Italic);
+						stringBuilder.Append("/F");
+						Write(stringBuilder, pdfFont.FontId);
+						stringBuilder.Append(" ");
+						Write(stringBuilder, fragment.Style.FontSize);
+						stringBuilder.Append(" Tf ");
+						WriteColor(stringBuilder, fragment.Style.Color, isStroke: false);
+						string escaped = EscapeString(fragment.Text);
+						WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+					}
+				}
+			}
+			stringBuilder.Append("ET");
+			m_pageContentsSection.Add(stringBuilder.ToString());
+		}
+
 		private PDFImage GetImage(string imageName, byte[] imageData, long imageDataOffset, GDIImageProps gdiImageProps)
 		{
 			if (string.IsNullOrEmpty(imageName) && imageData != null)

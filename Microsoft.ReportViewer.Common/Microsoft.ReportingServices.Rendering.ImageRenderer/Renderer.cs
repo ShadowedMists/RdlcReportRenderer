@@ -1177,6 +1177,30 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		protected virtual void ProcessRichTextBox(RectangleF textPosition, RPLTextBox textbox, ReportTextBox rptTextBox, PointF offset)
 		{
+			if (!System.OperatingSystem.IsWindows())
+			{
+				var crossPlatformParagraphs = new List<List<(string Text, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps Style)>>();
+				RPLParagraph crossPlatformParagraph;
+				while ((crossPlatformParagraph = textbox.GetNextParagraph()) != null)
+				{
+					var runs = new List<(string, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps)>();
+					RPLTextRun crossPlatformTextRun;
+					while ((crossPlatformTextRun = crossPlatformParagraph.GetNextTextRun()) != null)
+					{
+						RPLTextRunProps runProps = (RPLTextRunProps)crossPlatformTextRun.ElementProps;
+						string runText = runProps.Value;
+						if (string.IsNullOrEmpty(runText))
+						{
+							runText = ((RPLTextRunPropsDef)runProps.Definition).Value;
+						}
+						ReportTextRun runStyle = new ReportTextRun(runProps.Style, runProps.UniqueName, runProps.ActionInfo, m_cachedFontSizes, m_cachedReportColors);
+						runs.Add((runText, runStyle));
+					}
+					crossPlatformParagraphs.Add(runs);
+				}
+				Writer.DrawWrappedRichText(textPosition, offset, crossPlatformParagraphs);
+				return;
+			}
 			List<Microsoft.ReportingServices.Rendering.RichText.Paragraph> list = new List<Microsoft.ReportingServices.Rendering.RichText.Paragraph>();
 			RPLParagraph rPLParagraph = null;
 			List<TextRunItemizedData> value = null;

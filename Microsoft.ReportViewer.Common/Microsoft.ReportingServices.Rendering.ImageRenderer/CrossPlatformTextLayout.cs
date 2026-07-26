@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.ReportingServices.Rendering.RichText;
 
 namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 {
@@ -119,6 +120,103 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			}
 
 			lines.Add(currentLine.ToString());
+		}
+	}
+
+	/// <summary>
+	/// One piece of a wrapped line: a run of text drawn with a single style. Adjacent
+	/// same-style fragments are merged so PDFWriter emits one Tj per style change, not
+	/// per word.
+	/// </summary>
+	internal readonly struct StyledLineFragment
+	{
+		internal readonly string Text;
+		internal readonly ITextRunProps Style;
+
+		internal StyledLineFragment(string text, ITextRunProps style)
+		{
+			Text = text;
+			Style = style;
+		}
+	}
+
+	/// <summary>
+	/// Word-wrap across multiple styled runs within a paragraph (the cross-platform
+	/// counterpart to ProcessRichTextBox - see tasks/pdf-text-shaping-abstraction.md).
+	/// Each paragraph is wrapped independently; explicit newlines within a run's own text
+	/// force a line break the same way SimpleTextWrapper does. All runs in a paragraph
+	/// share one line-height/baseline (the paragraph's largest font size) - mixing wildly
+	/// different font sizes within one line is a documented approximation, not exact
+	/// per-run baseline alignment.
+	/// </summary>
+	internal static class StyledTextWrapper
+	{
+		internal static List<List<StyledLineFragment>> WrapParagraph(IReadOnlyList<(string Text, ITextRunProps Style)> runs, float maxWidthPoints)
+		{
+			var lines = new List<List<StyledLineFragment>>();
+			var currentLine = new List<StyledLineFragment>();
+			float currentWidth = 0f;
+			bool lineHasContent = false;
+
+			void FlushLine()
+			{
+				lines.Add(currentLine);
+				currentLine = new List<StyledLineFragment>();
+				currentWidth = 0f;
+				lineHasContent = false;
+			}
+
+			void AppendFragment(string text, ITextRunProps style)
+			{
+				if (currentLine.Count > 0 && ReferenceEquals(currentLine[currentLine.Count - 1].Style, style))
+				{
+					StyledLineFragment last = currentLine[currentLine.Count - 1];
+					currentLine[currentLine.Count - 1] = new StyledLineFragment(last.Text + text, style);
+				}
+				else
+				{
+					currentLine.Add(new StyledLineFragment(text, style));
+				}
+			}
+
+			foreach ((string runText, ITextRunProps style) in runs)
+			{
+				string[] paragraphPieces = runText.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+				for (int pieceIndex = 0; pieceIndex < paragraphPieces.Length; pieceIndex++)
+				{
+					string[] words = paragraphPieces[pieceIndex].Split(' ');
+					for (int w = 0; w < words.Length; w++)
+					{
+						string word = words[w];
+						bool wordHasLeadingSpace = w > 0;
+						float spaceWidth = wordHasLeadingSpace ? ApproximateTextMetrics.EstimateStringWidthPoints(" ", style.FontSize) : 0f;
+						float wordWidth = ApproximateTextMetrics.EstimateStringWidthPoints(word, style.FontSize);
+
+						if (lineHasContent && currentWidth + spaceWidth + wordWidth > maxWidthPoints)
+						{
+							FlushLine();
+							wordHasLeadingSpace = false;
+							spaceWidth = 0f;
+						}
+
+						AppendFragment((wordHasLeadingSpace ? " " : "") + word, style);
+						currentWidth += spaceWidth + wordWidth;
+						lineHasContent = true;
+					}
+
+					bool forcedBreakAfterPiece = pieceIndex < paragraphPieces.Length - 1;
+					if (forcedBreakAfterPiece)
+					{
+						FlushLine();
+					}
+				}
+			}
+
+			if (lineHasContent || lines.Count == 0)
+			{
+				lines.Add(currentLine);
+			}
+			return lines;
 		}
 	}
 }
