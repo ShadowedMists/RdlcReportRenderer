@@ -1104,7 +1104,8 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			// documented gap for now (ProcessRichTextBox is unchanged).
 			if (!System.OperatingSystem.IsWindows())
 			{
-				Writer.DrawWrappedText(textPosition, offset, value, reportTextRun);
+				RPLFormat.TextAlignments alignment = ResolveTextAlignment(reportParagraph.Alignment, rptTextBox);
+				Writer.DrawWrappedText(textPosition, offset, value, reportTextRun, alignment);
 				return;
 			}
 			Microsoft.ReportingServices.Rendering.RichText.Paragraph paragraph = new Microsoft.ReportingServices.Rendering.RichText.Paragraph(reportParagraph, 1);
@@ -1179,10 +1180,12 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		{
 			if (!System.OperatingSystem.IsWindows())
 			{
-				var crossPlatformParagraphs = new List<List<(string Text, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps Style)>>();
+				var crossPlatformParagraphs = new List<(RPLFormat.TextAlignments Alignment, List<(string Text, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps Style)> Runs)>();
 				RPLParagraph crossPlatformParagraph;
 				while ((crossPlatformParagraph = textbox.GetNextParagraph()) != null)
 				{
+					ReportParagraph crossPlatformParagraphProps = new ReportParagraph((RPLParagraphProps)crossPlatformParagraph.ElementProps);
+					RPLFormat.TextAlignments paragraphAlignment = ResolveTextAlignment(crossPlatformParagraphProps.Alignment, rptTextBox);
 					var runs = new List<(string, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps)>();
 					RPLTextRun crossPlatformTextRun;
 					while ((crossPlatformTextRun = crossPlatformParagraph.GetNextTextRun()) != null)
@@ -1196,7 +1199,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						ReportTextRun runStyle = new ReportTextRun(runProps.Style, runProps.UniqueName, runProps.ActionInfo, m_cachedFontSizes, m_cachedReportColors);
 						runs.Add((runText, runStyle));
 					}
-					crossPlatformParagraphs.Add(runs);
+					crossPlatformParagraphs.Add((paragraphAlignment, runs));
 				}
 				Writer.DrawWrappedRichText(textPosition, offset, crossPlatformParagraphs);
 				return;
@@ -1301,6 +1304,34 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					Writer.ReleaseHdc(release: false);
 				}
 			});
+		}
+
+		/// <summary>
+		/// Resolves RPLFormat.TextAlignments.General against the text box's own default
+		/// alignment/direction, mirroring RichText.TextBox.RenderParagraph's identical
+		/// resolution (RichText/TextBox.cs's RenderParagraph) - kept here rather than
+		/// shared with that method since it operates on ReportTextBox/ReportParagraph
+		/// directly, without needing a RichText.TextBox instance at all.
+		/// </summary>
+		private static RPLFormat.TextAlignments ResolveTextAlignment(RPLFormat.TextAlignments alignment, ReportTextBox textBoxProps)
+		{
+			if (alignment != RPLFormat.TextAlignments.General)
+			{
+				return alignment;
+			}
+			alignment = textBoxProps.DefaultAlignment;
+			if (textBoxProps.Direction != RPLFormat.Directions.LTR)
+			{
+				if (alignment == RPLFormat.TextAlignments.Right)
+				{
+					alignment = RPLFormat.TextAlignments.Left;
+				}
+				else if (alignment == RPLFormat.TextAlignments.Left)
+				{
+					alignment = RPLFormat.TextAlignments.Right;
+				}
+			}
+			return alignment;
 		}
 
 		private void CreateParagraphRuns(string value, Microsoft.ReportingServices.Rendering.RichText.Paragraph richTextParagraph, ReportTextRun reportTextRun, TextRunItemizedData textRunItemizedData)

@@ -165,16 +165,18 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// (the Windows-only ImageWriter/EMF path is unaffected and keeps using
 		/// DrawTextRun above via the existing LineBreaker/TextBox path).
 		/// </summary>
-		internal virtual void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style)
+		internal virtual void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style, RPLFormat.TextAlignments alignment)
 		{
 		}
 
 		/// <summary>
 		/// Cross-platform counterpart to DrawWrappedText for multi-run ("rich text")
-		/// text boxes - see tasks/pdf-text-shaping-abstraction.md. Each inner list is one
-		/// paragraph's runs in order, each run a (text, style) pair. No-op by default.
+		/// text boxes - see tasks/pdf-text-shaping-abstraction.md. Each paragraph carries
+		/// its own resolved alignment (RPLFormat.TextAlignments.General already resolved
+		/// against the text box's DefaultAlignment/Direction by the caller) and its runs
+		/// in order, each run a (text, style) pair. No-op by default.
 		/// </summary>
-		internal virtual void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<List<(string Text, ITextRunProps Style)>> paragraphs)
+		internal virtual void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<(RPLFormat.TextAlignments Alignment, List<(string Text, ITextRunProps Style)> Runs)> paragraphs)
 		{
 		}
 

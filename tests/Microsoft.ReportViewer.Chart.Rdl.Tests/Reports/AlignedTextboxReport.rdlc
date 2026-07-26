@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="TextboxCenter">
+            <Top>0.1in</Top>
+            <Left>0.1in</Left>
+            <Height>0.5in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <Style>
+                  <TextAlign>Center</TextAlign>
+                </Style>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Centered Title</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>14pt</FontSize>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+            <CanGrow>true</CanGrow>
+          </Textbox>
+          <Textbox Name="TextboxRight">
+            <Top>0.7in</Top>
+            <Left>0.1in</Left>
+            <Height>0.5in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <Style>
+                  <TextAlign>Right</TextAlign>
+                </Style>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Right aligned</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>10pt</FontSize>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+            <CanGrow>true</CanGrow>
+          </Textbox>
+        </ReportItems>
+        <Height>2in</Height>
+      </Body>
+      <Width>4in</Width>
+      <Page>
+        <PageWidth>4in</PageWidth>
+        <PageHeight>3in</PageHeight>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>

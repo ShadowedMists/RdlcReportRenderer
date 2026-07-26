@@ -1253,15 +1253,16 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		/// <summary>
 		/// Cross-platform DrawWrappedText implementation (see WriterBase.DrawWrappedText
-		/// and tasks/pdf-text-shaping-abstraction.md). Left-aligned only - center/right
-		/// alignment is a documented gap for this path, not attempted here to avoid an
-		/// unverified per-line positioning scheme (AGENTS.md: "document a genuine gap
-		/// honestly rather than risk a subtly wrong port"). Reuses WriteText's existing
-		/// non-composite/InternalFont Tj-writing branch directly (that branch never reads
-		/// its TextRun parameter, verified by reading WriteText/MapGlyphToUnicodeChar), so
-		/// no RichText.TextRun instance is needed at all.
+		/// and tasks/pdf-text-shaping-abstraction.md). Supports left/center/right alignment
+		/// by computing each wrapped line's approximate width (same ApproximateTextMetrics
+		/// used for word-wrap) and moving to each line via an explicit relative Td (dx, dy)
+		/// rather than TL/T*, since different lines can need different start-x under
+		/// center/right alignment. Reuses WriteText's existing non-composite/InternalFont
+		/// Tj-writing branch directly (that branch never reads its TextRun parameter,
+		/// verified by reading WriteText/MapGlyphToUnicodeChar), so no RichText.TextRun
+		/// instance is needed at all.
 		/// </summary>
-		internal override void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style)
+		internal override void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style, RPLFormat.TextAlignments alignment)
 		{
 			if (string.IsNullOrEmpty(text) || textPosition.Width <= 0f || textPosition.Height <= 0f)
 			{
@@ -1283,22 +1284,32 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Write(stringBuilder, fontSizePoints);
 			stringBuilder.Append(" Tf ");
 			WriteColor(stringBuilder, style.Color, isStroke: false);
-			Write(stringBuilder, lineHeightPoints);
-			stringBuilder.Append(" TL ");
 
-			float startXPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
+			float boxLeftPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
 			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
-			Write(stringBuilder, startXPoints);
-			stringBuilder.Append(" ");
-			Write(stringBuilder, startYPoints);
-			stringBuilder.Append(" Td ");
+			float previousLineX = 0f;
 
 			for (int i = 0; i < lines.Count; i++)
 			{
-				if (i > 0)
+				float lineWidthPoints = ApproximateTextMetrics.EstimateStringWidthPoints(lines[i], fontSizePoints);
+				float lineX = ComputeLineStartX(alignment, boxLeftPoints, maxWidthPoints, lineWidthPoints);
+
+				if (i == 0)
 				{
-					stringBuilder.Append("T* ");
+					Write(stringBuilder, lineX);
+					stringBuilder.Append(" ");
+					Write(stringBuilder, startYPoints);
+					stringBuilder.Append(" Td ");
 				}
+				else
+				{
+					Write(stringBuilder, lineX - previousLineX);
+					stringBuilder.Append(" ");
+					Write(stringBuilder, 0f - lineHeightPoints);
+					stringBuilder.Append(" Td ");
+				}
+				previousLineX = lineX;
+
 				string escaped = EscapeString(lines[i]);
 				WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
 			}
@@ -1309,13 +1320,14 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Cross-platform DrawWrappedRichText implementation (see WriterBase and
 		/// tasks/pdf-text-shaping-abstraction.md). Wraps each paragraph independently via
-		/// StyledTextWrapper, then draws each line as a sequence of Tf/color/Tj operators -
-		/// one per style-run fragment - relying on the PDF reader's own font-metrics-driven
-		/// text-position advance after each Tj to place subsequent fragments on the same
-		/// line, rather than computing per-fragment positions itself. Left-aligned only,
-		/// same documented scope cut as DrawWrappedText.
+		/// StyledTextWrapper (using that paragraph's own resolved alignment), then draws
+		/// each line as a sequence of Tf/color/Tj operators - one per style-run fragment -
+		/// relying on the PDF reader's own font-metrics-driven text-position advance after
+		/// each Tj to place subsequent fragments on the same line. Line-to-line movement
+		/// uses an explicit relative Td the same way DrawWrappedText does, to support
+		/// per-paragraph alignment.
 		/// </summary>
-		internal override void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<List<(string Text, ITextRunProps Style)>> paragraphs)
+		internal override void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<(RPLFormat.TextAlignments Alignment, List<(string Text, ITextRunProps Style)> Runs)> paragraphs)
 		{
 			if (paragraphs == null || paragraphs.Count == 0 || textPosition.Width <= 0f || textPosition.Height <= 0f)
 			{
@@ -1324,7 +1336,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 			float maxWidthPoints = textPosition.Width * 2.834646f;
 			float maxFontSizePoints = 1f;
-			foreach (List<(string Text, ITextRunProps Style)> paragraphRuns in paragraphs)
+			foreach ((RPLFormat.TextAlignments _, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
 			{
 				foreach ((string _, ITextRunProps style) in paragraphRuns)
 				{
@@ -1339,26 +1351,39 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.Append("\r\nBT ");
-			Write(stringBuilder, lineHeightPoints);
-			stringBuilder.Append(" TL ");
-			float startXPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
+			float boxLeftPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
 			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
-			Write(stringBuilder, startXPoints);
-			stringBuilder.Append(" ");
-			Write(stringBuilder, startYPoints);
-			stringBuilder.Append(" Td ");
-
+			float previousLineX = 0f;
 			bool firstLineOverall = true;
-			foreach (List<(string Text, ITextRunProps Style)> paragraphRuns in paragraphs)
+
+			foreach ((RPLFormat.TextAlignments alignment, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
 			{
 				List<List<StyledLineFragment>> wrappedLines = StyledTextWrapper.WrapParagraph(paragraphRuns, maxWidthPoints);
 				foreach (List<StyledLineFragment> line in wrappedLines)
 				{
-					if (!firstLineOverall)
+					float lineWidthPoints = 0f;
+					foreach (StyledLineFragment lineFragment in line)
 					{
-						stringBuilder.Append("T* ");
+						lineWidthPoints += ApproximateTextMetrics.EstimateStringWidthPoints(lineFragment.Text, lineFragment.Style.FontSize);
 					}
-					firstLineOverall = false;
+					float lineX = ComputeLineStartX(alignment, boxLeftPoints, maxWidthPoints, lineWidthPoints);
+
+					if (firstLineOverall)
+					{
+						Write(stringBuilder, lineX);
+						stringBuilder.Append(" ");
+						Write(stringBuilder, startYPoints);
+						stringBuilder.Append(" Td ");
+						firstLineOverall = false;
+					}
+					else
+					{
+						Write(stringBuilder, lineX - previousLineX);
+						stringBuilder.Append(" ");
+						Write(stringBuilder, 0f - lineHeightPoints);
+						stringBuilder.Append(" Td ");
+					}
+					previousLineX = lineX;
 
 					foreach (StyledLineFragment fragment in line)
 					{
@@ -1376,6 +1401,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			}
 			stringBuilder.Append("ET");
 			m_pageContentsSection.Add(stringBuilder.ToString());
+		}
+
+		private static float ComputeLineStartX(RPLFormat.TextAlignments alignment, float boxLeftPoints, float boxWidthPoints, float lineWidthPoints)
+		{
+			switch (alignment)
+			{
+				case RPLFormat.TextAlignments.Center:
+					return boxLeftPoints + Math.Max(0f, (boxWidthPoints - lineWidthPoints) / 2f);
+				case RPLFormat.TextAlignments.Right:
+					return boxLeftPoints + Math.Max(0f, boxWidthPoints - lineWidthPoints);
+				default:
+					return boxLeftPoints;
+			}
 		}
 
 		private PDFImage GetImage(string imageName, byte[] imageData, long imageDataOffset, GDIImageProps gdiImageProps)
