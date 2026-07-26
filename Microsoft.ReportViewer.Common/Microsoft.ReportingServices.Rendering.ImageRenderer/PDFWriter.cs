@@ -3,6 +3,7 @@ using Microsoft.ReportingServices.Interfaces;
 using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.RichText;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
+using SkiaSharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -1265,6 +1266,105 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		}
 
 		/// <summary>
+		/// Resolves (family, bold, italic) to a real, embeddable composite font backed by
+		/// SkiaSharp's <see cref="SKTypeface"/> - the cross-platform counterpart to
+		/// <see cref="GetOrCreateBase14Font"/>, used instead of it when <see cref="EmbedFonts"/>
+		/// is <see cref="FontEmbedding.Subset"/> (this reverses the earlier decision to defer
+		/// font embedding, per 2026-07-26 direction - see docs/decisions.md). The returned
+		/// PDFFont has CachedFont = null and SkiaTypeface set, which WriteFont/
+		/// WriteEmbeddedFont/ProcessFontForFontEmbedding check for to skip their Win32-HDC
+		/// branches. One PDFFont per distinct (family, bold, italic) is cached in m_fonts,
+		/// same as the base-14 path, so repeated draws reuse one font object/one set of
+		/// embedded glyphs for the whole report.
+		/// </summary>
+		private PDFFont GetOrCreateEmbeddedFont(string fontFamily, bool bold, bool italic, SkiaCachedFont skiaFont)
+		{
+			string styleSuffix = (bold && italic) ? ",BoldItalic" : (bold ? ",Bold" : (italic ? ",Italic" : ""));
+			string requestedKey = "__skia__" + fontFamily + styleSuffix;
+
+			if (!m_fonts.TryGetValue(requestedKey, out PDFFont pdfFont))
+			{
+				PdfFontStyle style = PdfFontStyle.Regular;
+				if (bold)
+				{
+					style |= PdfFontStyle.Bold;
+				}
+				if (italic)
+				{
+					style |= PdfFontStyle.Italic;
+				}
+				string pdfFontFamily = EncodePDFName(fontFamily + styleSuffix);
+				pdfFont = new PDFFont(cachedFont: null, fontFamily: fontFamily, pdfFontFamily: pdfFontFamily, fontCMap: "Identity-H", registry: "Adobe", ordering: "Identity", supplement: "0", style: style, emHeight: 1000, gridHeight: 0f, internalFont: false, simulateItalic: false, simulateBold: false)
+				{
+					SkiaTypeface = skiaFont.Typeface
+				};
+				pdfFont.FontId = ReserveObjectId();
+				m_fonts.Add(requestedKey, pdfFont);
+			}
+			if (!m_fontsUsedInCurrentPage.Contains(pdfFont.FontId))
+			{
+				m_fontsUsedInCurrentPage.Add(pdfFont.FontId);
+			}
+			return pdfFont;
+		}
+
+		/// <summary>
+		/// Draws <paramref name="text"/> through <paramref name="pdfFont"/>'s embedded
+		/// composite font instead of a base-14 Tj string: re-shapes the text with
+		/// <see cref="UnicodeParagraphShaper"/> (same itemization/shaping pipeline
+		/// <see cref="ShapedTextMetrics"/> already used to decide word-wrap) to get each
+		/// glyph's real font glyph id, registers each unique glyph's width (in the
+		/// 1000-units-per-em space CID font /W arrays use - <see cref="PDFFont.EMHeight"/>
+		/// is fixed at 1000 for this path, see GetOrCreateEmbeddedFont) via
+		/// <see cref="PDFFont.AddUniqueGlyph"/>, and appends "&lt;hex glyph codes&gt; Tj "
+		/// - the same 2-bytes-per-glyph Identity-H format <see cref="WriteGlyph"/> already
+		/// uses for the Win32 composite path. <see cref="UnicodeParagraphShaper.Shape"/>
+		/// already returns runs in visual (left-to-right draw) order - see
+		/// <see cref="BidiRunReorderer"/> - and each run's own glyphs are already in visual
+		/// order courtesy of HarfBuzz/SKShaper, so this loop can draw <paramref name="text"/>'s
+		/// runs/glyphs exactly in the order it receives them.
+		/// </summary>
+		private void WriteCompositeText(StringBuilder sb, PDFFont pdfFont, string text, SkiaCachedFont skiaFont, float fontSizePoints)
+		{
+			if (string.IsNullOrEmpty(text))
+			{
+				sb.Append("<> Tj ");
+				return;
+			}
+
+			sb.Append("<");
+			List<ShapedRunItem> items = UnicodeParagraphShaper.Shape(text, skiaFont);
+			foreach (ShapedRunItem item in items)
+			{
+				string itemText = text.Substring(item.CharPos, item.Length);
+				GlyphShapeData shapeData = item.GlyphData.GlyphScriptShapeData;
+				int[] rawAdvances = item.GlyphData.RawAdvances;
+				bool isRtlItem = (item.Analysis.word1 & (1 << 10)) != 0;
+
+				for (int g = 0; g < shapeData.GlyphCount; g++)
+				{
+					ushort glyphId = unchecked((ushort)shapeData.Glyphs[g]);
+					float width1000 = rawAdvances[g] * 1000f / fontSizePoints;
+					PDFFont.GlyphData added = pdfFont.AddUniqueGlyph(glyphId, width1000);
+					if (added != null && !isRtlItem)
+					{
+						for (int c = 0; c < itemText.Length; c++)
+						{
+							if (shapeData.Clusters[c] == g)
+							{
+								added.Character = itemText[c];
+								break;
+							}
+						}
+					}
+					WriteHex(sb, glyphId >> 8);
+					WriteHex(sb, glyphId & 0xFF);
+				}
+			}
+			sb.Append("> Tj ");
+		}
+
+		/// <summary>
 		/// Cross-platform DrawWrappedText implementation (see WriterBase.DrawWrappedText
 		/// and tasks/pdf-text-shaping-abstraction.md). Supports left/center/right alignment
 		/// by computing each wrapped line's real shaped width (via ShapedTextMetrics -
@@ -1284,8 +1384,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				return;
 			}
 
-			PDFFont pdfFont = GetOrCreateBase14Font(style.FontFamily, style.Bold, style.Italic);
 			float fontSizePoints = style.FontSize;
+			SkiaCachedFont skiaFont = ShapedFontCache.GetFont(style.FontFamily, fontSizePoints, style.Bold, style.Italic);
+			PDFFont pdfFont = (EmbedFonts == FontEmbedding.Subset)
+				? GetOrCreateEmbeddedFont(style.FontFamily, style.Bold, style.Italic, skiaFont)
+				: GetOrCreateBase14Font(style.FontFamily, style.Bold, style.Italic);
 			float maxWidthPoints = textPosition.Width * 2.834646f;
 			List<string> lines = ShapedTextWrapper.Wrap(text, style.FontFamily, fontSizePoints, style.Bold, style.Italic, maxWidthPoints, ShapedFontCache);
 			float lineHeightPoints = fontSizePoints * 1.2f;
@@ -1326,8 +1429,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 				previousLineX = lineX;
 
-				string escaped = EscapeString(lines[i]);
-				WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+				if (pdfFont.IsComposite)
+				{
+					WriteCompositeText(stringBuilder, pdfFont, lines[i], skiaFont, fontSizePoints);
+				}
+				else
+				{
+					string escaped = EscapeString(lines[i]);
+					WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+				}
 
 				if (lines[i].Length > 0)
 				{
@@ -1419,15 +1529,25 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					float currentX = lineX;
 					foreach (StyledLineFragment fragment in line)
 					{
-						PDFFont pdfFont = GetOrCreateBase14Font(fragment.Style.FontFamily, fragment.Style.Bold, fragment.Style.Italic);
+						SkiaCachedFont fragmentSkiaFont = ShapedFontCache.GetFont(fragment.Style.FontFamily, fragment.Style.FontSize, fragment.Style.Bold, fragment.Style.Italic);
+						PDFFont pdfFont = (EmbedFonts == FontEmbedding.Subset)
+							? GetOrCreateEmbeddedFont(fragment.Style.FontFamily, fragment.Style.Bold, fragment.Style.Italic, fragmentSkiaFont)
+							: GetOrCreateBase14Font(fragment.Style.FontFamily, fragment.Style.Bold, fragment.Style.Italic);
 						stringBuilder.Append("/F");
 						Write(stringBuilder, pdfFont.FontId);
 						stringBuilder.Append(" ");
 						Write(stringBuilder, fragment.Style.FontSize);
 						stringBuilder.Append(" Tf ");
 						WriteColor(stringBuilder, fragment.Style.Color, isStroke: false);
-						string escaped = EscapeString(fragment.Text);
-						WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+						if (pdfFont.IsComposite)
+						{
+							WriteCompositeText(stringBuilder, pdfFont, fragment.Text, fragmentSkiaFont, fragment.Style.FontSize);
+						}
+						else
+						{
+							string escaped = EscapeString(fragment.Text);
+							WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+						}
 
 						float fragmentWidthPoints = ShapedTextMetrics.MeasureTotalWidthPoints(fragment.Text, fragment.Style.FontFamily, fragment.Style.FontSize, fragment.Style.Bold, fragment.Style.Italic, ShapedFontCache);
 						if (fragment.Text.Length > 0)
@@ -2243,8 +2363,55 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			WriteObject(id, stringBuilder.ToString());
 		}
 
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="WriteEmbeddedFont"/>'s Win32
+		/// FontPackage.Generate call: reads the SKTypeface's own font-file bytes directly
+		/// (no HDC/HFONT needed) and writes them as-is via the existing WriteFontBuffer
+		/// helper. Honest gap: unlike the Win32 path, this does not subset the font to
+		/// only the glyphs actually used (<see cref="EmbeddedFont.GetGlyphIdArray"/> is
+		/// unused here) - it embeds the whole font file, which is correct but produces a
+		/// larger PDF than a real subset would. Real subsetting would need to parse and
+		/// rewrite the sfnt tables (glyf/loca/hmtx/etc.) - a follow-up increment, not
+		/// attempted here.
+		/// </summary>
+		private void WriteSkiaEmbeddedFont(EmbeddedFont embeddedFont)
+		{
+			PDFFont pdfFont = embeddedFont.PDFFonts[0];
+			try
+			{
+				using SKStreamAsset stream = pdfFont.SkiaTypeface.OpenStream(out _);
+				using SKData data = SKData.Create(stream);
+				byte[] buffer = data.ToArray();
+				WriteFontBuffer(embeddedFont.ObjectId, buffer);
+				foreach (PDFFont font in embeddedFont.PDFFonts)
+				{
+					font.FontPDFFamily = "ABCDEE+" + font.FontPDFFamily;
+				}
+			}
+			catch (RSException)
+			{
+				throw;
+			}
+			catch (Exception ex)
+			{
+				foreach (PDFFont font in embeddedFont.PDFFonts)
+				{
+					font.EmbeddedFont = null;
+				}
+				if (RSTrace.ImageRendererTracer.TraceError)
+				{
+					RSTrace.ImageRendererTracer.Trace(TraceLevel.Error, "Exception in WriteSkiaEmbeddedFont for Font {0}: {1}", embeddedFont.PDFFonts[0].FontFamily, ex.Message);
+				}
+			}
+		}
+
 		private void WriteEmbeddedFont(EmbeddedFont embeddedFont)
 		{
+			if (embeddedFont.PDFFonts[0].SkiaTypeface != null)
+			{
+				WriteSkiaEmbeddedFont(embeddedFont);
+				return;
+			}
 			Win32DCSafeHandle hdc = m_commonGraphics.GetHdc();
 			Win32ObjectSafeHandle win32ObjectSafeHandle = Win32ObjectSafeHandle.Zero;
 			try
@@ -2440,6 +2607,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				stringBuilder = null;
 				return;
 			}
+			if (pdfFont.SkiaTypeface != null)
+			{
+				WriteSkiaCompositeFont(stringBuilder, pdfFont);
+				return;
+			}
 			int num = -1;
 			int num2 = -1;
 			Win32ObjectSafeHandle win32ObjectSafeHandle = Win32ObjectSafeHandle.Zero;
@@ -2571,6 +2743,110 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			}
 		}
 
+		/// <summary>
+		/// Writes the Type0/CIDFontType2 font dictionary trio (top-level Type0, descendant
+		/// CIDFontType2, FontDescriptor) for a cross-platform embedded composite font -
+		/// the SkiaSharp-sourced counterpart to the Win32-HDC branch below (same object
+		/// shapes/field names, GetOutlineTextMetrics/GetCharABCWidthsFloat replaced by
+		/// SKFontMetrics/PDFFont.UniqueGlyphs' own widths). CIDToGIDMap is Identity since
+		/// HarfBuzzTextShaper's glyph ids already are this SKTypeface's real glyph indices
+		/// (see WriteCompositeText) - no CID-to-GID indirection is needed. Metrics
+		/// (ascent/descent/bbox/italic angle) are approximate (no font-table parsing
+		/// beyond what SKFontMetrics/SKTypeface already expose) - the same class of
+		/// approximation the Win32 branch's own OUTLINETEXTMETRIC-derived values are.
+		/// </summary>
+		private void WriteSkiaCompositeFont(StringBuilder stringBuilder, PDFFont pdfFont)
+		{
+			stringBuilder.Append("/Subtype /Type0 /BaseFont /");
+			stringBuilder.Append(pdfFont.FontPDFFamily);
+			stringBuilder.Append(" /Encoding /Identity-H");
+			int descendantId = ReserveObjectId();
+			stringBuilder.Append(" /DescendantFonts [");
+			Write(stringBuilder, descendantId);
+			stringBuilder.Append(" 0 R]");
+			if (pdfFont.EmbeddedFont != null)
+			{
+				stringBuilder.Append(" /ToUnicode ");
+				Write(stringBuilder, pdfFont.EmbeddedFont.ToUnicodeId);
+				stringBuilder.Append(" 0 R");
+			}
+			stringBuilder.Append(" >>");
+			WriteObject(pdfFont.FontId, stringBuilder.ToString());
+
+			SKTypeface typeface = pdfFont.SkiaTypeface;
+			int unitsPerEm = (typeface.UnitsPerEm > 0) ? typeface.UnitsPerEm : 1000;
+			float scale = 1000f / unitsPerEm;
+			SKFontMetrics metrics;
+			using (SKFont metricsFont = new SKFont(typeface, unitsPerEm))
+			{
+				metrics = metricsFont.Metrics;
+			}
+
+			StringBuilder descendantBuilder = new StringBuilder();
+			descendantBuilder.Append("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /");
+			descendantBuilder.Append(pdfFont.FontPDFFamily);
+			descendantBuilder.Append(" /CIDSystemInfo << /Registry (");
+			descendantBuilder.Append(pdfFont.Registry);
+			descendantBuilder.Append(") /Ordering (");
+			descendantBuilder.Append(pdfFont.Ordering);
+			descendantBuilder.Append(") /Supplement ");
+			descendantBuilder.Append(pdfFont.Supplement);
+			descendantBuilder.Append(" >> /CIDToGIDMap /Identity /DW 1000 /W [");
+			foreach (PDFFont.GlyphData glyphData in pdfFont.UniqueGlyphs)
+			{
+				Write(descendantBuilder, glyphData.Glyph);
+				descendantBuilder.Append(" [");
+				Write(descendantBuilder, glyphData.Width);
+				descendantBuilder.Append("] ");
+			}
+			descendantBuilder.Append("]");
+			int descriptorId = ReserveObjectId();
+			descendantBuilder.Append(" /FontDescriptor ");
+			Write(descendantBuilder, descriptorId);
+			descendantBuilder.Append(" 0 R >>");
+			WriteObject(descendantId, descendantBuilder.ToString());
+
+			int flags = 32;
+			if (typeface.IsFixedPitch)
+			{
+				flags |= 1;
+			}
+			int italicAngle = (typeface.FontStyle.Slant != SKFontStyleSlant.Upright) ? -12 : 0;
+			if (italicAngle != 0)
+			{
+				flags |= 64;
+			}
+
+			StringBuilder descriptorBuilder = new StringBuilder();
+			descriptorBuilder.Append("<< /Type /FontDescriptor /Ascent ");
+			Write(descriptorBuilder, (int)MathF.Round(-metrics.Ascent * scale));
+			descriptorBuilder.Append(" /CapHeight 0 /Descent ");
+			Write(descriptorBuilder, (int)MathF.Round(-metrics.Descent * scale));
+			descriptorBuilder.Append(" /Flags ");
+			Write(descriptorBuilder, flags);
+			descriptorBuilder.Append(" /FontBBox [ ");
+			Write(descriptorBuilder, (int)MathF.Round(metrics.XMin * scale));
+			descriptorBuilder.Append(" ");
+			Write(descriptorBuilder, (int)MathF.Round(metrics.Bottom * scale));
+			descriptorBuilder.Append(" ");
+			Write(descriptorBuilder, (int)MathF.Round(metrics.XMax * scale));
+			descriptorBuilder.Append(" ");
+			Write(descriptorBuilder, (int)MathF.Round(metrics.Top * scale));
+			descriptorBuilder.Append(" ] /FontName /");
+			descriptorBuilder.Append(pdfFont.FontPDFFamily);
+			descriptorBuilder.Append(" /ItalicAngle ");
+			Write(descriptorBuilder, italicAngle);
+			descriptorBuilder.Append(" /StemV 80 ");
+			if (pdfFont.EmbeddedFont != null)
+			{
+				descriptorBuilder.Append(" /FontFile2 ");
+				Write(descriptorBuilder, pdfFont.EmbeddedFont.ObjectId);
+				descriptorBuilder.Append(" 0 R ");
+			}
+			descriptorBuilder.Append(">>");
+			WriteObject(descriptorId, descriptorBuilder.ToString());
+		}
+
 		private void ProcessFontForFontEmbedding(PDFFont pdfFont, Dictionary<string, EmbeddedFont> embeddedFonts)
 		{
 			pdfFont.FontPDFFamily = pdfFont.FontPDFFamily.Replace("+UnicodeFont", "");
@@ -2609,7 +2885,14 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			if (flag)
 			{
 				flag = (pdfFont.UniqueGlyphs.Count > 0);
-				if (flag)
+				// The Win32 embedding-rights check (OS/2 fsType bits, read via
+				// FontPackage.CheckEmbeddingRights) needs a real HFONT selected into an
+				// HDC - unavailable for the SkiaSharp-backed cross-platform path (no
+				// CachedFont/Hfont at all). Honest gap: embedding rights are not checked
+				// on this path yet: every resolvable font is embedded regardless of its
+				// OS/2 fsType restrictions. Revisit if that turns out to matter (reading
+				// fsType from SKTypeface's own OS/2 table is possible without an HDC).
+				if (flag && pdfFont.SkiaTypeface == null)
 				{
 					Win32DCSafeHandle hdc = m_commonGraphics.GetHdc();
 					Win32ObjectSafeHandle win32ObjectSafeHandle = Win32ObjectSafeHandle.Zero;

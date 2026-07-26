@@ -70,6 +70,16 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal EmbeddedFont EmbeddedFont;
 
+		/// <summary>
+		/// Non-null only for the cross-platform (SkiaSharp-backed) composite font path
+		/// (see PDFWriter.GetOrCreateEmbeddedFont/WriteSkiaCompositeFont) - marks a
+		/// PDFFont whose CachedFont is null and whose metrics/font-file bytes come from
+		/// this SKTypeface instead of a Win32 HFONT/GDI+ Font, so WriteFont/
+		/// WriteEmbeddedFont/ProcessFontForFontEmbedding know to skip their Win32-HDC-based
+		/// branches for it.
+		/// </summary>
+		internal SkiaSharp.SKTypeface SkiaTypeface;
+
 		internal bool IsComposite => !string.IsNullOrEmpty(FontCMap);
 
 		internal PDFFont(CachedFont cachedFont, string fontFamily, string pdfFontFamily, string fontCMap, string registry, string ordering, string supplement, PdfFontStyle style, int emHeight, float gridHeight, bool internalFont, bool simulateItalic, bool simulateBold)

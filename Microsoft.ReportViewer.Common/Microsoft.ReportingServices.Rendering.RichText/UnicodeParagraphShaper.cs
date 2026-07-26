@@ -45,13 +45,14 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// step-3 scoping note) is untouched.
 	///
 	/// It IS wired into <see cref="Microsoft.ReportingServices.Rendering.ImageRenderer.PDFWriter"/>'s
-	/// cross-platform text path, but only for measurement: <see cref="Microsoft.ReportingServices.Rendering.ImageRenderer.ShapedTextMetrics"/>
+	/// cross-platform text path: <see cref="Microsoft.ReportingServices.Rendering.ImageRenderer.ShapedTextMetrics"/>
 	/// consumes this pipeline's per-character widths and soft-break flags to decide
-	/// where to word-wrap and how wide to draw decoration rectangles. Drawing itself
-	/// still goes through PDFWriter's base-14-font Tj path (plain text, not glyph
-	/// indices) - real font embedding (glyph-indexed Tj/TJ output against this pipeline's
-	/// shaped glyph ids) remains separately, explicitly deferred per user direction until
-	/// PDF rendering is otherwise end-to-end (see docs/decisions.md).
+	/// where to word-wrap and how wide to draw decoration rectangles (order-independent,
+	/// since it re-indexes by each item's absolute <see cref="ShapedRunItem.CharPos"/>), and
+	/// <c>PDFWriter.WriteCompositeText</c> draws the returned items in list order to emit
+	/// glyph-indexed Tj output against a real embedded font. The returned list is in visual
+	/// (left-to-right draw) order, not logical (storage/reading) order - see
+	/// <see cref="BidiRunReorderer"/>.
 	/// </summary>
 	internal static class UnicodeParagraphShaper
 	{
@@ -76,6 +77,8 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 				result.Add(new ShapedRunItem(item.CharPos, item.Length, item.Script, item.Analysis, itemLogAttr, glyphData));
 			}
+
+			BidiRunReorderer.ReorderToVisualOrder(result, item => (item.Analysis.word1 & (1 << 10)) != 0);
 
 			return result;
 		}

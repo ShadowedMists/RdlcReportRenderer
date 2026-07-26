@@ -103,5 +103,58 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
 
             Assert.AreEqual(0, runs.Count);
         }
+
+        [TestMethod]
+        public void PureHebrewText_ProducesOneRunMarkedRtl()
+        {
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+            const string text = "שלום עולם";
+
+            List<ShapedRunItem> runs = UnicodeParagraphShaper.Shape(text, font);
+
+            Assert.AreEqual(1, runs.Count);
+            Assert.IsTrue((runs[0].Analysis.word1 & (1 << 10)) != 0, "Hebrew run should be marked RTL");
+        }
+
+        [TestMethod]
+        public void LtrBase_SingleEmbeddedRtlWord_KeepsItsLogicalPosition()
+        {
+            // A lone RTL island inside an LTR paragraph doesn't need its run-order changed -
+            // only its own glyphs (already visual-order via HarfBuzz) are affected.
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+            const string text = "Hello שלום world";
+
+            List<ShapedRunItem> runs = UnicodeParagraphShaper.Shape(text, font);
+
+            Assert.IsTrue(runs.Count >= 3, "Expected at least [Latin][Hebrew][Latin] runs");
+            Assert.AreEqual(0, runs[0].CharPos, "First visual run should still be the leading Latin text");
+            int hebrewCharPos = text.IndexOf('ש');
+            bool foundHebrewInMiddle = false;
+            for (int i = 1; i < runs.Count - 1; i++)
+            {
+                if (runs[i].CharPos == hebrewCharPos)
+                {
+                    foundHebrewInMiddle = true;
+                }
+            }
+            Assert.IsTrue(foundHebrewInMiddle, "Hebrew run should remain in the middle visual position");
+        }
+
+        [TestMethod]
+        public void RtlBase_TrailingLatinWord_DrawsBeforeTheRtlRunVisually()
+        {
+            // A paragraph whose first strong character is RTL (Hebrew) establishes an RTL
+            // base direction; a trailing embedded LTR word visually sits to its left, so it
+            // must appear first in the returned (visual-order) run list.
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+            const string text = "שלום world";
+
+            List<ShapedRunItem> runs = UnicodeParagraphShaper.Shape(text, font);
+
+            Assert.AreEqual(2, runs.Count);
+            Assert.IsTrue(runs[0].CharPos > runs[1].CharPos, "The logically-later Latin run should be drawn first");
+            Assert.IsFalse((runs[0].Analysis.word1 & (1 << 10)) != 0, "First visual run should be the Latin (non-RTL) run");
+            Assert.IsTrue((runs[1].Analysis.word1 & (1 << 10)) != 0, "Second visual run should be the Hebrew (RTL) run");
+        }
     }
 }
