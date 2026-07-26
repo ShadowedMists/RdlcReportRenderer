@@ -1288,6 +1288,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			float boxLeftPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
 			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
 			float previousLineX = 0f;
+			StringBuilder decorationsBuilder = new StringBuilder();
 
 			for (int i = 0; i < lines.Count; i++)
 			{
@@ -1312,9 +1313,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 				string escaped = EscapeString(lines[i]);
 				WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+
+				if (lines[i].Length > 0)
+				{
+					float baselineYPoints = startYPoints - i * lineHeightPoints;
+					AppendDecorationRectangle(decorationsBuilder, style.Color, lineX, baselineYPoints, lineWidthPoints, fontSizePoints, style.TextDecoration);
+				}
 			}
 			stringBuilder.Append("ET");
 			m_pageContentsSection.Add(stringBuilder.ToString());
+			if (decorationsBuilder.Length > 0)
+			{
+				m_pageContentsSection.Add(decorationsBuilder.ToString());
+			}
 		}
 
 		/// <summary>
@@ -1354,7 +1365,9 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			float boxLeftPoints = m_bounds.Left + (textPosition.X + offset.X) * 2.834646f;
 			float startYPoints = m_bounds.Top - (textPosition.Y + offset.Y) * 2.834646f - ascentPoints;
 			float previousLineX = 0f;
+			float currentBaselineY = startYPoints;
 			bool firstLineOverall = true;
+			StringBuilder decorationsBuilder = new StringBuilder();
 
 			foreach ((RPLFormat.TextAlignments alignment, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
 			{
@@ -1382,9 +1395,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						stringBuilder.Append(" ");
 						Write(stringBuilder, 0f - lineHeightPoints);
 						stringBuilder.Append(" Td ");
+						currentBaselineY -= lineHeightPoints;
 					}
 					previousLineX = lineX;
 
+					float currentX = lineX;
 					foreach (StyledLineFragment fragment in line)
 					{
 						PDFFont pdfFont = GetOrCreateBase14Font(fragment.Style.FontFamily, fragment.Style.Bold, fragment.Style.Italic);
@@ -1396,11 +1411,49 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						WriteColor(stringBuilder, fragment.Style.Color, isStroke: false);
 						string escaped = EscapeString(fragment.Text);
 						WriteText(null, stringBuilder, pdfFont, escaped, HumanReadablePDF);
+
+						float fragmentWidthPoints = ApproximateTextMetrics.EstimateStringWidthPoints(fragment.Text, fragment.Style.FontSize);
+						if (fragment.Text.Length > 0)
+						{
+							AppendDecorationRectangle(decorationsBuilder, fragment.Style.Color, currentX, currentBaselineY, fragmentWidthPoints, fragment.Style.FontSize, fragment.Style.TextDecoration);
+						}
+						currentX += fragmentWidthPoints;
 					}
 				}
 			}
 			stringBuilder.Append("ET");
 			m_pageContentsSection.Add(stringBuilder.ToString());
+			if (decorationsBuilder.Length > 0)
+			{
+				m_pageContentsSection.Add(decorationsBuilder.ToString());
+			}
+		}
+
+		/// <summary>
+		/// Draws underline/strikethrough for the cross-platform text paths as a filled
+		/// rectangle appended after the enclosing BT/ET text object - PDF text objects may
+		/// only contain text-showing/text-state operators, so path-painting operators like
+		/// "re f" must live outside BT/ET (see tasks/pdf-text-shaping-abstraction.md).
+		/// Overline is not handled: RPLFormat.TextDecorations is a single value (not flags)
+		/// per run, and only underline/strikethrough were requested; adding overline later
+		/// is a one-line addition to the switch below.
+		/// </summary>
+		private static void AppendDecorationRectangle(StringBuilder decorationsBuilder, Color color, float leftPoints, float baselineYPoints, float widthPoints, float fontSizePoints, RPLFormat.TextDecorations decoration)
+		{
+			if (decoration != RPLFormat.TextDecorations.Underline && decoration != RPLFormat.TextDecorations.LineThrough)
+			{
+				return;
+			}
+
+			float thicknessPoints = Math.Max(0.5f, fontSizePoints * 0.06f);
+			float bottomPoints = (decoration == RPLFormat.TextDecorations.Underline)
+				? baselineYPoints - fontSizePoints * 0.15f - thicknessPoints / 2f
+				: baselineYPoints + fontSizePoints * 0.3f - thicknessPoints / 2f;
+
+			decorationsBuilder.Append("\r\n");
+			WriteColor(decorationsBuilder, color, isStroke: false);
+			WriteRectangle(decorationsBuilder, leftPoints, bottomPoints, new SizeF(widthPoints, thicknessPoints));
+			decorationsBuilder.Append(" re f");
 		}
 
 		private static float ComputeLineStartX(RPLFormat.TextAlignments alignment, float boxLeftPoints, float boxWidthPoints, float lineWidthPoints)

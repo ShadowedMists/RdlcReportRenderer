@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="TextboxUnderline">
+            <Top>0.1in</Top>
+            <Left>0.1in</Left>
+            <Height>0.4in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Underlined text sample</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>14pt</FontSize>
+                      <TextDecoration>Underline</TextDecoration>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+            <CanGrow>true</CanGrow>
+          </Textbox>
+          <Textbox Name="TextboxStrikethrough">
+            <Top>0.6in</Top>
+            <Left>0.1in</Left>
+            <Height>0.4in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Strikethrough text sample</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>14pt</FontSize>
+                      <TextDecoration>LineThrough</TextDecoration>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+            <CanGrow>true</CanGrow>
+          </Textbox>
+          <Textbox Name="TextboxMixedRich">
+            <Top>1.1in</Top>
+            <Left>0.1in</Left>
+            <Height>0.4in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Normal </Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>12pt</FontSize>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value>underlined </Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <TextDecoration>Underline</TextDecoration>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value>struck</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <TextDecoration>LineThrough</TextDecoration>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+            <CanGrow>true</CanGrow>
+          </Textbox>
+        </ReportItems>
+        <Height>1.6in</Height>
+      </Body>
+      <Width>4in</Width>
+      <Page>
+        <PageWidth>4in</PageWidth>
+        <PageHeight>2in</PageHeight>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>
