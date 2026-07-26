@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.IO;
 using Microsoft.Reporting.Rendering;
 using SkiaSharp;
@@ -37,6 +38,20 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			using SKData data = image.Encode(ToSkiaFormat(format), 100);
 			byte[] bytes = data.ToArray();
 			stream.Write(bytes, 0, bytes.Length);
+		}
+
+		public void DrawBackgroundBorder(Color color)
+		{
+			using SKPaint paint = new SKPaint
+			{
+				Color = SkiaConvert.ToSKColor(color),
+				Style = SKPaintStyle.Stroke,
+				StrokeWidth = 1f,
+				IsAntialias = false,
+			};
+			// GDI+'s DrawRectangle(pen, 0, 0, w, h) strokes the rectangle inset by half the pen
+			// width on each edge; a 1px SKRect at (0,0,w,h) matches that placement exactly.
+			NativeSurface.Canvas.DrawRect(new SKRect(0.5f, 0.5f, Width - 0.5f, Height - 0.5f), paint);
 		}
 
 		private static SKEncodedImageFormat ToSkiaFormat(ChartImageFormat format) => format switch

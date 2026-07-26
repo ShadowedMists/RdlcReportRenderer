@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.IO;
 using Microsoft.Reporting.Rendering;
 
@@ -20,6 +21,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering
 
 		/// <summary>Encode the rendered surface to <paramref name="stream"/>.</summary>
 		void Encode(Stream stream, ChartImageFormat format);
+
+		/// <summary>
+		/// Milestone F: the pre-paint background rectangle <c>ChartImage.GetImage</c>/<c>SaveImage</c>
+		/// draw before <c>Paint</c> runs — a raw one-pixel-pen outline covering the whole surface
+		/// (matches the pre-abstraction GDI+ behavior exactly, not a fill). Removes the last hard
+		/// <c>GdiRenderSurface</c> downcast from those two methods so they work on either backend.
+		/// </summary>
+		void DrawBackgroundBorder(Color color);
 	}
 
 	/// <summary>

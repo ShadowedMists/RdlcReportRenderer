@@ -23,7 +23,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal ChartGraphics chartGraph;
 
-		internal IRenderSurfaceFactory renderSurfaceFactory = new GdiRenderSurfaceFactory();
+		internal IRenderSurfaceFactory renderSurfaceFactory = ChartRenderingBackendFactory.CreateRenderSurfaceFactory();
 
 		internal bool backgroundRestored;
 
@@ -659,7 +659,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				throw new ArgumentNullException(SR.ExceptionInvalidServiceContainer);
 			}
 			common = new CommonElements(container);
-			chartGraph = new ChartGraphics(common);
+			chartGraph = ChartRenderingBackendFactory.CreateChartGraphics(common);
 			hotRegionsList = new HotRegionsList(common);
 			borderSkin = new BorderSkinAttributes(container);
 			serviceContainer = container;

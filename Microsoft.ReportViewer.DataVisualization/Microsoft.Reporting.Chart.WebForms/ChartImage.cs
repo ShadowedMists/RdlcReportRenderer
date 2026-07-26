@@ -156,13 +156,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
 			Bitmap bitmap = gdiRenderSurface.NativeBitmap;
-			Graphics graphics = gdiRenderSurface.NativeGraphics;
 			Color color = (!(base.BackColor != Color.Empty)) ? Color.White : base.BackColor;
-			Pen pen = new Pen(color);
-			graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
-			pen.Dispose();
+			renderSurface.DrawBackgroundBorder(color);
 			Paint(renderSurface, paintTopLevelElementOnly: false);
-			graphics.Dispose();
+			gdiRenderSurface.NativeGraphics.Dispose();
 			return bitmap;
 		}
 
@@ -171,10 +168,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 		/// instead of <see cref="GetImage"/>'s Bitmap-returning contract + a separate <c>Image.Save</c>
 		/// call. <see cref="Chart.Save(Stream, ChartImageFormat)"/> only ever encodes-and-discards the
 		/// result, so it never needed a live <see cref="Bitmap"/> in the first place — this removes that
-		/// unnecessary GDI+-typed round trip from the encode step. The background-rectangle fill below
-		/// still needs its own <see cref="GdiRenderSurface"/> downcast (a raw pre-paint GDI+ call, not part
-		/// of the <c>Paint</c> chain — see chart-gdi-type-abstraction.md's D2 notes for that residual item);
-		/// <c>Paint</c> itself (Milestone D2) now takes the abstract <see cref="IRenderSurface"/> directly.
+		/// unnecessary GDI+-typed round trip from the encode step. Milestone F removed the background-fill's
+		/// <c>GdiRenderSurface</c> downcast too (<see cref="IRenderSurface.DrawBackgroundBorder"/>), so this
+		/// whole method — together with <see cref="ChartRenderingBackendFactory"/>'s platform selection of
+		/// <see cref="ChartPicture.renderSurfaceFactory"/>/<see cref="ChartPicture.chartGraph"/> — is the real
+		/// production entry point (<c>ChartMapper.GetImage</c> → <c>Chart.Save</c> → here) that now renders
+		/// through Skia on non-Windows. <c>Paint</c> itself (Milestone D2) already took the abstract
+		/// <see cref="IRenderSurface"/> directly.
 		/// </summary>
 		internal void SaveImage(Stream stream, ChartImageFormat format, float resolution)
 		{
@@ -203,14 +203,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			using (renderSurface)
 			{
-				GdiRenderSurface gdiRenderSurface = (GdiRenderSurface)renderSurface;
-				Graphics graphics = gdiRenderSurface.NativeGraphics;
 				Color color = (!(base.BackColor != Color.Empty)) ? Color.White : base.BackColor;
-				Pen pen = new Pen(color);
-				graphics.DrawRectangle(pen, 0, 0, base.Width, base.Height);
-				pen.Dispose();
+				renderSurface.DrawBackgroundBorder(color);
 				Paint(renderSurface, paintTopLevelElementOnly: false);
-				graphics.Dispose();
 				renderSurface.Encode(stream, format);
 			}
 		}

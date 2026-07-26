@@ -30,6 +30,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 
 		public void Encode(Stream stream, ChartImageFormat format) => NativeBitmap.Save(stream, ToImageFormat(format));
 
+		public void DrawBackgroundBorder(Color color)
+		{
+			using Pen pen = new Pen(color);
+			NativeGraphics.DrawRectangle(pen, 0, 0, Width, Height);
+		}
+
 		// Emf/EmfPlus/EmfDual are metafile formats — they require a Metafile-backed
 		// surface, not this raster (Bitmap) surface. Callers must check
 		// IRenderSurfaceFactory.SupportsMetafile and use the metafile path (not yet
