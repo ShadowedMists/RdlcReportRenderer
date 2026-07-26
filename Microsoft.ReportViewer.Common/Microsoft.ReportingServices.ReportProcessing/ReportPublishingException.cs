@@ -30,16 +30,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		{
 		}
 
-		private ReportPublishingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			m_processingFlags = (ReportProcessingFlags)info.GetValue("ReportProcessingFlags", typeof(ReportProcessingFlags));
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			info.AddValue("ReportProcessingFlags", m_processingFlags);
-		}
 	}
 }

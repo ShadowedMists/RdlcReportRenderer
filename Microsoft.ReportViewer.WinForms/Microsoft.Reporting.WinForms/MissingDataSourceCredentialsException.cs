@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.WinForms
 			: base(CommonStrings.MissingDataSourceCredentials)
 		{
 		}
-
-		private MissingDataSourceCredentialsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

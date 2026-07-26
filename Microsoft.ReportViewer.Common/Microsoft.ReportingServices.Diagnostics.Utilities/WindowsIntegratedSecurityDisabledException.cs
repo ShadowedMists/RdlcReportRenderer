@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsWindowsIntegratedSecurityDisabled, ErrorStrings.rsWindowsIntegratedSecurityDisabled, null, null)
 		{
 		}
-
-		private WindowsIntegratedSecurityDisabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

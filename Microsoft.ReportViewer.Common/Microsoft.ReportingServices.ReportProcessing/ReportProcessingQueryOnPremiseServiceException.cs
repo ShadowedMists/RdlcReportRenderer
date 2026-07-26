@@ -15,11 +15,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		{
 		}
 
-		private ReportProcessingQueryOnPremiseServiceException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		protected override List<AdditionalMessage> GetAdditionalMessages()
 		{
 			return new List<AdditionalMessage>(new AdditionalMessage[1]

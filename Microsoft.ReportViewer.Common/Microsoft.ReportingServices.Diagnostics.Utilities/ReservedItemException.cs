@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReservedItem, ErrorStrings.rsReservedItem(itemPath), null, null)
 		{
 		}
-
-		private ReservedItemException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

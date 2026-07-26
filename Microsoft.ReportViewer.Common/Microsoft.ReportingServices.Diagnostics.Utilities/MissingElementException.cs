@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 		{
 			m_elementName = elementName;
 		}
-
-		private MissingElementException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

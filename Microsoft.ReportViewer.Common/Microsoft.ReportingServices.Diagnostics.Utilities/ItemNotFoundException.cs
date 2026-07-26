@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsItemNotFound, ErrorStrings.rsItemNotFound(itemPath), null, null)
 		{
 		}
-
-		private ItemNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

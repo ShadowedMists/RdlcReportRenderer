@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsScheduleAlreadyExists, ErrorStrings.rsScheduleAlreadyExists(name), null, null)
 		{
 		}
-
-		private ScheduleAlreadyExists(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

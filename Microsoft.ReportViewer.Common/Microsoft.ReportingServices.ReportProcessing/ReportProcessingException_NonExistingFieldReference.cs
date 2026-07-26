@@ -16,10 +16,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNonExistingFieldReference))
 		{
 		}
-
-		private ReportProcessingException_NonExistingFieldReference(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

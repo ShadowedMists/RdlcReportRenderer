@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsScheduleDateTimeRangeException, ErrorStrings.rsScheduleDateTimeRangeException, null, null)
 		{
 		}
-
-		private ScheduleDateTimeRangeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

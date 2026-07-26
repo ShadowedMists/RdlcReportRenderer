@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsOnPremConnectionBuilderConnectionStringMissing, ErrorStrings.rsOnPremConnectionBuilderConnectionStringMissing, null, null)
 		{
 		}
-
-		private OnPremConnectionBuilderConnectionStringMissingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

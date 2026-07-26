@@ -63,28 +63,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			base.DisplayExpression = table.DisplayExpression;
 		}
 
-		private ValuesDataTable(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			string text = (string)info.GetValue("columnDateStamp", typeof(string));
-			if (!string.IsNullOrEmpty(text) && base.Columns.IndexOf(text) > -1)
-			{
-				columnDateStamp = base.Columns[text];
-			}
-			text = (string)info.GetValue("columnValue", typeof(string));
-			if (!string.IsNullOrEmpty(text) && base.Columns.IndexOf(text) > -1)
-			{
-				columnValue = base.Columns[text];
-			}
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			info.AddValue("columnDateStamp", (columnDateStamp != null) ? columnDateStamp.ColumnName : "");
-			info.AddValue("columnValue", (columnValue != null) ? columnValue.ColumnName : "");
-		}
-
 		public void AddValuesRow(ValuesRow row)
 		{
 			base.Rows.Add(row);

@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNonExistingParameterReference(paramName)))
 		{
 		}
-
-		private ReportProcessingException_NonExistingParameterReference(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

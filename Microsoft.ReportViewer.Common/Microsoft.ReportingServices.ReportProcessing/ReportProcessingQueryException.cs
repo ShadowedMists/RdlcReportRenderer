@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(errorCode, innerException, arguments)
 		{
 		}
-
-		private ReportProcessingQueryException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsModelIDMismatch, ErrorStrings.rsModelIDMismatch, null, null)
 		{
 		}
-
-		private ModelIDMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

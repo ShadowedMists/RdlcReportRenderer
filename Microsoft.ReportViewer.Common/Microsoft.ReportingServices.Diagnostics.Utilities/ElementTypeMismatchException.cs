@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsElementTypeMismatch, ErrorStrings.rsElementTypeMismatch(elementName), innerException, null)
 		{
 		}
-
-		private ElementTypeMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

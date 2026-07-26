@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.RdlObjectModel
 			: base(component, property, value, minimum, SRErrors.InvalidParamGreaterThan(property, minimum))
 		{
 		}
-
-		protected ArgumentTooSmallException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

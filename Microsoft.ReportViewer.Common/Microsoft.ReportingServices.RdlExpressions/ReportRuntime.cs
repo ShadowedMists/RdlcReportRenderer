@@ -7929,7 +7929,9 @@ namespace Microsoft.ReportingServices.RdlExpressions
 					{
 						try
 						{
+#pragma warning disable SYSLIB0050 // No non-obsolete replacement exists for checking the [Serializable] attribute bit via reflection; this only inspects the flag, it never invokes formatter-based serialization.
 							if (result.Value is ISerializable || (result.Value.GetType().Attributes & TypeAttributes.Serializable) != 0)
+#pragma warning restore SYSLIB0050
 							{
 								result.TypeCode = TypeCode.Object;
 								if (m_isSerializableValuesProhibited)

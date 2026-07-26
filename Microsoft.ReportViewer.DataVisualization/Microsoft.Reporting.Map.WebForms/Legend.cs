@@ -1981,7 +1981,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				empty = new Size(2, 2);
 				break;
 			default:
-				throw new InvalidOperationException("Unknown legend separator type '" + separatorType.ToString(CultureInfo.CurrentCulture) + "'.");
+				throw new InvalidOperationException("Unknown legend separator type '" + separatorType.ToString() + "'.");
 			}
 			empty.Width += itemColumnSpacingRel;
 			return empty;

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsStoredParameterNotFound, ErrorStrings.rsStoredParameterNotFound(storedParameterId), null, null)
 		{
 		}
-
-		private StoredParameterNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -3075,7 +3075,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			catch (ThreadAbortException)
 			{
-				Thread.ResetAbort();
 			}
 			catch (OutOfMemoryException)
 			{

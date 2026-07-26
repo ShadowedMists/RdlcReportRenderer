@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSemanticQueryExtensionNotFound, ErrorStrings.rsSemanticQueryExtensionNotFound(extension), null, null)
 		{
 		}
-
-		private SemanticQueryExtensionNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

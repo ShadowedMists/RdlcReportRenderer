@@ -155,7 +155,7 @@ namespace Microsoft.ReportingServices.ReportProcessing
 				{
 					xmlReader = new XmlTextReader(stream)
 					{
-						ProhibitDtd = true
+						DtdProcessing = DtdProcessing.Prohibit
 					};
 				}
 				return xmlReader;

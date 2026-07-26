@@ -21,7 +21,7 @@ namespace Microsoft.ReportingServices.RdlObjectModel2010.Upgrade
 		{
 			Upgrade(new XmlTextReader(inStream)
 			{
-				ProhibitDtd = true
+				DtdProcessing = DtdProcessing.Prohibit
 			}, outStream, throwUpgradeException);
 		}
 

@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.NETCore
 			: base(message, null, innerException)
 		{
 		}
-
-		private SoapVersionMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

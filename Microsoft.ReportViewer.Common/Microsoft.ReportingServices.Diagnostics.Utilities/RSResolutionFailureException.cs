@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsResolutionFailureException, ErrorStrings.rsResolutionFailureException(databaseFullName), innerException, null)
 		{
 		}
-
-		private RSResolutionFailureException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportServerDatabaseLogonFailed, ErrorStrings.rsReportServerDatabaseLogonFailed, innerException, null)
 		{
 		}
-
-		private ReportServerDatabaseLogonFailedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

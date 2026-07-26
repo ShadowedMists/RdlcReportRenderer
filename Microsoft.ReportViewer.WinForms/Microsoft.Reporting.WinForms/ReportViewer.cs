@@ -1550,7 +1550,7 @@ namespace Microsoft.Reporting.WinForms
 			}
 		}
 
-		private void ExportDialogClosed(object sender, EventArgs e)
+		private void ExportDialogClosed(object sender, FormClosedEventArgs e)
 		{
 			UpdateUIState(UIState.ProcessingSuccess);
 		}
@@ -2177,7 +2177,7 @@ namespace Microsoft.Reporting.WinForms
 				throw new ArgumentOutOfRangeException("extension");
 			}
 			ExportDialog exportDialog = new ExportDialog(this, extension, deviceInfo, fileName);
-			exportDialog.Closed += ExportDialogClosed;
+			exportDialog.FormClosed += ExportDialogClosed;
 			exportDialog.Font = Font;
 			return exportDialog.ShowDialog(this);
 		}

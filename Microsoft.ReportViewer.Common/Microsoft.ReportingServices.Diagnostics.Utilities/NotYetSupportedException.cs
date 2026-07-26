@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsNotSupported, ErrorStrings.rsNotSupported, null, null)
 		{
 		}
-
-		private NotYetSupportedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

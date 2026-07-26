@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsMixedTasks, ErrorStrings.rsMixedTasks, null, null)
 		{
 		}
-
-		private MixedTasksException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

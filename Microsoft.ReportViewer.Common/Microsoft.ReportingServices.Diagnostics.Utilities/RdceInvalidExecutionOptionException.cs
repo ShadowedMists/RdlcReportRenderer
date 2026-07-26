@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRdceInvalidExecutionOptionError, ErrorStrings.rsRdceInvalidExecutionOptionError, null, RSTrace.IsTraceInitialized ? RSTrace.CatalogTrace : null, null)
 		{
 		}
-
-		private RdceInvalidExecutionOptionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

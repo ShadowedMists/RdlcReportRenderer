@@ -30,10 +30,5 @@ namespace Microsoft.ReportingServices.RdlObjectModel
 			m_value = value;
 			m_constraint = constraint;
 		}
-
-		protected ArgumentConstraintException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

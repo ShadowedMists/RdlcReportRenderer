@@ -9,10 +9,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsClaimsToWindowsTokenError, ErrorStrings.rsClaimsToWindowsTokenError, innerException, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, null)
 		{
 		}
-
-		private ClaimsToWindowsTokenException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

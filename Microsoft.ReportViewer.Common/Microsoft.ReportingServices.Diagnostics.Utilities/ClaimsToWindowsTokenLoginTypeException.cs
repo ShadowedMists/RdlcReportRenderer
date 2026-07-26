@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsClaimsToWindowsTokenLoginTypeError, ErrorStrings.rsClaimsToWindowsTokenLoginTypeError, null, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, null)
 		{
 		}
-
-		private ClaimsToWindowsTokenLoginTypeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

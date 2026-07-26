@@ -8,11 +8,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 	[Serializable]
 	internal sealed class UnhandledReportRenderingException : RSException
 	{
-		private UnhandledReportRenderingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		internal UnhandledReportRenderingException(ReportRenderingException innerException)
 			: base(innerException.ErrorCode, innerException.Message, innerException, Global.RenderingTracer, null)
 		{

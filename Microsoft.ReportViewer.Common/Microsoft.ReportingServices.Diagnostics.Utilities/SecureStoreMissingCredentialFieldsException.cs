@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreMissingCredentialFields, ErrorStrings.rsSecureStoreMissingCredentialFields(appId), null, null)
 		{
 		}
-
-		private SecureStoreMissingCredentialFieldsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

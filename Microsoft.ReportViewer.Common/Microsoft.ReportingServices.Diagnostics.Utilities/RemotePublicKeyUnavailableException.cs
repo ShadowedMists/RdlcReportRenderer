@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRemotePublicKeyUnavailable, ErrorStrings.rsRemotePublicKeyUnavailable, null, null)
 		{
 		}
-
-		private RemotePublicKeyUnavailableException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

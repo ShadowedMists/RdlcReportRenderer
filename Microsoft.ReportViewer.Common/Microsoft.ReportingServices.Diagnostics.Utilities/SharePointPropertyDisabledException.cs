@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsPropertyDisabled, ErrorStrings.rsPropertyDisabled, null, null)
 		{
 		}
-
-		private SharePointPropertyDisabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

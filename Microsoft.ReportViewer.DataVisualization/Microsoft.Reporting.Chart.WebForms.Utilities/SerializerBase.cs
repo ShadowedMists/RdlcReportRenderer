@@ -44,7 +44,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 
 		internal static ArrayConverter arrayConverter = new ArrayConverter();
 
-		protected static CaseInsensitiveHashCodeProvider hashCodeProvider = CaseInsensitiveHashCodeProvider.Default;
+		protected static StringComparer hashCodeProvider = StringComparer.CurrentCultureIgnoreCase;
 
 		private ArrayList serializableContentList;
 

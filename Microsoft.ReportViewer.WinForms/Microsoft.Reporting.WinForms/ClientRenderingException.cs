@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.WinForms
 			: base(CommonStrings.ClientRenderingErrors, renderingException)
 		{
 		}
-
-		private ClientRenderingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

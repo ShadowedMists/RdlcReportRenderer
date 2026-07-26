@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDataSourceCredentialSetting, ErrorStrings.rsInvalidDataSourceCredentialSetting, null, null)
 		{
 		}
-
-		private InvalidDataSourceCredentialSettingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

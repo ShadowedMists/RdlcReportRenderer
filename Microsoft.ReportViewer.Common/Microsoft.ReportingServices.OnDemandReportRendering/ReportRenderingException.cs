@@ -16,11 +16,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		public bool Unexpected => m_Unexpected;
 
-		protected ReportRenderingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		public ReportRenderingException(ErrorCode errCode)
 			: this(errCode, RenderErrors.Keys.GetString(errCode.ToString()), unexpected: false)
 		{

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsScheduleNotFound, ErrorStrings.rsScheduleNotFound(idOrData), null, null)
 		{
 		}
-
-		private ScheduleNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

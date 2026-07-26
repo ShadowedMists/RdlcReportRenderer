@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsMissingSessionId, ErrorStrings.rsMissingSessionId, null, null)
 		{
 		}
-
-		private MissingSessionIdException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

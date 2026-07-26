@@ -474,7 +474,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				if (CellType != 0)
 				{
-					throw new InvalidOperationException("Unknown Legend Cell Type: " + CellType.ToString(CultureInfo.CurrentCulture));
+					throw new InvalidOperationException("Unknown Legend Cell Type: " + CellType.ToString());
 				}
 				string cellText = GetCellText();
 				result = g.MeasureStringAbs(cellText + "I", cellFont);
@@ -659,7 +659,7 @@ namespace Microsoft.Reporting.Map.WebForms
 					PaintCellSeriesSymbol(chartGraph, fontSizeReducedBy, legendAutoFont, singleWCharacterSize);
 					break;
 				default:
-					throw new InvalidOperationException("Unknown legend cell type: '" + CellType.ToString(CultureInfo.CurrentCulture) + "'.");
+					throw new InvalidOperationException("Unknown legend cell type: '" + CellType.ToString() + "'.");
 				}
 			}
 		}

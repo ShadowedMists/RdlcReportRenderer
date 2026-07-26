@@ -23,10 +23,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			m_reportID = reportID;
 			m_isPermanentSnapshot = isPermanentSnapshot;
 		}
-
-		private VersionMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

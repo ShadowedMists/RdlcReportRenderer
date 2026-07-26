@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsHasUserProfileDependencies, ErrorStrings.rsHasUserProfileDependencies(reportName), null, null)
 		{
 		}
-
-		private HasUserProfileDependenciesException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

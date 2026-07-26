@@ -172,7 +172,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			if (Type == typeof(DateTime))
 			{
-				return XmlConvert.ToString(Convert.ToDateTime(value, CultureInfo.InvariantCulture));
+				return XmlConvert.ToString(Convert.ToDateTime(value, CultureInfo.InvariantCulture), XmlDateTimeSerializationMode.RoundtripKind);
 			}
 			return XmlConvert.ToString((TimeSpan)value);
 		}
@@ -201,7 +201,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			else if (Type == typeof(DateTime))
 			{
-				fields[Name] = XmlConvert.ToDateTime(fieldValue);
+				fields[Name] = XmlConvert.ToDateTime(fieldValue, XmlDateTimeSerializationMode.RoundtripKind);
 			}
 			else
 			{

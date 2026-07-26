@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsAppDomainManagerError, ErrorStrings.rsAppDomainManagerError(appDomain), null, additionalTraceMessage)
 		{
 		}
-
-		private ReportServerAppDomainManagerException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

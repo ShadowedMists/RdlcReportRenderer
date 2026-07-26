@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsUnrecognizedXmlElement, ErrorStrings.rsUnrecognizedXmlElement(elementName), null, null)
 		{
 		}
-
-		private UnrecognizedXmlElementException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

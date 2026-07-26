@@ -13,6 +13,8 @@
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2, E1, E2, D3-real, F all done; D3 [concrete-overload removal] permanently blocked by design) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (all milestones and open items closed) | HIGH |
 | 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | 📋 Re-scoped (2026-07-24), not started; P1-P3 bounded, P4 (Uniscribe shaping) open | MEDIUM (P1-P3) / HIGH (P4) |
+| 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | 📋 Documented (2026-07-26), not started — scheduled after PDF work, before Map engine | MEDIUM |
+| 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Documented (2026-07-26), not started — RDL/RML schema validator redesign | MEDIUM |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF work | HIGH |
 
 > The prior "Chart Library Migration (OxyPlot)" decision was retracted — see `docs/decisions.md`. Charts/gauges are rendered by vendored GDI+ engines this repo owns, not external libraries; the plan re-targets their existing rendering seams to SkiaSharp.
@@ -79,6 +81,8 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 - `tasks/chart-cross-platform-implementation.md` — overall Chart/Gauge phase plan
 - `tasks/pdf-render-callstack-analysis.md` / `tasks/pdf-quick-reference.md` — PDF migration roadmap (not started)
 - `tasks/adapter-layer-refactor.md` — broader adapter-layer scope and README compatibility-gap follow-ups
+- `tasks/webrequest-httpclient-migration.md` — SYSLIB0014 `WebRequest`/`HttpWebRequest` → `HttpClient` migration scope (not started)
+- `tasks/xmlvalidatingreader-migration.md` — CS0618 `XmlValidatingReader` → `XmlReader`/`XmlReaderSettings` migration scope for the RDL/RML schema validator (not started)
 - `tasks/chart-library-decision.md` / `tasks/chart-image-abstraction-analysis.md` — retraction/superseded pointers
 
 ## Notes

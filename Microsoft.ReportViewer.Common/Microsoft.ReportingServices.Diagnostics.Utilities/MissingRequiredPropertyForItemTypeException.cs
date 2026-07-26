@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsMissingRequiredPropertyForItemType, ErrorStrings.rsMissingRequiredPropertyForItemType(propertyName), null, null)
 		{
 		}
-
-		private MissingRequiredPropertyForItemTypeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

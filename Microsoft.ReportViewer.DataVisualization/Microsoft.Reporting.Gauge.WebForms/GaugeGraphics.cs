@@ -77,7 +77,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal static Brush GetHatchBrush(GaugeHatchStyle hatchStyle, Color backColor, Color foreColor)
 		{
-			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString(CultureInfo.InvariantCulture)), foreColor, backColor);
+			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
 		}
 
 		/// <summary>
@@ -88,7 +88,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		/// </summary>
 		internal IHatchBrush GetHatchBrushResource(GaugeHatchStyle hatchStyle, Color backColor, Color foreColor)
 		{
-			return ResourceFactory.CreateHatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString(CultureInfo.InvariantCulture)), foreColor, backColor);
+			return ResourceFactory.CreateHatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
 		}
 
 		internal Brush GetTextureBrush(string name, Color backImageTranspColor, GaugeImageWrapMode mode)

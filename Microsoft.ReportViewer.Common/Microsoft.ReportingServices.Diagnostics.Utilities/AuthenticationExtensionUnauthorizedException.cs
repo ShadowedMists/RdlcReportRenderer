@@ -25,11 +25,6 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			HttpResponseHeader = new KeyValuePair<string, string>("WWW-authenticate", GetAuthenticateHeader(authorizationUri, resourceId, nativeClientId, oauthLogoutUrl));
 		}
 
-		private AuthenticationExtensionUnauthorizedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		private string GetAuthenticateHeader(string authorizationUri, string resourceId, string nativeClientId, string oauthLogoutUrl)
 		{
 			return $"Bearer authorization_uri={authorizationUri},resource_id={resourceId},nativeclient_id={nativeClientId},oauthLogoutUrl_uri={oauthLogoutUrl}";

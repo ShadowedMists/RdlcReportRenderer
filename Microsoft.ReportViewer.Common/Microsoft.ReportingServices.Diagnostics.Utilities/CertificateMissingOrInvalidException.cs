@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCertificateMissingOrInvalid, ErrorStrings.rsCertificateMissingOrInvalid(certificateId), null, null)
 		{
 		}
-
-		private CertificateMissingOrInvalidException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

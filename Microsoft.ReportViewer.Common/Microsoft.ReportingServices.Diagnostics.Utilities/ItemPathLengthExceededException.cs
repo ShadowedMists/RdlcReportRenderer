@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsItemPathLengthExceeded, ErrorStrings.rsItemPathLengthExceeded(itemPath, CatalogItemNameUtility.MaxItemPathLength), null, null)
 		{
 		}
-
-		private ItemPathLengthExceededException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

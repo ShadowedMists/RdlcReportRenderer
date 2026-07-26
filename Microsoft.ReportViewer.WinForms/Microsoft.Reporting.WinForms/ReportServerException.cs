@@ -27,18 +27,6 @@ namespace Microsoft.Reporting.WinForms
 			}
 		}
 
-		protected ReportServerException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			info.AddValue("ReportServerErrorCode", m_errorCode);
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			m_errorCode = (info.GetValue("ReportServerErrorCode", typeof(string)) as string);
-		}
-
 		internal static ReportServerException FromException(Exception e)
 		{
 			ReportServerException ex = e as ReportServerException;

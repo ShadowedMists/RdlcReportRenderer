@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsWrongItemType, ErrorStrings.rsWrongItemType(itemPathOrType), null, null)
 		{
 		}
-
-		private WrongItemTypeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

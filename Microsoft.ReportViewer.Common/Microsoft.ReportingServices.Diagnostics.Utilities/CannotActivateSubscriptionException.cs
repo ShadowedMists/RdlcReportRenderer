@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCannotActivateSubscription, ErrorStrings.rsCannotActivateSubscription, null, null)
 		{
 		}
-
-		private CannotActivateSubscriptionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

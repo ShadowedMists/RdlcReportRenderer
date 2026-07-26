@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRdceInvalidRdlError, ErrorStrings.rsRdceInvalidRdlError, innerException, RSTrace.IsTraceInitialized ? RSTrace.CatalogTrace : null, null)
 		{
 		}
-
-		private RdceInvalidRdlException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

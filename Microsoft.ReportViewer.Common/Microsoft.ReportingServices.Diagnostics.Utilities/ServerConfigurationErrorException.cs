@@ -20,10 +20,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsServerConfigurationError, ErrorStrings.rsServerConfigurationError(null), null, additionalTraceMessage)
 		{
 		}
-
-		private ServerConfigurationErrorException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

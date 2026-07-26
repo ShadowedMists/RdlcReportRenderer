@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportServerStorageSingleRefreshConnectionExpected, ErrorStrings.rsReportServerStorageSingleRefreshConnectionExpected(modelId.ToString(), actualCount.ToString()), null, null)
 		{
 		}
-
-		private ReportServerStorageSingleRefreshConnectionExpectedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

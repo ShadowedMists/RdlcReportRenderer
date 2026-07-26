@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReadOnlyProperty, ErrorStrings.rsReadOnlyProperty(propertyName), null, null)
 		{
 		}
-
-		private ReadOnlyPropertyException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

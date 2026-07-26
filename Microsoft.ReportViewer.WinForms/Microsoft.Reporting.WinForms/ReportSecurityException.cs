@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.WinForms
 			: base(message)
 		{
 		}
-
-		private ReportSecurityException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

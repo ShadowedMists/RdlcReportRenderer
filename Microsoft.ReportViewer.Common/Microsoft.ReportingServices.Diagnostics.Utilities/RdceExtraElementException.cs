@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRdceExtraElementError, ErrorStrings.rsRdceExtraElementError(nodeName), null, RSTrace.IsTraceInitialized ? RSTrace.CatalogTrace : null, null)
 		{
 		}
-
-		private RdceExtraElementException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

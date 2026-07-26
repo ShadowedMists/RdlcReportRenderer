@@ -187,12 +187,12 @@ namespace Microsoft.Reporting.Map.WebForms
 					using (Brush brush2 = new SolidBrush(LabelColor))
 					{
 						RectangleF textBounds = new RectangleF(absoluteRectangle.Left + 3f, absoluteRectangle.Top, num2, absoluteRectangle.Height / 2f - 3f);
-						string text = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg, measurementUnit.ToString(CultureInfo.CurrentCulture));
+						string text = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg, measurementUnit.ToString());
 						SizeF textClipSize = g.MeasureString(text, Font, textBounds.Size, stringFormat);
 						RectangleF layoutRectangle = CreateTextClip(textBounds, textClipSize);
 						g.DrawString(text, Font, brush2, layoutRectangle, stringFormat);
 						RectangleF textBounds2 = new RectangleF(absoluteRectangle.Left + 3f, absoluteRectangle.Top + absoluteRectangle.Height / 2f + 3f, num3, absoluteRectangle.Height / 2f - 3f);
-						string text2 = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg2, measurementUnit2.ToString(CultureInfo.CurrentCulture));
+						string text2 = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg2, measurementUnit2.ToString());
 						SizeF textClipSize2 = g.MeasureString(text2, Font, textBounds2.Size, stringFormat);
 						RectangleF layoutRectangle2 = CreateTextClip(textBounds2, textClipSize2);
 						g.DrawString(text2, Font, brush2, layoutRectangle2, stringFormat);

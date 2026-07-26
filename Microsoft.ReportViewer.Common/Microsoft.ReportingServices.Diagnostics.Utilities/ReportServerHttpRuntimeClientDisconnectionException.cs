@@ -12,10 +12,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsHttpRuntimeClientDisconnectionError, ErrorStrings.rsHttpRuntimeClientDisconnectionError(appDomain, hr.ToString("X", CultureInfo.CurrentCulture)), innerException, RSTrace.IsTraceInitialized ? RSTrace.HttpRuntimeTracer : null, null, TraceLevel.Verbose)
 		{
 		}
-
-		private ReportServerHttpRuntimeClientDisconnectionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -8,11 +8,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 	[Serializable]
 	internal sealed class DataSetExecutionException : RSException
 	{
-		internal DataSetExecutionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		internal DataSetExecutionException(ErrorCode code)
 			: base(code, RPRes.Keys.GetString(code.ToString()), null, Global.Tracer, null)
 		{

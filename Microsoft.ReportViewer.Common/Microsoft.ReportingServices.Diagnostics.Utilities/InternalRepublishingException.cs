@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInternalRepublishingFailed, string.Format(CultureInfo.CurrentCulture, "Report upgrade failed for item '{0}'.", itemPath), innerException, null, contents)
 		{
 		}
-
-		private InternalRepublishingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

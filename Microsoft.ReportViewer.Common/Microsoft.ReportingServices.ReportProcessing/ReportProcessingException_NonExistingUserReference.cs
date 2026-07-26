@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNonExistingUserReference(propName)))
 		{
 		}
-
-		internal ReportProcessingException_NonExistingUserReference(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

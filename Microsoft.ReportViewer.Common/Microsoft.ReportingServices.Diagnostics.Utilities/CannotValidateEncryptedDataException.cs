@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCannotValidateEncryptedData, ErrorStrings.rsCannotValidateEncryptedData, e, null)
 		{
 		}
-
-		private CannotValidateEncryptedDataException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -258,7 +258,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			if (obj is DateTime)
 			{
-				return XmlConvert.ToString((DateTime)obj);
+				return XmlConvert.ToString((DateTime)obj, XmlDateTimeSerializationMode.RoundtripKind);
 			}
 			if (obj is Margins)
 			{

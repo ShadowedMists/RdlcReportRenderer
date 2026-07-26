@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsHttpRuntimeError, ErrorStrings.rsHttpRuntimeError(appDomain), null, additionalTraceMessage)
 		{
 		}
-
-		private ReportServerHttpRuntimeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

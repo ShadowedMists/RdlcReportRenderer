@@ -138,7 +138,7 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal static Brush GetHatchBrush(MapHatchStyle hatchStyle, Color backColor, Color foreColor)
 		{
-			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString(CultureInfo.InvariantCulture)), foreColor, backColor);
+			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
 		}
 
 		internal Brush GetTextureBrush(string name, Color backImageTranspColor, MapImageWrapMode mode)
@@ -1699,7 +1699,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			RectangleF areasRect = new RectangleF(0f, 0f, 100f, 100f);
 			if (frameAttr.FrameStyle != 0)
 			{
-				common.BorderTypeRegistry.GetBorderType(frameAttr.FrameStyle.ToString(CultureInfo.InvariantCulture))?.AdjustAreasPosition(this, ref areasRect);
+				common.BorderTypeRegistry.GetBorderType(frameAttr.FrameStyle.ToString())?.AdjustAreasPosition(this, ref areasRect);
 			}
 			RectangleF absoluteRectangle = GetAbsoluteRectangle(areasRect);
 			absoluteRectangle.Inflate(-5f, -5f);
@@ -1756,7 +1756,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			if (common != null && borderSkin.FrameStyle != 0 && absRect.Width != 0f && absRect.Height != 0f)
 			{
-				IBorderType borderType = common.BorderTypeRegistry.GetBorderType(borderSkin.FrameStyle.ToString(CultureInfo.InvariantCulture));
+				IBorderType borderType = common.BorderTypeRegistry.GetBorderType(borderSkin.FrameStyle.ToString());
 				if (borderType != null && borderType.IsVisible(this))
 				{
 					borderType.DrawBorder(this, borderSkin, absRect, backColor, backHatchStyle, backImage, backImageMode, backImageTranspColor, backImageAlign, backGradientType, backSecondaryColor, borderColor, borderWidth, borderStyle);

@@ -1997,7 +1997,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			callbackManager = new CallbackManager(this);
 			namedImages = new NamedImageCollection(this, common);
 			imageLoader = new ImageLoader(serviceContainer);
-			tileImagesCache = new Hashtable(new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture), StringComparer.OrdinalIgnoreCase);
+			tileImagesCache = new Hashtable(StringComparer.OrdinalIgnoreCase);
 			serviceContainer.AddService(typeof(ImageLoader), imageLoader);
 		}
 
@@ -5723,7 +5723,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			ImageCodecInfo imageCodecInfo = null;
 			EncoderParameter encoderParameter = null;
 			EncoderParameters encoderParameters = null;
-			string text = imageFormat.ToString(CultureInfo.InvariantCulture);
+			string text = imageFormat.ToString();
 			imageFormat2 = (ImageFormat)new ImageFormatConverter().ConvertFromString(text);
 			Paint(bufferBitmap.Graphics, renderingType, stream, buffered: false);
 			if (renderingType == RenderingType.Gdi && compression >= 0 && compression <= 100 && "JPEG,PNG,BMP".IndexOf(text.ToUpperInvariant(), StringComparison.Ordinal) != -1)
@@ -5834,13 +5834,13 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal void SavePanelAsImage(Panel panel, Stream stream, bool zoomThumbOnly)
 		{
-			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(CultureInfo.CurrentCulture), ignoreCase: true);
+			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(), ignoreCase: true);
 			SaveTo(stream, imageFormat, Compression, panel, zoomThumbOnly);
 		}
 
 		internal void SavePanelAsImage(Panel panel, string fileName, bool zoomThumbOnly)
 		{
-			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(CultureInfo.CurrentCulture), ignoreCase: true);
+			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(), ignoreCase: true);
 			SaveTo(fileName, imageFormat, Compression, panel, zoomThumbOnly);
 		}
 
@@ -6610,7 +6610,7 @@ namespace Microsoft.Reporting.Map.WebForms
 						if (!IsDesignMode())
 						{
 							BindingType bindingType = targetResolver.BindingType;
-							throw new InvalidOperationException(SR.field_duplication(name, bindingType.ToString(CultureInfo.CurrentCulture), fieldByName.Type.Name, type.Name));
+							throw new InvalidOperationException(SR.field_duplication(name, bindingType.ToString(), fieldByName.Type.Name, type.Name));
 						}
 					}
 					else if (!dummyData || fieldByName.IsTemporary)
@@ -6797,7 +6797,7 @@ namespace Microsoft.Reporting.Map.WebForms
 						if (!IsDesignMode())
 						{
 							BindingType bindingType = targetResolver.BindingType;
-							throw new InvalidOperationException(SR.field_duplication(name, bindingType.ToString(CultureInfo.CurrentCulture), fieldByName.Type.Name, type.Name));
+							throw new InvalidOperationException(SR.field_duplication(name, bindingType.ToString(), fieldByName.Type.Name, type.Name));
 						}
 					}
 					else if (!dummyData || fieldByName.IsTemporary)

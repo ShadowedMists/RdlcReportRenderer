@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRdceMismatchRdlVersion, ErrorStrings.rsRdceMismatchRdlVersion, null, RSTrace.IsTraceInitialized ? RSTrace.CatalogTrace : null, string.Format(CultureInfo.CurrentCulture, "Original namespace = '{0}', new namesapce = '{1}'", originalNamespace, processedNamespace))
 		{
 		}
-
-		private RdceMismatchRdlVersion(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportBuilderFileTransmissionError, ErrorStrings.rsReportBuilderFileTransmissionError(fileName), innerException, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, null)
 		{
 		}
-
-		private ReportBuilderFileTransmissionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

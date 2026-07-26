@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreInvalidLookupContext, ErrorStrings.rsSecureStoreInvalidLookupContext, null, null)
 		{
 		}
-
-		private SecureStoreInvalidLookupContextException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

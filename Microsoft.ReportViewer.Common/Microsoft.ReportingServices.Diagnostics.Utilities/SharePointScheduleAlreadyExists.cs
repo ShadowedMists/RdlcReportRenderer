@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsScheduleAlreadyExists, ErrorStrings.rsSharePoitScheduleAlreadyExists(name, path), null, null)
 		{
 		}
-
-		private SharePointScheduleAlreadyExists(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

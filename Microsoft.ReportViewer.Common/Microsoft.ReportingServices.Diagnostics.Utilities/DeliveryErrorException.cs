@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsDeliveryError, ErrorStrings.rsDeliverError, innerException, null)
 		{
 		}
-
-		private DeliveryErrorException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -9,10 +9,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreCannotRetrieveCredentials, ErrorStrings.rsSecureStoreCannotRetrieveCredentials(innerException.Message), innerException, null)
 		{
 		}
-
-		private SecureStoreCannotRetrieveCredentialsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

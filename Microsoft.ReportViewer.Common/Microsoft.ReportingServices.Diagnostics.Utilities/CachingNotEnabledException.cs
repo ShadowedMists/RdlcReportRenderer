@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCachingNotEnabled, ErrorStrings.rsCachingNotEnabled(itemPath), null, null)
 		{
 		}
-
-		private CachingNotEnabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

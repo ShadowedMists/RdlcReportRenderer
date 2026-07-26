@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(errorCode, ErrorStrings.rsExecuteQueriesFailure(dataSourceName), innerException, null)
 		{
 		}
-
-		private ExecuteQueriesFailureException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

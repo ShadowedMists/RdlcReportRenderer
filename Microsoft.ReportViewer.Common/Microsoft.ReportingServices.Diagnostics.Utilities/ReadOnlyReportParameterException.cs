@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReadOnlyReportParameter, ErrorStrings.rsReadOnlyReportParameter(parameterName), null, null)
 		{
 		}
-
-		private ReadOnlyReportParameterException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

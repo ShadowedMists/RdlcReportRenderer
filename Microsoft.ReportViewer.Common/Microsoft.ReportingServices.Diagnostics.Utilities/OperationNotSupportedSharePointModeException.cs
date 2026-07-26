@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsOperationNotSupportedSharePointMode, ErrorStrings.rsOperationNotSupportedSharePointMode, null, null)
 		{
 		}
-
-		private OperationNotSupportedSharePointModeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

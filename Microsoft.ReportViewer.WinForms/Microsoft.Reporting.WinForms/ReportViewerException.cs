@@ -16,10 +16,5 @@ namespace Microsoft.Reporting.WinForms
 			: base(message, innerException)
 		{
 		}
-
-		protected ReportViewerException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

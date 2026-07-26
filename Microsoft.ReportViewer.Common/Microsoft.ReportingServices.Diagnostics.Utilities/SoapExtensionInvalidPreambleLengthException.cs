@@ -16,10 +16,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSoapExtensionInvalidPreambleLengthError, ErrorStrings.rsSoapExtensionInvalidPreambleLengthError(length), null, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, null)
 		{
 		}
-
-		private SoapExtensionInvalidPreambleLengthException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

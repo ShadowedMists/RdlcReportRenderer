@@ -20,10 +20,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(msg, inner)
 		{
 		}
-
-		private CRI2005UpgradeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

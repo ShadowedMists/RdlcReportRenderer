@@ -218,7 +218,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (obj is DateTime)
 			{
-				return XmlConvert.ToString((DateTime)obj);
+				return XmlConvert.ToString((DateTime)obj, XmlDateTimeSerializationMode.RoundtripKind);
 			}
 			PropertyDescriptor propertyDescriptor = TypeDescriptor.GetProperties(parent)[elementName];
 			if (propertyDescriptor != null && propertyDescriptor.Converter != null && propertyDescriptor.Converter.CanConvertTo(typeof(string)))

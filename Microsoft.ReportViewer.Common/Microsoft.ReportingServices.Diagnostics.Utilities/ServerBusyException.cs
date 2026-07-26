@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsServerBusy, ErrorStrings.rsServerBusy, null, null)
 		{
 		}
-
-		private ServerBusyException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

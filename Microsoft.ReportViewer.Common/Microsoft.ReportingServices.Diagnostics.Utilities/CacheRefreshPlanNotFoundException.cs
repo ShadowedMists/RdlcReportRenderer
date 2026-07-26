@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCacheRefreshPlanNotFound, ErrorStrings.rsCacheRefreshPlanNotFound(idOrData), null, null)
 		{
 		}
-
-		private CacheRefreshPlanNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

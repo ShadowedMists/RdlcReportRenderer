@@ -229,11 +229,6 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			return DetailsAsXml(enableRemoteErrors, out errorMsgBuilder).OuterXml;
 		}
 
-		protected RSException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		protected XmlNode ToXml(XmlDocument doc, bool enableRemoteErrors, string detailedMsg, StringBuilder errorMsgBuilder)
 		{
 			XmlNode xmlNode = SoapUtil.CreateExceptionDetailsNode(doc, Code.ToString(), detailedMsg, ExceptionLevelHelpLink, m_ProductName, m_ProductVersion, m_ProductLocaleID, m_OS.ToString(), m_CountryLocaleID);

@@ -90,20 +90,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		{
 		}
 
-		protected ReportProcessingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			m_processingMessages = (ProcessingMessageList)info.GetValue("ProcessingMessages", typeof(ProcessingMessageList));
-			m_useMessageListForExceptionMessage = info.GetBoolean("UseMessageListForExeptionMessage");
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			info.AddValue("ProcessingMessages", m_processingMessages);
-			info.AddValue("UseMessageListForExeptionMessage", m_useMessageListForExceptionMessage);
-		}
-
 		protected override XmlNode AddMoreInformationForThis(XmlDocument doc, XmlNode parent, StringBuilder errorMsgBuilder)
 		{
 			if (m_processingMessages == null)

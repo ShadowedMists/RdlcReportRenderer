@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreUnsupportedCredentialField, ErrorStrings.rsSecureStoreUnsupportedCredentialField(appId), null, null)
 		{
 		}
-
-		private SecureStoreUnsupportedCredentialFieldException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreContextUrlNotSpecified, ErrorStrings.rsSecureStoreContextUrlNotSpecified, null, null)
 		{
 		}
-
-		private SecureStoreContextUrlNotSpecifiedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

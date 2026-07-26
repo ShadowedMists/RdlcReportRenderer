@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCannotBuildExternalConnectionString, ErrorStrings.cannotBuildExternalConnectionString(dataSource), innerException, null)
 		{
 		}
-
-		private CannotBuildExternalConnectionStringException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

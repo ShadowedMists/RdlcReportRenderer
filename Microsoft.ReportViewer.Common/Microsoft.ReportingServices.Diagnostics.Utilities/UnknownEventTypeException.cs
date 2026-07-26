@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsUnknownEventType, ErrorStrings.rsUnknownEventType(eventType), null, null)
 		{
 		}
-
-		private UnknownEventTypeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

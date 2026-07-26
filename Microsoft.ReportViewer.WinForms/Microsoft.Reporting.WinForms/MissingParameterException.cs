@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.WinForms
 			: base(CommonStrings.MissingParameter(parameterName))
 		{
 		}
-
-		private MissingParameterException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

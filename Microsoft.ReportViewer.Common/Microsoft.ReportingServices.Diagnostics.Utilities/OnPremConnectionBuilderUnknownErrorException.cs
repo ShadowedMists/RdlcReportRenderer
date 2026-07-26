@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsOnPremConnectionBuilderUnknownError, ErrorStrings.rsOnPremConnectionBuilderUnknownError, innerException, null)
 		{
 		}
-
-		private OnPremConnectionBuilderUnknownErrorException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

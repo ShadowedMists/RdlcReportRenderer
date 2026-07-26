@@ -228,11 +228,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 				: base(ex.Message, ex)
 			{
 			}
-
-			private DataCacheUnavailableException(SerializationInfo info, StreamingContext context)
-				: base(info, context)
-			{
-			}
 		}
 
 		public enum ReportChunkTypes

@@ -20,10 +20,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: this(null, additionalTraceMessage)
 		{
 		}
-
-		private CannotPrepareQueryException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

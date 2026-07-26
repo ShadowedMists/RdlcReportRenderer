@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInheritedPolicy, ErrorStrings.rsInheritedPolicyModelItem(itemPath, itemID), null, null)
 		{
 		}
-
-		private InheritedPolicyException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

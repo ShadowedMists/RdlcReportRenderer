@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidMultipleElementCombination, ErrorStrings.rsInvalidMultipleElementCombination(elementName1, elementName2, elementName3), null, null)
 		{
 		}
-
-		private InvalidMultipleElementCombinationException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

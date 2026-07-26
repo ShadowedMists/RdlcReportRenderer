@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRPCError, exceptionFromRPC.Message, exceptionFromRPC.InnerException, null)
 		{
 		}
-
-		private RPCException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

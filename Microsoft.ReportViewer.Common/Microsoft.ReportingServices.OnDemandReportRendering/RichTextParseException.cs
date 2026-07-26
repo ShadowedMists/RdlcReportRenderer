@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			: base(message)
 		{
 		}
-
-		protected RichTextParseException(SerializationInfo serializationInfo, StreamingContext context)
-			: base(serializationInfo, context)
-		{
-		}
 	}
 }

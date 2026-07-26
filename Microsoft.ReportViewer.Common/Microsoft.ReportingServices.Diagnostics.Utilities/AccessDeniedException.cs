@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(errorCode, ErrorStrings.rsAccessDenied(userName), null, null)
 		{
 		}
-
-		private AccessDeniedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

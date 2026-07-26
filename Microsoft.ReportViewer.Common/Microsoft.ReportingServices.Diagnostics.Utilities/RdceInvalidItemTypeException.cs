@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRdceInvalidItemTypeError, ErrorStrings.rsRdceInvalidItemTypeError(type), null, RSTrace.IsTraceInitialized ? RSTrace.CatalogTrace : null, null)
 		{
 		}
-
-		private RdceInvalidItemTypeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

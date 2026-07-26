@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSPSiteNotFound, ErrorStrings.rsSPSiteNotFound(siteId), null, null)
 		{
 		}
-
-		private SPSiteNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

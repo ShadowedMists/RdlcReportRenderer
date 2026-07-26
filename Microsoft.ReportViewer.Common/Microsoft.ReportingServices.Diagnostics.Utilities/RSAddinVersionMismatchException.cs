@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsVersionMismatch, ErrorStrings.rsVersionMismatch, null, null)
 		{
 		}
-
-		private RSAddinVersionMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

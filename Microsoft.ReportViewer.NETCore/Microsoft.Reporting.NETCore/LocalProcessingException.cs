@@ -20,10 +20,5 @@ namespace Microsoft.Reporting.NETCore
 			: base(message)
 		{
 		}
-
-		private LocalProcessingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

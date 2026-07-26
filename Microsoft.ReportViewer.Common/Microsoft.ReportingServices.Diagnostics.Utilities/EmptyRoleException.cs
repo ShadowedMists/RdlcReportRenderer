@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsEmptyRole, ErrorStrings.rsEmptyRole, null, null)
 		{
 		}
-
-		private EmptyRoleException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

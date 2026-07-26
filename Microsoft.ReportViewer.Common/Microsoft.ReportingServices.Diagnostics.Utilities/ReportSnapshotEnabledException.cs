@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportSnapshotEnabled, ErrorStrings.rsReportSnapshotEnabled, null, null)
 		{
 		}
-
-		private ReportSnapshotEnabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

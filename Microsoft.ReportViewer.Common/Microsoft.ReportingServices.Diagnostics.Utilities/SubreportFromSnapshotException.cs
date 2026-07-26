@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSubreportFromSnapshot, ErrorStrings.rsSubreportFromSnapshot, null, null)
 		{
 		}
-
-		private SubreportFromSnapshotException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

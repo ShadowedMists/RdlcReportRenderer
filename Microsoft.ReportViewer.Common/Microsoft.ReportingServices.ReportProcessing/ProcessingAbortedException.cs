@@ -23,11 +23,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal CancelationTrigger Trigger => m_cancelationTrigger;
 
-		private ProcessingAbortedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		internal ProcessingAbortedException()
 			: this(CancelationTrigger.None)
 		{

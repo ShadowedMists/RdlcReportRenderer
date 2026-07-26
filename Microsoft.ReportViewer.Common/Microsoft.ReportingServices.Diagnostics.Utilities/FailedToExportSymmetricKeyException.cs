@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsFailedToExportSymmetricKey, ErrorStrings.rsFailedToExportSymmetricKey, null, null)
 		{
 		}
-
-		private FailedToExportSymmetricKeyException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

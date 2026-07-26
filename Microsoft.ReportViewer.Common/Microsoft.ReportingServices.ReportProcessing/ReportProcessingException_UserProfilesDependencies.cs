@@ -9,10 +9,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		internal ReportProcessingException_UserProfilesDependencies()
 		{
 		}
-
-		private ReportProcessingException_UserProfilesDependencies(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

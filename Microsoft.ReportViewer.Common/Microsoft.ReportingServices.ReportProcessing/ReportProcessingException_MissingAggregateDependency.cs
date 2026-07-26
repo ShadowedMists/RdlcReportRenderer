@@ -9,10 +9,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		internal ReportProcessingException_MissingAggregateDependency()
 		{
 		}
-
-		private ReportProcessingException_MissingAggregateDependency(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

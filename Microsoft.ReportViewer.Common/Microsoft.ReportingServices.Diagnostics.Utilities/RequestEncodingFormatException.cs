@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRequestEncodingFormatException, ErrorStrings.rsRequestEncodingFormatException, innerException, null)
 		{
 		}
-
-		private RequestEncodingFormatException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

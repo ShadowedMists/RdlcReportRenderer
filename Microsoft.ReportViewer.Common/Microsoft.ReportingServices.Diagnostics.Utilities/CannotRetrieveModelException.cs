@@ -24,10 +24,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsCannotRetrieveModel, ErrorStrings.rsCannotRetrieveModel(itemName), innerException, null)
 		{
 		}
-
-		private CannotRetrieveModelException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

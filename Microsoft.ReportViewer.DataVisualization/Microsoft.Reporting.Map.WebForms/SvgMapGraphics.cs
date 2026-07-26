@@ -258,7 +258,7 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		public void SetGradient(Color firstColor, Color secondColor, GradientType gradientType)
 		{
-			mapSvgGradientType = (SvgGradientType)Enum.Parse(typeof(SvgGradientType), gradientType.ToString(CultureInfo.CurrentCulture));
+			mapSvgGradientType = (SvgGradientType)Enum.Parse(typeof(SvgGradientType), gradientType.ToString());
 			mapBrushColor = firstColor;
 			mapBrushSecondColor = secondColor;
 		}

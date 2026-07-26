@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReservedRole, ErrorStrings.rsReservedRole(roleName), null, null)
 		{
 		}
-
-		private ReservedRoleException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

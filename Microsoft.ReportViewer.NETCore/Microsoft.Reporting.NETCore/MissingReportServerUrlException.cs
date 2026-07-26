@@ -10,10 +10,5 @@ namespace Microsoft.Reporting.NETCore
 			: base(CommonStrings.MissingReportServerUrl)
 		{
 		}
-
-		private MissingReportServerUrlException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

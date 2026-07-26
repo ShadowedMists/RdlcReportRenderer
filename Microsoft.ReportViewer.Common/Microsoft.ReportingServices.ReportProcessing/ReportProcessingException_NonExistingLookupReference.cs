@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNonExistingLookupReference))
 		{
 		}
-
-		internal ReportProcessingException_NonExistingLookupReference(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

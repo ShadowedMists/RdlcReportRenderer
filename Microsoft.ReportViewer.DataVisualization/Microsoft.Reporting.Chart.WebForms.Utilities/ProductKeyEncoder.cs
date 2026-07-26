@@ -89,7 +89,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Utilities
 			MemoryStream memoryStream = new MemoryStream(1024);
 			MemoryStream memoryStream2 = new MemoryStream(1024);
 			byte[] array = StringToBytes(key);
-			SymmetricAlgorithm symmetricAlgorithm = SymmetricAlgorithm.Create();
+			SymmetricAlgorithm symmetricAlgorithm = Aes.Create();
 			CryptoStream cryptoStream = new CryptoStream(memoryStream, symmetricAlgorithm.CreateDecryptor(rijnKey, rijnIV), CryptoStreamMode.Write);
 			CryptoStream cryptoStream2 = new CryptoStream(memoryStream2, new FromBase64Transform(), CryptoStreamMode.Write);
 			cryptoStream2.Write(array, 0, array.Length);

@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsUnknownUserName, ErrorStrings.rsUnknownUserName(userName), innerException, null)
 		{
 		}
-
-		private UnknownUserNameException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

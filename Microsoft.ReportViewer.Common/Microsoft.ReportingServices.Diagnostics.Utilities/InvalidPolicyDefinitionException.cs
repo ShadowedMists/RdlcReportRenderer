@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidPolicyDefinition, ErrorStrings.rsInvalidPolicyDefinition(principalName), null, null)
 		{
 		}
-
-		private InvalidPolicyDefinitionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

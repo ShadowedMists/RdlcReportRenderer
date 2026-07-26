@@ -11,7 +11,7 @@ namespace Microsoft.Reporting.Map.WebForms
 {
 	internal class BinaryFormatSerializer : SerializerBase
 	{
-		private CaseInsensitiveHashCodeProvider hashCodeProvider = new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture);
+		private StringComparer hashCodeProvider = StringComparer.InvariantCultureIgnoreCase;
 
 		public override void Serialize(object objectToSerialize, object destination)
 		{

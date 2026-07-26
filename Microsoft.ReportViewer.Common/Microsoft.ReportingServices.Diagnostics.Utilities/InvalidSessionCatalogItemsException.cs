@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidSessionCatalogItems, ErrorStrings.rsInvalidSessionCatalogItems(errorString), innerException, null)
 		{
 		}
-
-		private InvalidSessionCatalogItemsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

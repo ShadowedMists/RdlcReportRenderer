@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDataSourceReference, ErrorStrings.rsInvalidDataSourceReference(datasourceName), null, null)
 		{
 		}
-
-		private InvalidDataSourceReferenceException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

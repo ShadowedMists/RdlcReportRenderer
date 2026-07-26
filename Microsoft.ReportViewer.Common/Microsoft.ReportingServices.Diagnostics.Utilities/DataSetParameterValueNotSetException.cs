@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsDataSetParameterValueNotSet, ErrorStrings.rsDataSetParameterValueNotSet(parameterName), null, parameterName)
 		{
 		}
-
-		private DataSetParameterValueNotSetException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

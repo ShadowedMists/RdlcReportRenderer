@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsJobWasCanceled, ErrorStrings.rsJobWasCanceled, innerException, null)
 		{
 		}
-
-		private JobCanceledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

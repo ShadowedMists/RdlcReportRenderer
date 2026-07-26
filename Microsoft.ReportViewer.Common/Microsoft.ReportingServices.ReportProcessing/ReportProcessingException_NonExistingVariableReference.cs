@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNonExistingVariableReference(varName)))
 		{
 		}
-
-		private ReportProcessingException_NonExistingVariableReference(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

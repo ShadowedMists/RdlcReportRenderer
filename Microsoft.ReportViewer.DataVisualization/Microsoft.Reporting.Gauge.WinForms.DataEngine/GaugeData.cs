@@ -84,13 +84,6 @@ namespace Microsoft.Reporting.Gauge.WinForms.DataEngine
 			}
 
 			[DebuggerNonUserCode]
-			protected ValuesDataTable(SerializationInfo info, StreamingContext context)
-				: base(info, context)
-			{
-				InitVars();
-			}
-
-			[DebuggerNonUserCode]
 			public void AddValuesRow(ValuesRow row)
 			{
 				base.Rows.Add(row);
@@ -383,46 +376,6 @@ namespace Microsoft.Reporting.Gauge.WinForms.DataEngine
 			base.Tables.CollectionChanged += value;
 			base.Relations.CollectionChanged += value;
 			EndInit();
-		}
-
-		[DebuggerNonUserCode]
-		protected GaugeData(SerializationInfo info, StreamingContext context)
-			: base(info, context, ConstructSchema: false)
-		{
-			if (IsBinarySerialized(info, context))
-			{
-				InitVars(initTable: false);
-				CollectionChangeEventHandler value = SchemaChanged;
-				Tables.CollectionChanged += value;
-				Relations.CollectionChanged += value;
-				return;
-			}
-			string s = (string)info.GetValue("XmlSchema", typeof(string));
-			if (DetermineSchemaSerializationMode(info, context) == SchemaSerializationMode.IncludeSchema)
-			{
-				DataSet dataSet = new DataSet();
-				dataSet.ReadXmlSchema(new XmlTextReader(new StringReader(s)));
-				if (dataSet.Tables["Values"] != null)
-				{
-					base.Tables.Add(new ValuesDataTable(dataSet.Tables["Values"]));
-				}
-				base.DataSetName = dataSet.DataSetName;
-				base.Prefix = dataSet.Prefix;
-				base.Namespace = dataSet.Namespace;
-				base.Locale = dataSet.Locale;
-				base.CaseSensitive = dataSet.CaseSensitive;
-				base.EnforceConstraints = dataSet.EnforceConstraints;
-				Merge(dataSet, preserveChanges: false, MissingSchemaAction.Add);
-				InitVars();
-			}
-			else
-			{
-				ReadXmlSchema(new XmlTextReader(new StringReader(s)));
-			}
-			GetSerializationData(info, context);
-			CollectionChangeEventHandler value2 = SchemaChanged;
-			base.Tables.CollectionChanged += value2;
-			Relations.CollectionChanged += value2;
 		}
 
 		[DebuggerNonUserCode]

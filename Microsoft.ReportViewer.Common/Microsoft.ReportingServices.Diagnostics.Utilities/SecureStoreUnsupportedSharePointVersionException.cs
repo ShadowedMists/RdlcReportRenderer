@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreUnsupportedSharePointVersion, ErrorStrings.rsSecureStoreUnsupportedSharePointVersion, null, null)
 		{
 		}
-
-		private SecureStoreUnsupportedSharePointVersionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -96,7 +96,7 @@ namespace Microsoft.ReportingServices.ReportPublishing
 				}
 				xmlReaderSettings.ValidationType = ValidationType.Schema;
 				xmlReaderSettings.ValidationEventHandler += ValidationCallBack;
-				xmlReaderSettings.ProhibitDtd = true;
+				xmlReaderSettings.DtdProcessing = DtdProcessing.Prohibit;
 				xmlReaderSettings.CloseInput = true;
 				xmlReaderSettings.XmlResolver = new XmlNullResolver();
 				m_reader = XmlReader.Create(stream, xmlReaderSettings);

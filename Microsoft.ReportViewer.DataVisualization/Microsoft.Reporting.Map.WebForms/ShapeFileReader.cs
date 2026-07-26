@@ -450,7 +450,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			string result = "";
 			try
 			{
-				Type type = Assembly.LoadWithPartialName("System.Web").GetType("System.Web.Util.FindFileData");
+				Type type = Assembly.Load("System.Web").GetType("System.Web.Util.FindFileData");
 				object[] array = new object[2]
 				{
 					fullPath,

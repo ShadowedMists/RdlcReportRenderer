@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsIdentityClaimsMissingOrInvalid, ErrorStrings.rsIdentityClaimsMissingOrInvalid((identityClaims == null) ? string.Empty : identityClaims), null, null)
 		{
 		}
-
-		private IdentityClaimsMissingOrInvalidException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

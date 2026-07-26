@@ -14,11 +14,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 		{
 		}
 
-		internal IncompatibleRIFVersionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		internal static void ThrowIfIncompatible(int documentCompatVersion, int codeCompatVersion)
 		{
 			if (documentCompatVersion != codeCompatVersion && documentCompatVersion != 0 && documentCompatVersion > codeCompatVersion)

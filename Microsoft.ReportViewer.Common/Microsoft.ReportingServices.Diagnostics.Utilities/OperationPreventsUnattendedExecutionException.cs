@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsOperationPreventsUnattendedExecution, ErrorStrings.rsOperationPreventsUnattendedExecution, null, null)
 		{
 		}
-
-		private OperationPreventsUnattendedExecutionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

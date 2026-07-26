@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsUnsupportedParameterForMode, ErrorStrings.rsUnsupportedParameterForMode(mode, parameterName), null, null)
 		{
 		}
-
-		private UnsupportedParameterForModeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

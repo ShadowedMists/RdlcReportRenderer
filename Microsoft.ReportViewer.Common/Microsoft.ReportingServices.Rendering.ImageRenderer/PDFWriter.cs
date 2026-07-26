@@ -807,7 +807,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			stringBuilder3.Append("\r\n");
 			stringBuilder3.Append("/CreationDate (D:");
 			DateTime now = DateTime.Now;
-			TimeSpan utcOffset = TimeZone.CurrentTimeZone.GetUtcOffset(now);
+			TimeSpan utcOffset = TimeZoneInfo.Local.GetUtcOffset(now);
 			stringBuilder3.Append(now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
 			if (utcOffset.Hours > 0)
 			{

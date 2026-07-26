@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidMove, ErrorStrings.rsInvalidMove(itemPath, targetPath), null, null)
 		{
 		}
-
-		private InvalidMoveException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

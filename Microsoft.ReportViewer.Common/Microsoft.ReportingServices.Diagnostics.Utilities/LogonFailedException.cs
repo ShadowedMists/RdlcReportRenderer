@@ -25,10 +25,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			}
 			return string.Format(CultureInfo.InvariantCulture, "Logon attempt for user '{0}' failed.", userName);
 		}
-
-		private LogonFailedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

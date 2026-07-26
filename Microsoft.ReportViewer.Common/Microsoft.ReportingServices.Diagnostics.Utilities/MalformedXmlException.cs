@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsMalformedXml, ErrorStrings.rsMalformedXml(ex.Message), ex, null)
 		{
 		}
-
-		private MalformedXmlException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

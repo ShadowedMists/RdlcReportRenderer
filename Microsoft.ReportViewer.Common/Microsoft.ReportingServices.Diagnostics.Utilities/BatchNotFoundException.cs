@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsBatchNotFound, ErrorStrings.rsBatchNotFound(batchId), null, null)
 		{
 		}
-
-		private BatchNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

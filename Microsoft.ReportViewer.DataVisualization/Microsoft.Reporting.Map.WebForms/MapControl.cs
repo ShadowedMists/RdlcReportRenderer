@@ -1023,13 +1023,13 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		public void SaveAsImage(Stream stream)
 		{
-			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(CultureInfo.CurrentCulture), ignoreCase: true);
+			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(), ignoreCase: true);
 			mapCore.SaveTo(stream, imageFormat, Compression, null, zoomThumbOnly: false);
 		}
 
 		public void SaveAsImage(string fileName)
 		{
-			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(CultureInfo.CurrentCulture), ignoreCase: true);
+			MapImageFormat imageFormat = (MapImageFormat)Enum.Parse(typeof(MapImageFormat), ImageType.ToString(), ignoreCase: true);
 			mapCore.SaveTo(fileName, imageFormat, Compression, null, zoomThumbOnly: false);
 		}
 

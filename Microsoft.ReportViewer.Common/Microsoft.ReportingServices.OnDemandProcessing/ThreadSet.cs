@@ -76,7 +76,7 @@ namespace Microsoft.ReportingServices.OnDemandProcessing
 			m_waitCalled = true;
 			lock (m_counterLock)
 			{
-				if (Thread.VolatileRead(ref m_runningThreadCount) > 0)
+				if (Volatile.Read(ref m_runningThreadCount) > 0)
 				{
 					m_allThreadsDone.Reset();
 				}

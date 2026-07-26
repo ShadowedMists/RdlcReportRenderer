@@ -34,11 +34,6 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			m_cancelationTrigger = cancelationTrigger;
 		}
 
-		private ModelRetrievalAbortedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		private static string CreateAdditionalTraceMessage(CancelationTrigger trigger)
 		{
 			return string.Format(CultureInfo.InvariantCulture, "[{0}]", trigger.ToString());

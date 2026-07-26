@@ -25,10 +25,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: this(null, additionalTraceMessage, exceptionData)
 		{
 		}
-
-		private InternalCatalogException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -16,10 +16,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(msg, inner)
 		{
 		}
-
-		private RDLUpgradeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

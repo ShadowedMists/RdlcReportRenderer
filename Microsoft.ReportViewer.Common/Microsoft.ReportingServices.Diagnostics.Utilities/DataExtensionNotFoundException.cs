@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsDataExtensionNotFound, ErrorStrings.rsDataExtensionNotFound(extension), null, null)
 		{
 		}
-
-		private DataExtensionNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

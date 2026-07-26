@@ -31,42 +31,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			base.Relations.CollectionChanged += value;
 		}
 
-		private GaugeData(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			string text = (string)info.GetValue("XmlSchema", typeof(string));
-			if (text != null)
-			{
-				DataSet dataSet = new DataSet();
-				dataSet.ReadXmlSchema(new XmlTextReader(new StringReader(text)));
-				if (dataSet.Tables["Values"] != null)
-				{
-					base.Tables.Add(new ValuesDataTable(dataSet.Tables["Values"]));
-				}
-				base.DataSetName = dataSet.DataSetName;
-				base.Prefix = dataSet.Prefix;
-				base.Namespace = dataSet.Namespace;
-				base.Locale = dataSet.Locale;
-				base.CaseSensitive = dataSet.CaseSensitive;
-				base.EnforceConstraints = dataSet.EnforceConstraints;
-				Merge(dataSet, preserveChanges: false, MissingSchemaAction.Add);
-				InitVars();
-			}
-			else
-			{
-				InitClass();
-			}
-			GetSerializationData(info, context);
-			CollectionChangeEventHandler value = SchemaChanged;
-			base.Tables.CollectionChanged += value;
-			base.Relations.CollectionChanged += value;
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-		}
-
 		public override DataSet Clone()
 		{
 			GaugeData obj = (GaugeData)base.Clone();

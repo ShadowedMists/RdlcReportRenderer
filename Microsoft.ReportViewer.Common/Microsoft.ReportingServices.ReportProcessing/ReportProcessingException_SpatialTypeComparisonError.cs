@@ -18,16 +18,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			m_type = type;
 		}
 
-		internal ReportProcessingException_SpatialTypeComparisonError(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			m_type = info.GetString("type");
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			info.AddValue("type", m_type);
-		}
 	}
 }

@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInternalResourceNotFoundError, ErrorStrings.rsInternalResourceNotFoundError(imageId), null, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, null)
 		{
 		}
-
-		private InternalResourceNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

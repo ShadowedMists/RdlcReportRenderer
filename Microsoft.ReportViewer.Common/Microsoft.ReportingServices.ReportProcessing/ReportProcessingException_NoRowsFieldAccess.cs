@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(string.Format(CultureInfo.CurrentCulture, RPRes.rsNoRowsFieldAccess))
 		{
 		}
-
-		private ReportProcessingException_NoRowsFieldAccess(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

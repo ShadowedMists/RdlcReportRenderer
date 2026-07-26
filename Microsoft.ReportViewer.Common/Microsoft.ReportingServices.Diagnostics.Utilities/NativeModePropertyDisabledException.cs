@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsPropertyDisabledNativeMode, ErrorStrings.rsPropertyDisabledNativeMode, null, null)
 		{
 		}
-
-		private NativeModePropertyDisabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsErrorOpeningConnection, ErrorStrings.rsErrorOpeningConnection(datasourceName), innerException, null)
 		{
 		}
-
-		private DataSourceOpenException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

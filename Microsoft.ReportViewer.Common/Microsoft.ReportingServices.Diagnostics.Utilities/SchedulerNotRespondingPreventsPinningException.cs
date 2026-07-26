@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSchedulerNotResponding, ErrorStrings.rsSchedulerNotRespondingPreventsPinning, null, null)
 		{
 		}
-
-		private SchedulerNotRespondingPreventsPinningException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRoleAlreadyExists, ErrorStrings.rsRoleAlreadyExists(roleName), null, null)
 		{
 		}
-
-		private RoleAlreadyExistsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

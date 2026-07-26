@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDataSourceCount, ErrorStrings.rsInvalidDataSourceCount(reportPath), null, null)
 		{
 		}
-
-		private InvalidDataSourceCountException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

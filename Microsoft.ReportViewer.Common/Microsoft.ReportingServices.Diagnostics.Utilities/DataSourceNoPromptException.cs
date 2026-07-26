@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsDataSourceNoPrompt, ErrorStrings.rsDataSourceNoPromptException(dataSource), null, null)
 		{
 		}
-
-		private DataSourceNoPromptException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

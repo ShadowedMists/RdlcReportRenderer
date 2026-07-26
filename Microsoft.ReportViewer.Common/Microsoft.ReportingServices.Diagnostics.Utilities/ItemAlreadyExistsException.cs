@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsItemAlreadyExists, ErrorStrings.rsItemAlreadyExists(itemPath), null, null)
 		{
 		}
-
-		private ItemAlreadyExistsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

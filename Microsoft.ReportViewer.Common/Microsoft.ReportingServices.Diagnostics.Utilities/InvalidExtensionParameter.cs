@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidExtensionParameter, ErrorStrings.rsInvalidExtensionParameter(reason), null, null)
 		{
 		}
-
-		private InvalidExtensionParameter(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsFileExtensionViolation, ErrorStrings.rsFileExtensionViolation(targetFileExtension, sourceFileExtension), null, null)
 		{
 		}
-
-		private FileExtensionViolationException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

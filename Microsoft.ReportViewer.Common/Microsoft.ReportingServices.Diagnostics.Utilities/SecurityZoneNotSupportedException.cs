@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecurityZoneNotSupported, ErrorStrings.rsSecurityZoneNotSupported, null, null)
 		{
 		}
-
-		private SecurityZoneNotSupportedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

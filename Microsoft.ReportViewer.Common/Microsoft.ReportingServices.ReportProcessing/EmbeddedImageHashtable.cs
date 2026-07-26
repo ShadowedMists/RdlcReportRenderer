@@ -17,10 +17,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			: base(capacity)
 		{
 		}
-
-		private EmbeddedImageHashtable(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

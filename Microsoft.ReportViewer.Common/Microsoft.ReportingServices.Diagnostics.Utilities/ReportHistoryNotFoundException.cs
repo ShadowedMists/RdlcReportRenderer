@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportHistoryNotFound, ErrorStrings.rsReportHistoryNotFound(reportPath, snapshotId), null, null)
 		{
 		}
-
-		private ReportHistoryNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsStreamNotFound, ErrorStrings.rsStreamNotFound, null, null)
 		{
 		}
-
-		private StreamNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

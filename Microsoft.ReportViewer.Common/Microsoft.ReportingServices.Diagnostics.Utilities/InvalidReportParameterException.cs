@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidReportParameter, ErrorStrings.rsInvalidReportParameter(parameterName), null, null)
 		{
 		}
-
-		private InvalidReportParameterException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsExecutionNotFound, ErrorStrings.rsExecutionNotFound(ExecutionID), null, null)
 		{
 		}
-
-		private ExecutionNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

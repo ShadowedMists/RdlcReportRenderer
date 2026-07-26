@@ -1161,7 +1161,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 					result.Height = result.Width;
 				}
 			}
-			float xamlFrameAspectRatio = GetXamlFrameAspectRatio(Shape);
+			float xamlFrameAspectRatio = GetXamlFrameAspectRatio(FrameShape);
 			if (xamlFrameAspectRatio > 1f)
 			{
 				float num4 = result.Height * xamlFrameAspectRatio;

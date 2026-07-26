@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportServerStorageRefreshConnectionNotValidated, ErrorStrings.rsReportServerStorageRefreshConnectionNotValidated(modelId.ToString(), refreshConnectionId.ToString()), null, null)
 		{
 		}
-
-		private ReportServerStorageRefreshConnectionNotValidatedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

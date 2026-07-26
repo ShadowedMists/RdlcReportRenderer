@@ -79,7 +79,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			}
 			if (imageData == null)
 			{
-				imageData = new Hashtable(new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture), StringComparer.OrdinalIgnoreCase);
+				imageData = new Hashtable(StringComparer.OrdinalIgnoreCase);
 			}
 			if (imageData.Contains(imageURL))
 			{

@@ -11,10 +11,5 @@ namespace Microsoft.ReportingServices.Diagnostics
 			: base(errorCode, localizedMessage, innerException, tracer, additionalTraceMessage, exceptionData)
 		{
 		}
-
-		protected ReportProcessingExceptionBase(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

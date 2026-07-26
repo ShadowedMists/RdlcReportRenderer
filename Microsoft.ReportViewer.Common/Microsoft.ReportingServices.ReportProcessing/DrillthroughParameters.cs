@@ -17,11 +17,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		{
 		}
 
-		internal DrillthroughParameters(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		public void Add(string key, object value)
 		{
 			BaseAdd(key, value);

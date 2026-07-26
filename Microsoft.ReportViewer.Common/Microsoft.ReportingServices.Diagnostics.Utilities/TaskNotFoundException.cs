@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsTaskNotFound, ErrorStrings.rsTaskNotFound(taskID), null, null)
 		{
 		}
-
-		private TaskNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

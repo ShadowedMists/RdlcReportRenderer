@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidModelDrillthroughReport, ErrorStrings.rsInvalidModelDrillthroughReport(reportName), null, null)
 		{
 		}
-
-		private InvalidModelDrillthroughReportException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

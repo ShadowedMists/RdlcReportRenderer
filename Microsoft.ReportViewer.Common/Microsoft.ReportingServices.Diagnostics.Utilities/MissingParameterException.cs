@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsMissingParameter, ErrorStrings.rsMissingParameter(parameterName), null, null)
 		{
 		}
-
-		private MissingParameterException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

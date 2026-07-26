@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsContainerNotSupported, ErrorStrings.rsContainerNotSupported, null, null)
 		{
 		}
-
-		private ContainerTypeNotSupportedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

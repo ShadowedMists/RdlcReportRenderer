@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRequestThroughHttpRedirectorNotSupportedError, ErrorStrings.rsRequestThroughHttpRedirectorNotSupportedError, null, RSTrace.IsTraceInitialized ? RSTrace.WebServerTracer : null, message)
 		{
 		}
-
-		private RequestThroughHttpRedirectorNotSupportedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

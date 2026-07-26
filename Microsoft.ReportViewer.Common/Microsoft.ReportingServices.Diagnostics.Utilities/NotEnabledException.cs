@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsNotEnabled, ErrorStrings.rsNotEnabled, null, null)
 		{
 		}
-
-		private NotEnabledException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

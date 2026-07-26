@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSubscriptionNotFound, ErrorStrings.rsSubscriptionNotFound(idOrData), null, null)
 		{
 		}
-
-		private SubscriptionNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

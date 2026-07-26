@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportServerServiceUnavailable, ErrorStrings.rsReportServerServiceUnavailable(serviceName), null, null)
 		{
 		}
-
-		private ReportServerServiceUnavailableException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

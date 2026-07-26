@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsFileExtensionRequired, ErrorStrings.rsFileExtensionRequired, null, null)
 		{
 		}
-
-		private FileExtensionMissingException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

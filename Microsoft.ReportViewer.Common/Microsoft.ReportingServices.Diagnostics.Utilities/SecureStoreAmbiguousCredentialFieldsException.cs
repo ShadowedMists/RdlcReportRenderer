@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSecureStoreAmbiguousCredentialFields, ErrorStrings.rsSecureStoreAmbiguousCredentialFields(appId), null, null)
 		{
 		}
-
-		private SecureStoreAmbiguousCredentialFieldsException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

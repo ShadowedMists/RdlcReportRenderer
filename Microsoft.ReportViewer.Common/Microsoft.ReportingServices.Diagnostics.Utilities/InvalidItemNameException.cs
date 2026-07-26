@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidItemName, ErrorStrings.rsInvalidItemName(invalidName, maxItemNameLength), null, null)
 		{
 		}
-
-		private InvalidItemNameException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

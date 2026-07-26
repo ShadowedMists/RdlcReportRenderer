@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsModelItemNotFound, ErrorStrings.rsModelItemNotFound(modelPath, modelItemID), null, null)
 		{
 		}
-
-		private ModelItemNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

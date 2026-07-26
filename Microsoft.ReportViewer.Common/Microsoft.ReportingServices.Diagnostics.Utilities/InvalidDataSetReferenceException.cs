@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDataSetReference, ErrorStrings.rsInvalidDataSetReference(dataSetName), null, null)
 		{
 		}
-
-		private InvalidDataSetReferenceException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

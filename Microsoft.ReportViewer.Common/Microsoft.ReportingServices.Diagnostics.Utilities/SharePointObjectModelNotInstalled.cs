@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsSharePointObjectModelNotInstalled, ErrorStrings.rsSharePointObjectModelNotInstalled((sharePointObjectModelLoadException != null) ? sharePointObjectModelLoadException.ToString() : string.Empty), sharePointObjectModelLoadException, null)
 		{
 		}
-
-		private SharePointObjectModelNotInstalled(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

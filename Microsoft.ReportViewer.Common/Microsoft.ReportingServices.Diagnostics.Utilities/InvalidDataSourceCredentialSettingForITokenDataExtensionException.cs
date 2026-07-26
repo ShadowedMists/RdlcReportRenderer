@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDataSourceCredentialSettingForITokenDataExtension, ErrorStrings.rsInvalidDataSourceCredentialSettingForITokenDataExtension, null, null)
 		{
 		}
-
-		private InvalidDataSourceCredentialSettingForITokenDataExtensionException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

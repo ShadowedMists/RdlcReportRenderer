@@ -8,10 +8,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsDataCacheMismatch, ErrorStrings.rsFileSize, null, null)
 		{
 		}
-
-		private FileSizeException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

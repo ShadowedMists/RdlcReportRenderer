@@ -8,9 +8,9 @@ namespace Microsoft.Reporting.Map.WebForms
 {
 	internal class BorderTypeRegistry : IServiceProvider
 	{
-		internal Hashtable registeredBorderTypes = new Hashtable(new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture), StringComparer.OrdinalIgnoreCase);
+		internal Hashtable registeredBorderTypes = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
-		private Hashtable createdBorderTypes = new Hashtable(new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture), StringComparer.OrdinalIgnoreCase);
+		private Hashtable createdBorderTypes = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
 		private IServiceContainer serviceContainer;
 

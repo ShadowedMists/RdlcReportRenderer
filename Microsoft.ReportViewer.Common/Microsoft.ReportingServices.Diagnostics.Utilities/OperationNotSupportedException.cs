@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsOperationNotSupported, ErrorStrings.rsOperationNotSupported(operation), null, null)
 		{
 		}
-
-		private OperationNotSupportedException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

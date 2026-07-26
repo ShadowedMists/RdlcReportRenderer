@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsAccessDeniedToSecureData, ErrorStrings.rsAccessDeniedToSecureData, null, null)
 		{
 		}
-
-		private AccessDeniedToSecureDataException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

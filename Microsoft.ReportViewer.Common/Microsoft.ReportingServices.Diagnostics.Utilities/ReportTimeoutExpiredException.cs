@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportTimeoutExpired, ErrorStrings.rsReportTimeoutExpired, innerException, null)
 		{
 		}
-
-		private ReportTimeoutExpiredException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

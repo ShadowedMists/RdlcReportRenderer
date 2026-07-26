@@ -15,10 +15,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 		{
 			m_status = status;
 		}
-
-		private ReportProcessingException_FieldError(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

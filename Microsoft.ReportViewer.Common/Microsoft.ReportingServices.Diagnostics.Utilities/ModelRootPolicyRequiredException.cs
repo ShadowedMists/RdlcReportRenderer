@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsModelRootPolicyRequired, ErrorStrings.rsModelRootPolicyRequired, null, null)
 		{
 		}
-
-		private ModelRootPolicyRequiredException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

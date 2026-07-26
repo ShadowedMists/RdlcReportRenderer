@@ -1882,7 +1882,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			ImageCodecInfo imageCodecInfo = null;
 			EncoderParameter encoderParameter = null;
 			EncoderParameters encoderParameters = null;
-			string text = imageFormat.ToString(CultureInfo.InvariantCulture);
+			string text = imageFormat.ToString();
 			imageFormat2 = (ImageFormat)new ImageFormatConverter().ConvertFromString(text);
 			Color color = (!(BackColor != Color.Empty)) ? Color.White : BackColor;
 			Pen pen = new Pen(color);

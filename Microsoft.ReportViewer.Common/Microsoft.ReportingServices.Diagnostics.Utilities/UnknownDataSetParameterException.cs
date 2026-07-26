@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsUnknownDataSetParameter, ErrorStrings.rsUnknownDataSetParameter(parameterName), null, null)
 		{
 		}
-
-		private UnknownDataSetParameterException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

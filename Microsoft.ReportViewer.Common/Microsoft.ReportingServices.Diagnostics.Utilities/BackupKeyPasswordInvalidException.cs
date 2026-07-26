@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsBackupKeyPasswordInvalid, ErrorStrings.rsBackupKeyPasswordInvalid, null, null)
 		{
 		}
-
-		private BackupKeyPasswordInvalidException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

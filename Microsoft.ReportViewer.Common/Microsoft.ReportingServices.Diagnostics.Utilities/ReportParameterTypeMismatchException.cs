@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsReportParameterTypeMismatch, ErrorStrings.rsReportParameterTypeMismatch(parameterName), null, null)
 		{
 		}
-
-		private ReportParameterTypeMismatchException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

@@ -218,14 +218,14 @@ namespace Microsoft.ReportingServices.Diagnostics
 
 		public static XmlReaderSettings ApplyDtdDosDefense(XmlReaderSettings settings)
 		{
-			settings.ProhibitDtd = true;
+			settings.DtdProcessing = DtdProcessing.Prohibit;
 			settings.XmlResolver = null;
 			return settings;
 		}
 
 		public static XmlTextReader ApplyDtdDosDefense(XmlTextReader reader)
 		{
-			reader.ProhibitDtd = true;
+			reader.DtdProcessing = DtdProcessing.Prohibit;
 			reader.XmlResolver = null;
 			return reader;
 		}

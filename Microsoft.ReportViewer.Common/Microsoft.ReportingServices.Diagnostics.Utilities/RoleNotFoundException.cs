@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsRoleNotFound, ErrorStrings.rsRoleNotFound(roleName), null, null)
 		{
 		}
-
-		private RoleNotFoundException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

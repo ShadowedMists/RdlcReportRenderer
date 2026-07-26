@@ -73,6 +73,7 @@ namespace Microsoft.ReportingServices.RdlExpressions.ExpressionHostObjectModel
 			throw new NotSupportedException();
 		}
 
+		[Obsolete("Overrides the obsolete MarshalByRefObject.InitializeLifetimeService; kept to preserve the infinite-lease lifetime this sandboxed proxy relies on across the AppDomain boundary during long-running report processing.")]
 		public override object InitializeLifetimeService()
 		{
 			return null;

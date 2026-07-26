@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsEventLogSourceNotFound, ErrorStrings.rsEventLogSourceNotFound(source), null, null)
 		{
 		}
-
-		private EventLogSourceNotFound(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

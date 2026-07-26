@@ -20,11 +20,6 @@ namespace Microsoft.Reporting.WinForms.Internal.Soap.ReportingServices2005.Execu
 			{
 			}
 
-			private MissingEndpointException(SerializationInfo info, StreamingContext context)
-				: base(info, context)
-			{
-			}
-
 			public static void ThrowIfEndpointMissing(WebException e)
 			{
 				if (e.Status == WebExceptionStatus.ProtocolError && e.Response != null)
@@ -43,11 +38,6 @@ namespace Microsoft.Reporting.WinForms.Internal.Soap.ReportingServices2005.Execu
 		{
 			private SoapVersionMismatchException(string message, Exception inner)
 				: base(message, inner)
-			{
-			}
-
-			private SoapVersionMismatchException(SerializationInfo info, StreamingContext context)
-				: base(info, context)
 			{
 			}
 

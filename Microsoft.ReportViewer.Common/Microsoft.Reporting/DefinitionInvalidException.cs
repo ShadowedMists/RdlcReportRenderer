@@ -11,10 +11,5 @@ namespace Microsoft.Reporting
 			: base(ErrorCode.pvInvalidDefinition, ProcessingStrings.pvInvalidDefinition(reportPath), inner, null, null)
 		{
 		}
-
-		private DefinitionInvalidException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }

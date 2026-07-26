@@ -26,18 +26,5 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			m_typeY = typeY;
 		}
 
-		private ReportProcessingException_ComparisonError(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-			m_typeX = info.GetString("typex");
-			m_typeY = info.GetString("typey");
-		}
-
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData(info, context);
-			info.AddValue("typex", m_typeX);
-			info.AddValue("typex", m_typeY);
-		}
 	}
 }

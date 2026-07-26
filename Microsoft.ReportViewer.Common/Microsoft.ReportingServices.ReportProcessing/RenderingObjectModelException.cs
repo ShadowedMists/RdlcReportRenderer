@@ -12,11 +12,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal ProcessingErrorCode ProcessingErrorCode => m_processingErrorCode;
 
-		private RenderingObjectModelException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
-
 		internal RenderingObjectModelException(string LocalizedErrorMessage)
 			: base(ErrorCode.rrRenderingError, LocalizedErrorMessage, null, Global.RenderingTracer, null)
 		{

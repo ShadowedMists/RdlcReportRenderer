@@ -10,10 +10,5 @@ namespace Microsoft.ReportingServices.Diagnostics.Utilities
 			: base(ErrorCode.rsInvalidDestination, ErrorStrings.rsInvalidDestination(sourcePath, targetPath), null, null)
 		{
 		}
-
-		private InvalidDestinationException(SerializationInfo info, StreamingContext context)
-			: base(info, context)
-		{
-		}
 	}
 }
