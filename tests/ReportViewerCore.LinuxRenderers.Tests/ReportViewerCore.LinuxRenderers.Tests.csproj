@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
     <PackageReference Include="SkiaSharp" Version="3.119.1" />
+    <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
   </ItemGroup>
 
