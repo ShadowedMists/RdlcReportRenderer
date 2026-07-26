@@ -135,47 +135,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 			DrawLineAbs(color, width, style, firstPoint, secondPoint);
 		}
 
-		public Brush GetHatchBrush(ChartHatchStyle hatchStyle, Color backColor, Color foreColor)
-		{
-			return new HatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetHatchBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetHatchBrush</c> — its one caller (the now-removed concrete <c>CreateBrush</c>) is gone (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal IHatchBrush GetHatchBrushResource(ChartHatchStyle hatchStyle, Color backColor, Color foreColor)
 		{
 			return resourceFactory.CreateHatchBrush((HatchStyle)Enum.Parse(typeof(HatchStyle), hatchStyle.ToString()), foreColor, backColor);
 		}
 
-		internal Brush GetTextureBrush(string name, Color backImageTranspColor, ChartImageWrapMode mode, Color backColor)
-		{
-			Image image = common.ImageLoader.LoadImage(name);
-			ImageAttributes imageAttributes = new ImageAttributes();
-			imageAttributes.SetWrapMode((WrapMode)((mode == ChartImageWrapMode.Unscaled) ? ChartImageWrapMode.Scaled : mode));
-			if (backImageTranspColor != Color.Empty)
-			{
-				imageAttributes.SetColorKey(backImageTranspColor, backImageTranspColor, ColorAdjustType.Default);
-			}
-			if (backImageTranspColor == Color.Empty && image is Metafile && backColor != Color.Transparent)
-			{
-				TextureBrush textureBrush = null;
-				Bitmap image2 = new Bitmap(image.Width, image.Height);
-				using (Graphics graphics = Graphics.FromImage(image2))
-				{
-					using (SolidBrush brush = new SolidBrush(backColor))
-					{
-						graphics.FillRectangle(brush, 0, 0, image.Width, image.Height);
-						graphics.DrawImageUnscaled(image, 0, 0);
-						return new TextureBrush(image2, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
-					}
-				}
-			}
-			// Fixed 96 DPI baseline assumed (chart-gdi-type-abstraction.md Milestone B2) — no DPI-mismatch rescale.
-			return new TextureBrush(image, new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
-		}
-
 		/// <summary>
-		/// Interface-typed counterpart of <see cref="GetTextureBrush(string, Color, ChartImageWrapMode, Color)"/>
-		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). <c>ImageLoader</c>
+		/// Only remaining form of the original concrete <c>GetTextureBrush</c> — its one caller (the now-removed
+		/// concrete <c>CreateBrush</c>) is gone (chart-gdi-type-abstraction.md's E1 residual pass). <c>ImageLoader</c>
 		/// itself remains GDI+-only/concrete (documented, deliberate) — its loaded <see cref="Image"/> is bridged
 		/// into <see cref="IChartImage"/> via <see cref="IDrawingResourceFactory.WrapImage"/>.
 		/// </summary>
@@ -203,68 +171,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return resourceFactory.CreateTextureBrush(resourceFactory.WrapImage(image), new RectangleF(0f, 0f, image.Width, image.Height), imageAttributes);
 		}
 
-		public Brush GetGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)
-		{
-			SetGradient(firstColor, secondColor, type);
-			rectangle.Inflate(1f, 1f);
-			Brush brush = null;
-			float angle = 0f;
-			if (rectangle.Height == 0f || rectangle.Width == 0f)
-			{
-				return new SolidBrush(Color.Black);
-			}
-			switch (type)
-			{
-			case GradientType.LeftRight:
-			case GradientType.VerticalCenter:
-				angle = 0f;
-				break;
-			case GradientType.TopBottom:
-			case GradientType.HorizontalCenter:
-				angle = 90f;
-				break;
-			case GradientType.DiagonalLeft:
-				angle = (float)(Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
-				break;
-			case GradientType.DiagonalRight:
-				angle = (float)(180.0 - Math.Atan(rectangle.Width / rectangle.Height) * 180.0 / Math.PI);
-				break;
-			}
-			if (type == GradientType.TopBottom || type == GradientType.LeftRight || type == GradientType.DiagonalLeft || type == GradientType.DiagonalRight || type == GradientType.HorizontalCenter || type == GradientType.VerticalCenter)
-			{
-				RectangleF rect = new RectangleF(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
-				switch (type)
-				{
-				case GradientType.HorizontalCenter:
-					rect.Height /= 2f;
-					brush = new LinearGradientBrush(rect, firstColor, secondColor, angle);
-					((LinearGradientBrush)brush).WrapMode = WrapMode.TileFlipX;
-					break;
-				case GradientType.VerticalCenter:
-					rect.Width /= 2f;
-					brush = new LinearGradientBrush(rect, firstColor, secondColor, angle);
-					((LinearGradientBrush)brush).WrapMode = WrapMode.TileFlipX;
-					break;
-				default:
-					brush = new LinearGradientBrush(rectangle, firstColor, secondColor, angle);
-					break;
-				}
-				return brush;
-			}
-			GraphicsPath graphicsPath = new GraphicsPath();
-			graphicsPath.AddRectangle(rectangle);
-			brush = new PathGradientBrush(graphicsPath);
-			((PathGradientBrush)brush).CenterColor = firstColor;
-			Color[] surroundColors = new Color[1]
-			{
-				secondColor
-			};
-			((PathGradientBrush)brush).SurroundColors = surroundColors;
-			graphicsPath?.Dispose();
-			return brush;
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetGradientBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetGradientBrush</c> — its one caller (the now-removed concrete <c>CreateBrush</c>) is gone (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal IBrush GetGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor, GradientType type)
 		{
 			SetGradient(firstColor, secondColor, type);
@@ -322,21 +229,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return pathBrush;
 		}
 
-		internal Brush GetPieGradientBrush(RectangleF rectangle, Color firstColor, Color secondColor)
-		{
-			GraphicsPath graphicsPath = new GraphicsPath();
-			graphicsPath.AddEllipse(rectangle);
-			PathGradientBrush pathGradientBrush = new PathGradientBrush(graphicsPath);
-			pathGradientBrush.CenterColor = firstColor;
-			Color[] array2 = pathGradientBrush.SurroundColors = new Color[1]
-			{
-				secondColor
-			};
-			graphicsPath?.Dispose();
-			return pathGradientBrush;
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetPieGradientBrush"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetPieGradientBrush</c> — it had no callers left (chart-gdi-type-abstraction.md's E1 residual pass); this interface-typed sibling's real callers (<c>DrawPieSoftShadow</c>, <c>DrawMarkerAbs</c>'s soft circular-marker shadow, <c>DrawPieGradientEffects</c>) already used it.</summary>
 		internal IPathGradientBrush GetPieGradientBrushResource(RectangleF rectangle, Color firstColor, Color secondColor)
 		{
 			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
@@ -942,7 +835,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			Restore(gstate);
 		}
 
-		internal GraphicsPath GetTranformedTextRectPath(PointF center, SizeF size, int angle)
+		/// <summary>Retyped to <see cref="IGraphicsPath"/> in place (E1 — see chart-gdi-type-abstraction.md's residual pass): its one real caller (<c>Axis.cs</c>'s title hot-region code) previously bridged the concrete result via <c>PathPoints</c>/<c>PathTypes</c> immediately after calling this — with no other caller, retyping directly removed that bridge instead of adding a dual-overload sibling.</summary>
+		internal IGraphicsPath GetTranformedTextRectPath(PointF center, SizeF size, int angle)
 		{
 			size.Width += 10f;
 			size.Height += 10f;
@@ -954,400 +848,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 				new PointF(absolutePoint.X + size.Width / 2f, absolutePoint.Y + size.Height / 2f),
 				new PointF(absolutePoint.X - size.Width / 2f, absolutePoint.Y + size.Height / 2f)
 			};
-			Matrix matrix = base.Transform.Clone();
-			matrix.RotateAt(angle, absolutePoint);
+			Matrix3x2 matrix = base.GetTransform();
+			matrix = matrix.RotateAt(angle, absolutePoint);
 			matrix.TransformPoints(array);
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
 			graphicsPath.AddLines(array);
 			graphicsPath.CloseAllFigures();
 			return graphicsPath;
 		}
 
-		internal void DrawLabelStringRel(Axis axis, int labelRowIndex, LabelMark labelMark, Color markColor, string text, string image, Color imageTranspColor, Font font, Brush brush, RectangleF position, StringFormat format, int angle, RectangleF boundaryRect, CustomLabel label, bool truncatedLeft, bool truncatedRight)
-		{
-			StringFormat stringFormat = (StringFormat)format.Clone();
-			SizeF sizeF = SizeF.Empty;
-			if (position.Width == 0f || position.Height == 0f)
-			{
-				return;
-			}
-			RectangleF rectangleF = GetAbsoluteRectangle(position);
-			if (rectangleF.Width < 1f)
-			{
-				rectangleF.Width = 1f;
-			}
-			if (rectangleF.Height < 1f)
-			{
-				rectangleF.Height = 1f;
-			}
-			CommonElements commonElements = axis.Common;
-			if (commonElements.ProcessModeRegions)
-			{
-				commonElements.HotRegionsList.AddHotRegion(Rectangle.Round(rectangleF), label, ChartElementType.AxisLabels, relativeCoordinates: false, insertAtBeginning: true);
-			}
-			if (labelRowIndex > 0)
-			{
-				stringFormat.LineAlignment = StringAlignment.Center;
-				stringFormat.Alignment = StringAlignment.Center;
-				angle = 0;
-				if (axis.AxisPosition == AxisPosition.Left)
-				{
-					angle = -90;
-				}
-				else if (axis.AxisPosition == AxisPosition.Right)
-				{
-					angle = 90;
-				}
-				else if (axis.AxisPosition != AxisPosition.Top)
-				{
-					_ = axis.AxisPosition;
-					_ = 3;
-				}
-			}
-			PointF empty = PointF.Empty;
-			if (axis.AxisPosition == AxisPosition.Left)
-			{
-				empty.X = rectangleF.Right;
-				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
-			}
-			else if (axis.AxisPosition == AxisPosition.Right)
-			{
-				empty.X = rectangleF.Left;
-				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
-			}
-			else if (axis.AxisPosition == AxisPosition.Top)
-			{
-				empty.X = rectangleF.X + rectangleF.Width / 2f;
-				empty.Y = rectangleF.Bottom;
-			}
-			else if (axis.AxisPosition == AxisPosition.Bottom)
-			{
-				empty.X = rectangleF.X + rectangleF.Width / 2f;
-				empty.Y = rectangleF.Top;
-			}
-			if ((axis.AxisPosition == AxisPosition.Top || axis.AxisPosition == AxisPosition.Bottom) && angle != 0)
-			{
-				empty.X = rectangleF.X + rectangleF.Width / 2f;
-				empty.Y = ((axis.AxisPosition == AxisPosition.Top) ? rectangleF.Bottom : rectangleF.Y);
-				RectangleF empty2 = RectangleF.Empty;
-				empty2.X = rectangleF.X + rectangleF.Width / 2f;
-				empty2.Y = rectangleF.Y - rectangleF.Width / 2f;
-				empty2.Height = rectangleF.Width;
-				empty2.Width = rectangleF.Height;
-				if (axis.AxisPosition == AxisPosition.Bottom)
-				{
-					if (angle < 0)
-					{
-						empty2.X -= empty2.Width;
-					}
-					stringFormat.Alignment = StringAlignment.Near;
-					if (angle < 0)
-					{
-						stringFormat.Alignment = StringAlignment.Far;
-					}
-					stringFormat.LineAlignment = StringAlignment.Center;
-				}
-				if (axis.AxisPosition == AxisPosition.Top)
-				{
-					empty2.Y += rectangleF.Height;
-					if (angle > 0)
-					{
-						empty2.X -= empty2.Width;
-					}
-					stringFormat.Alignment = StringAlignment.Far;
-					if (angle < 0)
-					{
-						stringFormat.Alignment = StringAlignment.Near;
-					}
-					stringFormat.LineAlignment = StringAlignment.Center;
-				}
-				rectangleF = empty2;
-			}
-			if ((axis.AxisPosition == AxisPosition.Left || axis.AxisPosition == AxisPosition.Right) && (angle == 90 || angle == -90))
-			{
-				empty.X = rectangleF.X + rectangleF.Width / 2f;
-				empty.Y = rectangleF.Y + rectangleF.Height / 2f;
-				RectangleF empty3 = RectangleF.Empty;
-				empty3.X = empty.X - rectangleF.Height / 2f;
-				empty3.Y = empty.Y - rectangleF.Width / 2f;
-				empty3.Height = rectangleF.Width;
-				empty3.Width = rectangleF.Height;
-				rectangleF = empty3;
-				StringAlignment alignment = stringFormat.Alignment;
-				stringFormat.Alignment = stringFormat.LineAlignment;
-				stringFormat.LineAlignment = alignment;
-				if (angle == 90)
-				{
-					if (stringFormat.LineAlignment == StringAlignment.Far)
-					{
-						stringFormat.LineAlignment = StringAlignment.Near;
-					}
-					else if (stringFormat.LineAlignment == StringAlignment.Near)
-					{
-						stringFormat.LineAlignment = StringAlignment.Far;
-					}
-				}
-				if (angle == -90)
-				{
-					if (stringFormat.Alignment == StringAlignment.Far)
-					{
-						stringFormat.Alignment = StringAlignment.Near;
-					}
-					else if (stringFormat.Alignment == StringAlignment.Near)
-					{
-						stringFormat.Alignment = StringAlignment.Far;
-					}
-				}
-			}
-			Matrix matrix = null;
-			if (angle != 0)
-			{
-				myMatrix = base.GetTransform().RotateAt(angle, empty);
-				matrix = base.Transform;
-				base.SetTransform(myMatrix);
-			}
-			RectangleF rect = Rectangle.Empty;
-			float num = 0f;
-			float num2 = 0f;
-			if (angle != 0 && angle != 90 && angle != -90)
-			{
-				sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF.Size, stringFormat);
-				rect.Width = sizeF.Width;
-				rect.Height = sizeF.Height;
-				if (stringFormat.Alignment == StringAlignment.Far)
-				{
-					rect.X = rectangleF.Right - sizeF.Width;
-				}
-				else if (stringFormat.Alignment == StringAlignment.Near)
-				{
-					rect.X = rectangleF.X;
-				}
-				else if (stringFormat.Alignment == StringAlignment.Center)
-				{
-					rect.X = rectangleF.X + rectangleF.Width / 2f - sizeF.Width / 2f;
-				}
-				if (stringFormat.LineAlignment == StringAlignment.Far)
-				{
-					rect.Y = rectangleF.Bottom - sizeF.Height;
-				}
-				else if (stringFormat.LineAlignment == StringAlignment.Near)
-				{
-					rect.Y = rectangleF.Y;
-				}
-				else if (stringFormat.LineAlignment == StringAlignment.Center)
-				{
-					rect.Y = rectangleF.Y + rectangleF.Height / 2f - sizeF.Height / 2f;
-				}
-				num = (float)Math.Sin((double)((float)(90 - angle) / 180f) * Math.PI) * rect.Height / 2f;
-				num2 = (float)Math.Sin((double)((float)Math.Abs(angle) / 180f) * Math.PI) * rect.Height / 2f;
-				if (axis.AxisPosition == AxisPosition.Left)
-				{
-					myMatrix = myMatrix.Translate(0f - num2, 0f);
-				}
-				else if (axis.AxisPosition == AxisPosition.Right)
-				{
-					myMatrix = myMatrix.Translate(num2, 0f);
-				}
-				else if (axis.AxisPosition == AxisPosition.Top)
-				{
-					myMatrix = myMatrix.Translate(0f, 0f - num);
-				}
-				else if (axis.AxisPosition == AxisPosition.Bottom)
-				{
-					myMatrix = myMatrix.Translate(0f, num);
-				}
-				if (boundaryRect != RectangleF.Empty)
-				{
-					Rendering.IClipRegion region = resourceFactory.CreateRegion(rect);
-					region.Transform(myMatrix);
-					if (axis.AxisPosition == AxisPosition.Left)
-					{
-						boundaryRect.Width += boundaryRect.X;
-						boundaryRect.X = 0f;
-					}
-					else if (axis.AxisPosition == AxisPosition.Right)
-					{
-						boundaryRect.Width = (float)common.Width - boundaryRect.X;
-					}
-					else if (axis.AxisPosition == AxisPosition.Top)
-					{
-						boundaryRect.Height += boundaryRect.Y;
-						boundaryRect.Y = 0f;
-					}
-					else if (axis.AxisPosition == AxisPosition.Bottom)
-					{
-						boundaryRect.Height = (float)common.Height - boundaryRect.Y;
-					}
-					region.Exclude(GetAbsoluteRectangle(boundaryRect));
-					if (!region.IsEmpty(this))
-					{
-						base.Transform = matrix;
-						float num3 = region.GetBounds(this).Width / (float)Math.Cos((double)((float)Math.Abs(angle) / 180f) * Math.PI);
-						if (axis.AxisPosition == AxisPosition.Left)
-						{
-							num3 -= rect.Height * (float)Math.Tan((double)((float)Math.Abs(angle) / 180f) * Math.PI);
-							rectangleF.Y = rect.Y;
-							rectangleF.X = rect.X + num3;
-							rectangleF.Width = rect.Width - num3;
-							rectangleF.Height = rect.Height;
-						}
-						else if (axis.AxisPosition == AxisPosition.Right)
-						{
-							num3 -= rect.Height * (float)Math.Tan((double)((float)Math.Abs(angle) / 180f) * Math.PI);
-							rectangleF.Y = rect.Y;
-							rectangleF.X = rect.X;
-							rectangleF.Width = rect.Width - num3;
-							rectangleF.Height = rect.Height;
-						}
-						else if (axis.AxisPosition == AxisPosition.Top)
-						{
-							rectangleF.Y = rect.Y;
-							rectangleF.X = rect.X;
-							rectangleF.Width = rect.Width - num3;
-							rectangleF.Height = rect.Height;
-							if (angle > 0)
-							{
-								rectangleF.X += num3;
-							}
-						}
-						else if (axis.AxisPosition == AxisPosition.Bottom)
-						{
-							rectangleF.Y = rect.Y;
-							rectangleF.X = rect.X;
-							rectangleF.Width = rect.Width - num3;
-							rectangleF.Height = rect.Height;
-							if (angle < 0)
-							{
-								rectangleF.X += num3;
-							}
-						}
-					}
-				}
-				base.SetTransform(myMatrix);
-			}
-			RectangleF rectangleF2 = new RectangleF(rectangleF.Location, rectangleF.Size);
-			Image image2 = null;
-			SizeF size = default(SizeF);
-			if (image.Length > 0)
-			{
-				ImageLoader.GetAdjustedImageSize(image2, ref size);
-				rectangleF2.Width -= image2.Size.Width;
-				rectangleF2.X += image2.Size.Width;
-				if (rectangleF2.Width < 1f)
-				{
-					rectangleF2.Width = 1f;
-				}
-			}
-			if (labelRowIndex > 0 && labelMark != 0)
-			{
-				sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF2.Size, stringFormat);
-				SizeF labelSize = new SizeF(sizeF.Width, sizeF.Height);
-				if (image2 != null)
-				{
-					labelSize.Width += image2.Width;
-				}
-				DrawSecondRowLabelMark(axis, markColor, rectangleF, labelSize, labelMark, truncatedLeft, truncatedRight, matrix);
-			}
-			if ((stringFormat.FormatFlags & StringFormatFlags.LineLimit) != 0)
-			{
-				stringFormat.FormatFlags ^= StringFormatFlags.LineLimit;
-				if (MeasureString("I", font, rectangleF.Size, stringFormat).Height < rectangleF.Height)
-				{
-					stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
-				}
-			}
-			else
-			{
-				if ((stringFormat.FormatFlags & StringFormatFlags.NoClip) != 0)
-				{
-					stringFormat.FormatFlags ^= StringFormatFlags.NoClip;
-				}
-				SizeF sizeF2 = MeasureString("I", font, rectangleF.Size, stringFormat);
-				stringFormat.FormatFlags ^= StringFormatFlags.NoClip;
-				if (sizeF2.Height > rectangleF.Height)
-				{
-					float num4 = sizeF2.Height - rectangleF.Height;
-					rectangleF.Y -= num4 / 2f;
-					rectangleF.Height += num4;
-				}
-			}
-			DrawString(text.Replace("\\n", "\n"), font, brush, rectangleF2, stringFormat);
-			if (commonElements.ProcessModeRegions)
-			{
-				GraphicsPath graphicsPath = new GraphicsPath();
-				graphicsPath.AddRectangle(rectangleF2);
-				graphicsPath.Transform(base.Transform);
-				string empty4 = string.Empty;
-				string empty5 = string.Empty;
-				empty4 = label.Href;
-				empty5 = label.MapAreaAttributes;
-				commonElements.HotRegionsList.AddHotRegion(this, graphicsPath, relativePath: false, label.ToolTip, empty4, empty5, label, ChartElementType.AxisLabels);
-			}
-			if (image2 != null)
-			{
-				if (sizeF.IsEmpty)
-				{
-					sizeF = MeasureString(text.Replace("\\n", "\n"), font, rectangleF2.Size, stringFormat);
-				}
-				RectangleF rectangleF3 = new RectangleF(rectangleF.X + (rectangleF.Width - (float)image2.Size.Width - sizeF.Width) / 2f, rectangleF.Y + (rectangleF.Height - (float)image2.Size.Height) / 2f, image2.Size.Width, image2.Size.Height);
-				if (stringFormat.LineAlignment == StringAlignment.Center)
-				{
-					rectangleF3.Y = rectangleF.Y + (rectangleF.Height - (float)image2.Size.Height) / 2f;
-				}
-				else if (stringFormat.LineAlignment == StringAlignment.Far)
-				{
-					rectangleF3.Y = rectangleF.Bottom - (sizeF.Height + (float)image2.Size.Height) / 2f;
-				}
-				else if (stringFormat.LineAlignment == StringAlignment.Near)
-				{
-					rectangleF3.Y = rectangleF.Top + (sizeF.Height - (float)image2.Size.Height) / 2f;
-				}
-				if (stringFormat.Alignment == StringAlignment.Center)
-				{
-					rectangleF3.X = rectangleF.X + (rectangleF.Width - (float)image2.Size.Width - sizeF.Width) / 2f;
-				}
-				else if (stringFormat.Alignment == StringAlignment.Far)
-				{
-					rectangleF3.X = rectangleF.Right - (float)image2.Size.Width - sizeF.Width;
-				}
-				else if (stringFormat.Alignment == StringAlignment.Near)
-				{
-					rectangleF3.X = rectangleF.X;
-				}
-				ImageAttributes imageAttributes = new ImageAttributes();
-				if (imageTranspColor != Color.Empty)
-				{
-					imageAttributes.SetColorKey(imageTranspColor, imageTranspColor, ColorAdjustType.Default);
-				}
-				DrawImage(image2, Rectangle.Round(rectangleF3), 0, 0, image2.Width, image2.Height, GraphicsUnit.Pixel, imageAttributes);
-				if (commonElements.ProcessModeRegions)
-				{
-					GraphicsPath graphicsPath2 = new GraphicsPath();
-					graphicsPath2.AddRectangle(rectangleF3);
-					graphicsPath2.Transform(base.Transform);
-					string empty6 = string.Empty;
-					string empty7 = string.Empty;
-					empty6 = label.ImageHref;
-					empty7 = label.ImageMapAreaAttributes;
-					commonElements.HotRegionsList.AddHotRegion(this, graphicsPath2, relativePath: false, string.Empty, empty6, empty7, label, ChartElementType.AxisLabelImage);
-				}
-			}
-			if (matrix != null)
-			{
-				base.Transform = matrix;
-			}
-		}
-
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="DrawLabelStringRel(Axis, int, LabelMark, Color, string, string, Color, Font, Brush, RectangleF, StringFormat, int, RectangleF, CustomLabel, bool, bool)"/>
-		/// (E1 — see chart-gdi-type-abstraction.md). <c>ITextFormat</c> has no <c>Clone()</c>, so the
-		/// leading clone-and-mutate is replaced by allocating a fresh <see cref="ITextFormat"/> and copying
-		/// its 4 members. The 2 hot-region <see cref="GraphicsPath"/> locals become <see cref="IGraphicsPath"/>,
-		/// transformed via <c>base.GetTransform()</c> (the <see cref="System.Numerics.Matrix3x2"/> equivalent
-		/// of the still-concrete <c>base.Transform</c> property) instead of <c>GraphicsPath.Transform(Matrix)</c>.
-		/// <c>DrawSecondRowLabelMark</c>/the save-restore <c>matrix</c> local stay concrete <see cref="Matrix"/> —
-		/// they only round-trip through <c>base.Transform</c>, never touch font/brush/format.
-		/// </summary>
+		/// <summary>Only remaining form of the original concrete <c>DrawLabelStringRel(Axis, ..., Font, Brush, ...)</c> — both real callers (<c>Label.cs</c>) already bridge to this interface-typed overload; the concrete original had no callers left and was removed (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal void DrawLabelStringRel(Axis axis, int labelRowIndex, LabelMark labelMark, Color markColor, string text, string image, Color imageTranspColor, IChartFont font, IBrush brush, RectangleF position, ITextFormat format, int angle, RectangleF boundaryRect, CustomLabel label, bool truncatedLeft, bool truncatedRight)
 		{
 			ITextFormat stringFormat = resourceFactory.CreateTextFormat();
@@ -2547,33 +2057,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		internal GraphicsPath GetPolygonCirclePath(RectangleF position, int polygonSectorsNumber)
-		{
-			PointF pointF = new PointF(position.X + position.Width / 2f, position.Y);
-			PointF point = new PointF(position.X + position.Width / 2f, position.Y + position.Height / 2f);
-			float num = 0f;
-			GraphicsPath graphicsPath = new GraphicsPath();
-			PointF pt = PointF.Empty;
-			float num2 = 0f;
-			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
-			for (num2 = 0f; num2 < 360f; num2 += num)
-			{
-				PointF[] array = new PointF[1]
-				{
-					pointF
-				};
-				Matrix3x2.Identity.RotateAt(num2, point).TransformPoints(array);
-				if (!pt.IsEmpty)
-				{
-					graphicsPath.AddLine(pt, array[0]);
-				}
-				pt = array[0];
-			}
-			graphicsPath.CloseAllFigures();
-			return graphicsPath;
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetPolygonCirclePath"/> (E1 — see chart-gdi-type-abstraction.md). Its path is fully self-contained (built and returned, never handed to a GDI+-typed callee), so it converts without rippling into any other signature.</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetPolygonCirclePath</c> — its 2 real callers (both in <c>Axis.cs</c>) migrated to this interface-typed sibling; the concrete original had no callers left and was removed (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal IGraphicsPath GetPolygonCirclePathResource(RectangleF position, int polygonSectorsNumber)
 		{
 			PointF pointF = new PointF(position.X + position.Width / 2f, position.Y);
@@ -2600,83 +2084,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return graphicsPath;
 		}
 
-		internal void DrawCircleAbs(Pen pen, Brush brush, RectangleF position, int polygonSectorsNumber, bool circle3D)
-		{
-			bool flag = circle3D && brush != null;
-			if (polygonSectorsNumber <= 2 && !flag)
-			{
-				if (brush != null)
-				{
-					FillEllipse(brush, position);
-				}
-				if (pen != null)
-				{
-					DrawEllipse(pen, position);
-				}
-				return;
-			}
-			PointF pointF = new PointF(position.X + position.Width / 2f, position.Y);
-			PointF pointF2 = new PointF(position.X + position.Width / 2f, position.Y + position.Height / 2f);
-			float num = 0f;
-			GraphicsPath graphicsPath = new GraphicsPath();
-			PointF pointF3 = PointF.Empty;
-			float num2 = 0f;
-			SmoothingMode smoothingMode = base.SmoothingMode;
-			if (flag)
-			{
-				base.SmoothingMode = SmoothingMode.None;
-			}
-			num = ((polygonSectorsNumber > 2) ? (360f / (float)polygonSectorsNumber) : 1f);
-			for (num2 = 0f; num2 < 360f; num2 += num)
-			{
-				PointF[] array = new PointF[1]
-				{
-					pointF
-				};
-				Matrix3x2.Identity.RotateAt(num2, pointF2).TransformPoints(array);
-				if (!pointF3.IsEmpty)
-				{
-					graphicsPath.AddLine(pointF3, array[0]);
-					if (flag)
-					{
-						graphicsPath.AddLine(array[0], pointF2);
-						graphicsPath.AddLine(pointF2, pointF3);
-						FillPath(GetSector3DBrush(brush, num2, num), graphicsPath);
-						graphicsPath.Reset();
-					}
-				}
-				pointF3 = array[0];
-			}
-			graphicsPath.CloseAllFigures();
-			if (!pointF3.IsEmpty && flag)
-			{
-				graphicsPath.AddLine(pointF3, pointF);
-				graphicsPath.AddLine(pointF, pointF2);
-				graphicsPath.AddLine(pointF2, pointF3);
-				FillPath(GetSector3DBrush(brush, num2, num), graphicsPath);
-				graphicsPath.Reset();
-			}
-			if (flag)
-			{
-				base.SmoothingMode = smoothingMode;
-			}
-			if (brush != null && !circle3D)
-			{
-				FillPath(brush, graphicsPath);
-			}
-			if (pen != null)
-			{
-				DrawPath(pen, graphicsPath);
-			}
-		}
-
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="DrawCircleAbs(Pen, Brush, RectangleF, int, bool)"/>
-		/// (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md). Its
-		/// <c>graphicsPath</c> local is fully self-contained (built and consumed only within this method,
-		/// never handed to an outside caller), so it converts to <see cref="IGraphicsPath"/> without
-		/// rippling into any other method's signature — unlike <c>DrawPathAbs</c>'s public path parameter.
-		/// </summary>
+		/// <summary>Only remaining form of the original concrete <c>DrawCircleAbs(Pen, Brush, ...)</c> — every real caller (Axis.cs, PointAndFigureChart.cs, this file's own <c>FillRectangle*</c> helpers) already passes <see cref="IPen"/>/<see cref="IBrush"/>; the concrete overload had no callers left and was removed (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal void DrawCircleAbs(IPen pen, IBrush brush, RectangleF position, int polygonSectorsNumber, bool circle3D)
 		{
 			bool flag = circle3D && brush != null;
@@ -2748,40 +2156,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			graphicsPath.Dispose();
 		}
 
-		internal Brush GetSector3DBrush(Brush brush, float curentSector, float sectorSize)
-		{
-			Color beginColor = Color.Gray;
-			if (brush is HatchBrush)
-			{
-				beginColor = ((HatchBrush)brush).BackgroundColor;
-			}
-			else if (brush is LinearGradientBrush)
-			{
-				beginColor = ((LinearGradientBrush)brush).LinearColors[0];
-			}
-			else if (brush is PathGradientBrush)
-			{
-				beginColor = ((PathGradientBrush)brush).CenterColor;
-			}
-			else if (brush is SolidBrush)
-			{
-				beginColor = ((SolidBrush)brush).Color;
-			}
-			curentSector -= sectorSize / 2f;
-			if (sectorSize == 72f && curentSector == 180f)
-			{
-				curentSector *= 0.8f;
-			}
-			if (curentSector > 180f)
-			{
-				curentSector = 360f - curentSector;
-			}
-			curentSector /= 180f;
-			beginColor = GetBrightGradientColor(beginColor, curentSector);
-			return new SolidBrush(beginColor);
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetSector3DBrush(Brush, float, float)"/> (Milestone B2 — coexists until callers migrate; see chart-gdi-type-abstraction.md).</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetSector3DBrush(Brush, ...)</c> — its only 2 callers lived inside <c>DrawCircleAbs(Pen, Brush, ...)</c>, itself removed as dead code; this interface-typed sibling's own 2 callers (inside <c>DrawCircleAbs(IPen, IBrush, ...)</c>) are the only ones left (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal IBrush GetSector3DBrush(IBrush brush, float curentSector, float sectorSize)
 		{
 			Color beginColor = Color.Gray;
@@ -3147,25 +2522,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			pathPen.Dispose();
 		}
 
-		internal Brush CreateBrush(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor)
-		{
-			Brush result = new SolidBrush(backColor);
-			if (backImage.Length > 0 && backImageMode != ChartImageWrapMode.Unscaled && backImageMode != ChartImageWrapMode.Scaled)
-			{
-				result = GetTextureBrush(backImage, backImageTranspColor, backImageMode, backColor);
-			}
-			else if (backHatchStyle != 0)
-			{
-				result = GetHatchBrush(backHatchStyle, backColor, backGradientEndColor);
-			}
-			else if (backGradientType != 0)
-			{
-				result = GetGradientBrush(rect, backColor, backGradientEndColor, backGradientType);
-			}
-			return result;
-		}
-
-		/// <summary>Interface-typed sibling of <see cref="CreateBrush"/> for callers that no longer allocate concrete GDI+ resources (E1).</summary>
+		/// <summary>Only remaining form of the original concrete <c>CreateBrush</c> — it had no callers left (chart-gdi-type-abstraction.md's E1 residual pass), which in turn meant <c>GetHatchBrush</c>/<c>GetTextureBrush</c>/<c>GetGradientBrush</c>'s concrete overloads (each only called from here) and <c>GetPieGradientBrush</c>'s concrete overload (independently dead) had no callers left either — all 5 removed together.</summary>
 		internal IBrush CreateBrushResource(RectangleF rect, Color backColor, ChartHatchStyle backHatchStyle, string backImage, ChartImageWrapMode backImageMode, Color backImageTranspColor, ChartImageAlign backImageAlign, GradientType backGradientType, Color backGradientEndColor)
 		{
 			IBrush result = resourceFactory.CreateSolidBrush(backColor);
@@ -3236,28 +2593,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return empty;
 		}
 
-		internal GraphicsPath CreateRoundedRectPath(RectangleF rect, float[] cornerRadius)
-		{
-			GraphicsPath graphicsPath = new GraphicsPath();
-			graphicsPath.AddLine(rect.X + cornerRadius[0], rect.Y, rect.Right - cornerRadius[1], rect.Y);
-			graphicsPath.AddArc(rect.Right - 2f * cornerRadius[1], rect.Y, 2f * cornerRadius[1], 2f * cornerRadius[2], 270f, 90f);
-			graphicsPath.AddLine(rect.Right, rect.Y + cornerRadius[2], rect.Right, rect.Bottom - cornerRadius[3]);
-			graphicsPath.AddArc(rect.Right - 2f * cornerRadius[4], rect.Bottom - 2f * cornerRadius[3], 2f * cornerRadius[4], 2f * cornerRadius[3], 0f, 90f);
-			graphicsPath.AddLine(rect.Right - cornerRadius[4], rect.Bottom, rect.X + cornerRadius[5], rect.Bottom);
-			graphicsPath.AddArc(rect.X, rect.Bottom - 2f * cornerRadius[6], 2f * cornerRadius[5], 2f * cornerRadius[6], 90f, 90f);
-			graphicsPath.AddLine(rect.X, rect.Bottom - cornerRadius[6], rect.X, rect.Y + cornerRadius[7]);
-			graphicsPath.AddArc(rect.X, rect.Y, 2f * cornerRadius[0], 2f * cornerRadius[7], 180f, 90f);
-			return graphicsPath;
-		}
-
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="CreateRoundedRectPath"/> (Milestone B2 — coexists
-		/// until callers migrate; see chart-gdi-type-abstraction.md). Named distinctly rather than
-		/// overloaded, since both versions take the same <c>(RectangleF, float[])</c> parameters and only
-		/// differ by return type. Feeds the interface-typed <c>DrawPathAbs(IGraphicsPath, ...)</c> overload
-		/// from callers (e.g. <c>Borders3D/SunkenBorder.cs</c>) that don't also need the result as a
-		/// concrete <see cref="GraphicsPath"/> for <see cref="System.Drawing.Region"/> clip composition.
-		/// </summary>
+		/// <summary>Only remaining form of the original concrete <c>CreateRoundedRectPath</c> — its real callers (<c>Borders3D/EmbossBorder.cs</c>/<c>SunkenBorder.cs</c>) already migrated to this interface-typed sibling; the concrete original had no callers left and was removed (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		internal IGraphicsPath CreateRoundedRectPathResource(RectangleF rect, float[] cornerRadius)
 		{
 			IGraphicsPath graphicsPath = resourceFactory.CreatePath();
@@ -3910,30 +3246,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return Color.FromArgb(beginColor.A, (int)num, (int)num2, (int)num3);
 		}
 
-		private GraphicsPath GetLabelBackgroundGraphicsPath(RectangleF backPosition, int rotationAngle)
-		{
-			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
-			PointF point = new PointF(rect.X + rect.Width / 2f, rect.Y + rect.Height / 2f);
-			myMatrix = base.GetTransform().RotateAt(rotationAngle, point);
-			GraphicsPath graphicsPath = new GraphicsPath();
-			graphicsPath.AddRectangle(rect);
-			graphicsPath.Transform(myMatrix.ToGdiMatrix());
-			return graphicsPath;
-		}
-
-		public bool CanLabelFitInSlice(GraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle)
-		{
-			if (sliceGraphicsPath == null)
-			{
-				return false;
-			}
-			using (GraphicsPath path = GetLabelBackgroundGraphicsPath(labelRelativeRect, labelRotationAngle))
-			{
-				return sliceGraphicsPath.IsSuperSetOf(path, Graphics);
-			}
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="GetLabelBackgroundGraphicsPath"/> (E1 — see chart-gdi-type-abstraction.md). Self-contained (built and consumed only within this method), so it converts without rippling into any other signature.</summary>
+		/// <summary>Only remaining form of the original concrete <c>GetLabelBackgroundGraphicsPath</c> — its one caller (the now-removed concrete <c>CanLabelFitInSlice(GraphicsPath, ...)</c>) is gone (chart-gdi-type-abstraction.md's E1 residual pass).</summary>
 		private IGraphicsPath GetLabelBackgroundGraphicsPathResource(RectangleF backPosition, int rotationAngle)
 		{
 			RectangleF rect = Round(GetAbsoluteRectangle(backPosition));
@@ -3946,10 +3259,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		/// <summary>
-		/// Interface-typed counterpart of <see cref="CanLabelFitInSlice(GraphicsPath, RectangleF, int)"/>
-		/// (E1 — see chart-gdi-type-abstraction.md, <c>SunburstChart</c>'s label-fitting residual). The
-		/// original's <c>Region.IsSuperSetOf</c> (union-then-<c>Region.Equals(Region, Graphics)</c>, a
-		/// GDI+-only raster comparison) is replaced by an equivalent, backend-agnostic set identity:
+		/// Only remaining form of the original concrete <c>CanLabelFitInSlice(GraphicsPath, ...)</c> — its
+		/// caller (<c>SunburstChart</c>'s label-fitting chain) already migrated here, and the concrete
+		/// original was removed (chart-gdi-type-abstraction.md's E1 residual pass). The original's
+		/// <c>Region.IsSuperSetOf</c> (union-then-<c>Region.Equals(Region, Graphics)</c>, a GDI+-only
+		/// raster comparison) is replaced by an equivalent, backend-agnostic set identity:
 		/// <c>sliceRegion ⊇ labelPath</c> iff <c>labelPath - sliceRegion</c> is empty, which
 		/// <see cref="IClipRegion.Complement"/> computes directly (updates the region to "the portion of
 		/// the given path that does not intersect it" — exactly <c>path - region</c>).

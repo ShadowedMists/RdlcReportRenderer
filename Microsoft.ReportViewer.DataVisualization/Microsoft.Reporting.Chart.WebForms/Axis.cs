@@ -1450,9 +1450,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, bridgedTitleFormat, num, GetTextOrientation());
 				if (base.Common.ProcessModeRegions)
 				{
-					using GraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
-					using IGraphicsPath tranformedTextRectPathResource = graph.ResourceFactory.CreatePath(tranformedTextRectPath.PathPoints, tranformedTextRectPath.PathTypes);
-					base.Common.HotRegionsList.AddHotRegion(tranformedTextRectPathResource, relativePath: false, graph, ChartElementType.AxisTitle, this);
+					using IGraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
+					base.Common.HotRegionsList.AddHotRegion(tranformedTextRectPath, relativePath: false, graph, ChartElementType.AxisTitle, this);
 				}
 			}
 		}
