@@ -460,7 +460,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		protected override GraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
+		protected override IGraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
 		{
 			if (pointLoopIndex != 2)
 			{
@@ -474,7 +474,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				DrawLabels3D(area, graph, area.Common, pointEx, positionZ, depth);
 			}
 			DrawLabels3D(area, graph, area.Common, dataPoint3D, positionZ, depth);
-			return new GraphicsPath();
+			return graph.ResourceFactory.CreatePath();
 		}
 
 		protected override void GetTopSurfaceVisibility(ChartArea area, DataPoint3D firstPoint, DataPoint3D secondPoint, bool upSideDown, float positionZ, float depth, Matrix3D matrix, ref SurfaceNames visibleSurfaces)

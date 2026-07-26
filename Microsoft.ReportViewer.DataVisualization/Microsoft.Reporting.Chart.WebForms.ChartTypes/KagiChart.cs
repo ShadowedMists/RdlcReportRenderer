@@ -351,9 +351,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return array;
 		}
 
-		protected override GraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
+		protected override IGraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
 		{
-			GraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? new GraphicsPath() : null;
+			IGraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? graph.ResourceFactory.CreatePath() : null;
 			if (centerPointIndex == int.MaxValue)
 			{
 				centerPointIndex = GetCenterPointIndex(points);
@@ -432,7 +432,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					dataPoint3D5.dataPoint = dataPoint3D.dataPoint;
 				}
 			}
-			GraphicsPath[] array = new GraphicsPath[3];
+			IGraphicsPath[] array = new IGraphicsPath[3];
 			for (int i = 0; i < 2; i++)
 			{
 				DataPoint3D firstPoint = dataPoint3D2;
@@ -455,8 +455,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				if (lineSegmentType == LineSegmentType.First || dataPoint3D5 == null)
 				{
-					array[i] = new GraphicsPath();
-					array[i] = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, firstPoint, secondPoint, points, pointIndex, 0f, operationType, lineSegmentType, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+					array[i] = graph.ResourceFactory.CreatePath();
+					array[i] = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, firstPoint, secondPoint, points, pointIndex, 0f, operationType, lineSegmentType, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 				}
 				else
 				{
@@ -464,13 +464,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						backColor = ((currentKagiDirection == -1) ? kagiUpColor : color);
 					}
-					array[i] = new GraphicsPath();
-					array[i] = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, firstPoint, dataPoint3D5, points, pointIndex, 0f, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+					array[i] = graph.ResourceFactory.CreatePath();
+					array[i] = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, firstPoint, dataPoint3D5, points, pointIndex, 0f, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 					graph.frontLinePen = null;
 					currentKagiDirection = ((currentKagiDirection != 1) ? 1 : (-1));
 					backColor = ((!flag) ? ((currentKagiDirection == -1) ? kagiUpColor : color) : ((currentKagiDirection == 1) ? kagiUpColor : color));
-					array[2] = new GraphicsPath();
-					array[2] = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D5, secondPoint, points, pointIndex, 0f, operationType, lineSegmentType, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+					array[2] = graph.ResourceFactory.CreatePath();
+					array[2] = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D5, secondPoint, points, pointIndex, 0f, operationType, lineSegmentType, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 					if (!flag)
 					{
 						backColor = ((currentKagiDirection == 1) ? kagiUpColor : color);

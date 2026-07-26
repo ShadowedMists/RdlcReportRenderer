@@ -655,7 +655,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						int neighborPointIndex = num3;
 						DataPoint3D dataPoint3D2 = ChartGraphics3D.FindPointByIndex(dataPointDrawingOrder, item2.index - 1, multiSeries ? item2 : null, ref neighborPointIndex);
-						GraphicsPath graphicsPath = null;
+						IGraphicsPath graphicsPath = null;
 						double yValue = GetYValue(common, area, series3, item2.dataPoint, item2.index - 1, 0);
 						double yValue2 = GetYValue(common, area, series3, dataPoint3D2.dataPoint, dataPoint3D2.index - 1, 0);
 						double yValue3 = item2.indexedSeries ? ((double)item2.index) : item2.dataPoint.XValue;
@@ -706,7 +706,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		{
 		}
 
-		protected virtual GraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
+		protected virtual IGraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
 		{
 			if (centerPointIndex == int.MaxValue)
 			{
@@ -734,7 +734,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				borderStyle = ChartDashStyle.Solid;
 			}
-			return graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D, points, pointIndex, tension, operationType, LineSegmentType.Single, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+			return graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D, points, pointIndex, tension, operationType, LineSegmentType.Single, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 		}
 
 		protected int GetCenterPointIndex(ArrayList points)
@@ -755,7 +755,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return 1;
 		}
 
-		protected bool ClipTopPoints(GraphicsPath resultPath, ref DataPoint3D firstPoint, ref DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening)
+		protected bool ClipTopPoints(IGraphicsPath resultPath, ref DataPoint3D firstPoint, ref DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening)
 		{
 			area.IterationCounter++;
 			if (area.IterationCounter > 20)
@@ -903,7 +903,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				for (int i = 0; i < 3; i++)
 				{
-					GraphicsPath graphicsPath = null;
+					IGraphicsPath graphicsPath = null;
 					if ((i == 0 && !reversed) || (i == 2 && reversed))
 					{
 						if (dataPoint3D2 == null)
@@ -944,7 +944,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return false;
 		}
 
-		protected bool ClipBottomPoints(GraphicsPath resultPath, ref DataPoint3D firstPoint, ref DataPoint3D secondPoint, ref PointF thirdPoint, ref PointF fourthPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening)
+		protected bool ClipBottomPoints(IGraphicsPath resultPath, ref DataPoint3D firstPoint, ref DataPoint3D secondPoint, ref PointF thirdPoint, ref PointF fourthPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening)
 		{
 			area.IterationCounter++;
 			if (area.IterationCounter > 20)
@@ -1071,7 +1071,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				for (int i = 0; i < 3; i++)
 				{
-					GraphicsPath graphicsPath = null;
+					IGraphicsPath graphicsPath = null;
 					if ((i == 0 && !reversed) || (i == 2 && reversed))
 					{
 						if (dataPoint3D2 == null)
@@ -1177,7 +1177,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return false;
 		}
 
-		protected virtual GraphicsPath Draw3DSurface(DataPoint3D firstPoint, DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment, bool clipOnTop, bool clipOnBottom)
+		protected virtual IGraphicsPath Draw3DSurface(DataPoint3D firstPoint, DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment, bool clipOnTop, bool clipOnBottom)
 		{
 			return null;
 		}

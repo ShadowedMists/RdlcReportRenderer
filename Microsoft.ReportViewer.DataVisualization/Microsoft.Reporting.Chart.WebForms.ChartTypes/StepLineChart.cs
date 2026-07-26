@@ -62,9 +62,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		protected override GraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
+		protected override IGraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
 		{
-			GraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? new GraphicsPath() : null;
+			IGraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? graph.ResourceFactory.CreatePath() : null;
 			if (centerPointIndex == int.MaxValue)
 			{
 				centerPointIndex = GetCenterPointIndex(points);
@@ -103,24 +103,24 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				flag = false;
 			}
-			GraphicsPath graphicsPath2;
-			GraphicsPath graphicsPath3;
+			IGraphicsPath graphicsPath2;
+			IGraphicsPath graphicsPath3;
 			if (flag)
 			{
 				dataPoint3D4.dataPoint = dataPoint3D.dataPoint;
-				graphicsPath2 = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D4, points, pointIndex, 0f, operationType, LineSegmentType.First, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+				graphicsPath2 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D4, points, pointIndex, 0f, operationType, LineSegmentType.First, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 				graph.frontLinePen = null;
 				dataPoint3D4.dataPoint = dataPoint3D2.dataPoint;
-				graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D4, dataPoint3D, points, pointIndex, 0f, operationType, LineSegmentType.Last, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+				graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D4, dataPoint3D, points, pointIndex, 0f, operationType, LineSegmentType.Last, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 				graph.frontLinePen = null;
 			}
 			else
 			{
 				dataPoint3D4.dataPoint = dataPoint3D2.dataPoint;
-				graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D4, dataPoint3D, points, pointIndex, 0f, operationType, LineSegmentType.Last, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+				graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D4, dataPoint3D, points, pointIndex, 0f, operationType, LineSegmentType.Last, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 				graph.frontLinePen = null;
 				dataPoint3D4.dataPoint = dataPoint3D.dataPoint;
-				graphicsPath2 = graph.Draw3DSurface(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D4, points, pointIndex, 0f, operationType, LineSegmentType.First, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+				graphicsPath2 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, SurfaceNames.Top, positionZ, depth, backColor, dataPoint3D3.dataPoint.BorderColor, dataPoint3D3.dataPoint.BorderWidth, borderStyle, dataPoint3D2, dataPoint3D4, points, pointIndex, 0f, operationType, LineSegmentType.First, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 				graph.frontLinePen = null;
 			}
 			if (graphicsPath != null)

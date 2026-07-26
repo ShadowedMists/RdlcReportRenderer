@@ -371,9 +371,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		protected override GraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
+		protected override IGraphicsPath Draw3DSurface(ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment)
 		{
-			GraphicsPath result = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? new GraphicsPath() : null;
+			IGraphicsPath result = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? graph.ResourceFactory.CreatePath() : null;
 			if (centerPointIndex == int.MaxValue)
 			{
 				centerPointIndex = GetCenterPointIndex(points);
@@ -439,9 +439,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return Draw3DSurface(dataPoint3D2, dataPoint3D, reversed, area, graph, matrix, lightStyle, prevDataPointEx, positionZ, depth, points, pointIndex, pointLoopIndex, tension, operationType, LineSegmentType.Single, topDarkening, bottomDarkening, thirdPointPosition, fourthPointPosition, clippedSegment, clipOnTop: true, clipOnBottom: true);
 		}
 
-		protected override GraphicsPath Draw3DSurface(DataPoint3D firstPoint, DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment, bool clipOnTop, bool clipOnBottom)
+		protected override IGraphicsPath Draw3DSurface(DataPoint3D firstPoint, DataPoint3D secondPoint, bool reversed, ChartArea area, ChartGraphics graph, Matrix3D matrix, LightStyle lightStyle, DataPoint3D prevDataPointEx, float positionZ, float depth, ArrayList points, int pointIndex, int pointLoopIndex, float tension, DrawingOperationTypes operationType, LineSegmentType surfaceSegmentType, float topDarkening, float bottomDarkening, PointF thirdPointPosition, PointF fourthPointPosition, bool clippedSegment, bool clipOnTop, bool clipOnBottom)
 		{
-			GraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? new GraphicsPath() : null;
+			IGraphicsPath graphicsPath = ((operationType & DrawingOperationTypes.CalcElementPath) == DrawingOperationTypes.CalcElementPath) ? graph.ResourceFactory.CreatePath() : null;
 			DataPoint3D dataPoint3D = secondPoint;
 			if (prevDataPointEx.dataPoint.Empty)
 			{
@@ -506,7 +506,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					}
 					for (int i = 0; i <= 1; i++)
 					{
-						GraphicsPath graphicsPath2 = null;
+						IGraphicsPath graphicsPath2 = null;
 						if ((i == 0 && !reversed) || (i == 1 && reversed))
 						{
 							fourthPointY2Value = (float)dataPoint3D2.yPosition;
@@ -625,11 +625,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							color2 = ChartGraphics.GetGradientColor(color, Color.Black, 0.2);
 						}
 					}
-					GraphicsPath graphicsPath3 = null;
+					IGraphicsPath graphicsPath3 = null;
 					switch (surfaceNames)
 					{
 					case SurfaceNames.Top:
-						graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, firstPoint, secondPoint, points, pointIndex, tension, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+						graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, firstPoint, secondPoint, points, pointIndex, tension, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 						break;
 					case SurfaceNames.Bottom:
 					{
@@ -643,7 +643,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						dataPoint3D14.index = secondPoint.index;
 						dataPoint3D14.xPosition = secondPoint.xPosition;
 						dataPoint3D14.yPosition = fourthPoint.Y;
-						graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D13, dataPoint3D14, points, pointIndex, tension, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 1, clipInsideArea: true);
+						graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D13, dataPoint3D14, points, pointIndex, tension, operationType, LineSegmentType.Middle, showPointLines ? true : false, forceThickBorder: false, area.reverseSeriesOrder, multiSeries, 1, clipInsideArea: true);
 						break;
 					}
 					case SurfaceNames.Left:
@@ -656,7 +656,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							DataPoint3D dataPoint3D12 = new DataPoint3D();
 							dataPoint3D12.xPosition = dataPoint3D10.xPosition;
 							dataPoint3D12.yPosition = dataPoint3D10.yPosition;
-							graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D11, dataPoint3D12, points, pointIndex, 0f, operationType, LineSegmentType.Single, forceThinBorder: false, forceThickBorder: true, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+							graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D11, dataPoint3D12, points, pointIndex, 0f, operationType, LineSegmentType.Single, forceThinBorder: false, forceThickBorder: true, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 						}
 						break;
 					case SurfaceNames.Right:
@@ -669,7 +669,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 							DataPoint3D dataPoint3D9 = new DataPoint3D();
 							dataPoint3D9.xPosition = dataPoint3D7.xPosition;
 							dataPoint3D9.yPosition = dataPoint3D7.yPosition;
-							graphicsPath3 = graph.Draw3DSurface(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D8, dataPoint3D9, points, pointIndex, 0f, operationType, LineSegmentType.Single, forceThinBorder: false, forceThickBorder: true, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
+							graphicsPath3 = graph.Draw3DSurfaceResource(area, matrix, lightStyle, surfaceNames, positionZ, depth, backColor, color2, dataPoint3D.dataPoint.BorderWidth, borderStyle, dataPoint3D8, dataPoint3D9, points, pointIndex, 0f, operationType, LineSegmentType.Single, forceThinBorder: false, forceThickBorder: true, area.reverseSeriesOrder, multiSeries, 0, clipInsideArea: true);
 						}
 						break;
 					case SurfaceNames.Back:
@@ -839,7 +839,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		internal GraphicsPath Draw3DSplinePolygon(ChartGraphics graph, ChartArea area, float positionZ, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, DataPoint3D firstPoint, DataPoint3D secondPoint, DataPoint3D thirdPoint, DataPoint3D fourthPoint, ArrayList points, int pointIndex, float tension, DrawingOperationTypes operationType, LineSegmentType lineSegmentType, bool forceThinBorder)
+		internal IGraphicsPath Draw3DSplinePolygon(ChartGraphics graph, ChartArea area, float positionZ, Color backColor, Color borderColor, int borderWidth, ChartDashStyle borderStyle, DataPoint3D firstPoint, DataPoint3D secondPoint, DataPoint3D thirdPoint, DataPoint3D fourthPoint, ArrayList points, int pointIndex, float tension, DrawingOperationTypes operationType, LineSegmentType lineSegmentType, bool forceThinBorder)
 		{
 			if (tension == 0f)
 			{
@@ -848,12 +848,12 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					thinBorders = (SurfaceNames.Left | SurfaceNames.Right);
 				}
-				return graph.Draw3DPolygon(area, area.matrix3D, area.Area3DStyle.Light, SurfaceNames.Front, positionZ, backColor, borderColor, borderWidth, borderStyle, firstPoint, secondPoint, thirdPoint, fourthPoint, points, pointIndex, tension, operationType, lineSegmentType, thinBorders);
+				return graph.Draw3DPolygonResource(area, area.matrix3D, area.Area3DStyle.Light, SurfaceNames.Front, positionZ, backColor, borderColor, borderWidth, borderStyle, firstPoint, secondPoint, thirdPoint, fourthPoint, points, pointIndex, tension, operationType, lineSegmentType, thinBorders);
 			}
 			bool num = (operationType & DrawingOperationTypes.DrawElement) == DrawingOperationTypes.DrawElement;
-			GraphicsPath graphicsPath = new GraphicsPath();
-			GraphicsPath splineFlattenPath = graph.GetSplineFlattenPath(area, area.matrix3D, positionZ, 0f, firstPoint, secondPoint, points, pointIndex, tension, flatten: false, translateCoordinates: true, 0);
-			GraphicsPath splineFlattenPath2 = graph.GetSplineFlattenPath(area, area.matrix3D, positionZ, 0f, thirdPoint, fourthPoint, points, pointIndex, tension, flatten: false, translateCoordinates: true, 1);
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
+			IGraphicsPath splineFlattenPath = graph.GetSplineFlattenPathResource(area, area.matrix3D, positionZ, 0f, firstPoint, secondPoint, points, pointIndex, tension, flatten: false, translateCoordinates: true, 0);
+			IGraphicsPath splineFlattenPath2 = graph.GetSplineFlattenPathResource(area, area.matrix3D, positionZ, 0f, thirdPoint, fourthPoint, points, pointIndex, tension, flatten: false, translateCoordinates: true, 1);
 			graphicsPath.AddPath(splineFlattenPath, connect: true);
 			graphicsPath.AddPath(splineFlattenPath2, connect: true);
 			graphicsPath.CloseAllFigures();
@@ -871,22 +871,22 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				color = ChartGraphics.GetGradientColor(backColor, Color.Black, 0.2);
 			}
-			Pen pen = null;
+			IPen pen = null;
 			if (num)
 			{
 				SmoothingMode smoothingMode = graph.SmoothingMode;
 				graph.SmoothingMode = SmoothingMode.Default;
-				graph.FillPath(new SolidBrush(polygonLight), graphicsPath);
+				graph.FillPath(graph.ResourceFactory.CreateSolidBrush(polygonLight), graphicsPath);
 				graph.SmoothingMode = smoothingMode;
 				if (forceThinBorder)
 				{
-					graph.DrawPath(new Pen(color, 1f), graphicsPath);
+					graph.DrawPath(graph.ResourceFactory.CreatePen(color, 1f), graphicsPath);
 				}
 				else if (polygonLight.A == byte.MaxValue)
 				{
-					graph.DrawPath(new Pen(polygonLight, 1f), graphicsPath);
+					graph.DrawPath(graph.ResourceFactory.CreatePen(polygonLight, 1f), graphicsPath);
 				}
-				pen = new Pen(color, borderWidth);
+				pen = graph.ResourceFactory.CreatePen(color, borderWidth);
 				pen.StartCap = LineCap.Round;
 				pen.EndCap = LineCap.Round;
 				graph.DrawPath(pen, splineFlattenPath);
@@ -894,10 +894,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				switch (lineSegmentType)
 				{
 				case LineSegmentType.First:
-					graph.DrawLine(pen, splineFlattenPath.PathPoints[0], splineFlattenPath2.GetLastPoint());
+					graph.DrawLine(pen, splineFlattenPath.PathPoints[0], splineFlattenPath2.PathPoints[splineFlattenPath2.PathPoints.Length - 1]);
 					break;
 				case LineSegmentType.Last:
-					graph.DrawLine(pen, splineFlattenPath.GetLastPoint(), splineFlattenPath2.PathPoints[0]);
+					graph.DrawLine(pen, splineFlattenPath.PathPoints[splineFlattenPath.PathPoints.Length - 1], splineFlattenPath2.PathPoints[0]);
 					break;
 				}
 			}
