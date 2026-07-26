@@ -2688,7 +2688,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			SizeF sizeF = new SizeF(relativeSize.Width, relativeSize.Height);
 			sizeF.Height += relativeSize.Height / 8f;
 			sizeF.Width += sizeF.Width / (float)labelText.Length;
-			graph.DrawPointLabelStringRel(backPosition: new RectangleF(relativePoint.X - sizeF.Width / 2f, relativePoint.Y - sizeF.Height / 2f - relativeSize.Height / 10f, sizeF.Width, sizeF.Height), common: graph.common, text: labelText, font: point.Font, brush: new SolidBrush(point.FontColor), position: relativePoint, format: stringFormat, angle: 0, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: point.series, point: point, pointIndex: pointIndex);
+			IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
+			ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
+			bridgedFormat.Alignment = stringFormat.Alignment;
+			bridgedFormat.LineAlignment = stringFormat.LineAlignment;
+			bridgedFormat.FormatFlags = stringFormat.FormatFlags;
+			bridgedFormat.Trimming = stringFormat.Trimming;
+			graph.DrawPointLabelStringRel(backPosition: new RectangleF(relativePoint.X - sizeF.Width / 2f, relativePoint.Y - sizeF.Height / 2f - relativeSize.Height / 10f, sizeF.Width, sizeF.Height), common: graph.common, text: labelText, font: bridgedFont, brush: graph.ResourceFactory.CreateSolidBrush(point.FontColor), position: relativePoint, format: bridgedFormat, angle: 0, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: point.series, point: point, pointIndex: pointIndex);
 		}
 
 		private static string GetPointLabel(DataPoint point, bool alwaysIncludeAxisLabel = false)

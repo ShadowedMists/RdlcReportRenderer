@@ -8,19 +8,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
     /// <summary>
     /// Milestone E2 (2026-07-23) — renders real <see cref="Chart"/> object-model scenes (the same
     /// ones <see cref="SampleCharts"/>'s <c>Build*</c> methods feed the GDI+ regression suite)
-    /// end to end through the Skia backend, against committed Skia-rendered baselines. Bypasses
-    /// <see cref="ChartImage.GetImage"/>/<see cref="ChartImage.SaveImage"/> entirely (both hard-downcast
-    /// to <c>GdiRenderSurface</c> — see chart-gdi-type-abstraction.md's E2 notes) by driving
+    /// end to end through the Skia backend, against committed Skia-rendered baselines. Deliberately
+    /// bypasses <see cref="ChartImage.GetImage"/>/<see cref="ChartImage.SaveImage"/> (Milestone F's
+    /// <c>ChartRenderingBackendFactory</c> is what selects Skia for those production entry points —
+    /// see chart-gdi-type-abstraction.md's Milestone F notes) by driving
     /// <c>ChartPicture.Paint(IRenderSurface, bool)</c> directly with a <see cref="SkiaRenderSurface"/>
-    /// after selecting <see cref="RenderingType.Skia"/> on the chart's <c>chartGraph</c>.
+    /// after selecting <see cref="RenderingType.Skia"/> on the chart's <c>chartGraph</c> — this keeps
+    /// every scene here reachable regardless of the platform the test suite actually runs on.
     ///
     /// Originally scoped to 2D scenes only, since the LineChart/AreaChart-family Draw3DSurface/
     /// Draw3DPolygon virtual dispatch chain was still GDI+-typed. Milestone D3-real converted that
-    /// chain to IGraphicsPath, so most 3D scenes now render here too (see the 3D scenes below) —
-    /// only PieChart's 3D label path remains blocked, by the separate, still-open Milestone B1b (see
-    /// chart-gdi-type-abstraction.md). Gradient/hatch-heavy scenes render (E1 covers every brush kind
-    /// for real) but are Skia-vs-its-own-baseline only, not GDI+-vs-Skia parity — text/gradient
-    /// rasterization differs between backends regardless of how faithful the port is.
+    /// chain to IGraphicsPath, and Milestone B1b then closed the one remaining exclusion (PieChart's
+    /// 3D label path) — every 3D scene now renders here too (see the 3D scenes below). Gradient/hatch-
+    /// heavy scenes render (E1 covers every brush kind for real) but are Skia-vs-its-own-baseline only,
+    /// not GDI+-vs-Skia parity — text/gradient rasterization differs between backends regardless of how
+    /// faithful the port is.
     /// </summary>
     [TestClass]
     public class SkiaChartRenderingTests
@@ -218,12 +220,6 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
         // Draw3DSurface/Draw3DPolygon virtual dispatch chain now compiles against IGraphicsPath, so these
         // scenes (previously excluded from E2) render through Skia for the first time. New Skia-only
         // baselines — no GDI+ byte-for-byte parity expected, same as every other scene in this class.
-        //
-        // Pie3DChart/Doughnut3DChart are deliberately NOT added here: PieChart.Draw3DInsideLabels still
-        // calls the concrete DrawPointLabelStringRel(Font,Brush,...) overload, which hits
-        // SkiaChartGraphics.DrawString's intentionally-unreachable stub (Milestone B1b, still open —
-        // see SkiaChartGraphics.cs). That's a pre-existing PieChart label-drawing gap, unrelated to the
-        // Draw3DSurface/Draw3DPolygon family this milestone converted — track it under B1b, not here.
         [TestMethod]
         public void BarChart3DWithLabels_RendersViaSkia_MatchesBaseline() =>
             AssertMatchesBaseline(SampleCharts.BuildBarChart3DWithLabels(), "BarChart3DWithLabels.Skia.png");
@@ -238,5 +234,18 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             // RadarChartWithAxisLabels (see ImageComparer.CompareToBaseline's remarks); this scene's
             // axis titles hit the same edge-pixel drift, just on the Skia backend instead of GDI+.
             AssertMatchesBaseline(SampleCharts.BuildChart3DWithAxisTitles(), "Chart3DWithAxisTitles.Skia.png", maxDiffPixels: 2);
+
+        // Pie3D/Doughnut3D (Milestone B1b, closed): PieChart.Draw3DInsideLabels previously called the
+        // concrete DrawPointLabelStringRel(Font,Brush,...) overload, hitting SkiaChartGraphics.DrawString's
+        // unreachable stub. Bridged to the interface-typed IChartFont/IBrush/ITextFormat overload (same
+        // pattern as this file's other 3 DrawPointLabelStringRel call sites), so these two scenes — the
+        // only ones D3-real had to leave out — now render through Skia too.
+        [TestMethod]
+        public void Pie3DChart_RendersViaSkia_MatchesBaseline() =>
+            AssertMatchesBaseline(SampleCharts.BuildPie3DChart(), "Pie3DChart.Skia.png");
+
+        [TestMethod]
+        public void Doughnut3DChart_RendersViaSkia_MatchesBaseline() =>
+            AssertMatchesBaseline(SampleCharts.BuildDoughnut3DChart(), "Doughnut3DChart.Skia.png");
     }
 }

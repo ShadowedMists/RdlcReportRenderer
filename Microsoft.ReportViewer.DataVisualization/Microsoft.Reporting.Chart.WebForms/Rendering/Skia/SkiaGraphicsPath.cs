@@ -191,8 +191,23 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 			}
 		}
 
-		public void AddArc(float x, float y, float width, float height, float startAngle, float sweepAngle) =>
-			NativePath.AddArc(new SKRect(x, y, x + width, y + height), startAngle, sweepAngle);
+		/// <summary>
+		/// Real correctness fix (Milestone B1b, 2026-07-26) — same class of bug as <see cref="AddLine(PointF, PointF)"/>'s
+		/// fix above. <c>SKPath.AddArc</c> always starts a brand-new contour (an implicit <c>MoveTo</c>), but GDI+'s
+		/// <c>GraphicsPath.AddArc</c> continues the current figure — connecting the last point with a straight line to
+		/// the arc's start — when one is already open (e.g. <c>ChartGraphics3D.FillDoughnutSlice</c>'s
+		/// <c>AddLine(...); AddArc(...); AddLine(...); AddArc(...)</c> chain, which needs one continuous closed boundary
+		/// for the doughnut-hole fill). <c>SKPath.ArcTo(rect, startAngle, sweepAngle, forceMoveTo: false)</c> has exactly
+		/// GDI+'s semantics (falls back to an implicit initial <c>MoveTo</c> only when the path is still empty) —
+		/// <see cref="AddPie(float, float, float, float, float, float)"/> already used this correctly below, just not
+		/// this method. Caught the same way the <c>AddLine</c> bug was: no exception, only visible on eyeballing the
+		/// rendered PNG (self-intersecting "bowtie" fill artifacts inside a 3D doughnut's inner hole boundary).
+		/// </summary>
+		public void AddArc(float x, float y, float width, float height, float startAngle, float sweepAngle)
+		{
+			NativePath.ArcTo(new SKRect(x, y, x + width, y + height), startAngle, sweepAngle, forceMoveTo: false);
+			openFigure = true;
+		}
 
 		public void AddBezier(PointF pt1, PointF pt2, PointF pt3, PointF pt4)
 		{
