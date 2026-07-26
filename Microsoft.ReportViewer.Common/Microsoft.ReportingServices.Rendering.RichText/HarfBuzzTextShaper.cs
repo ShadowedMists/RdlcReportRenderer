@@ -1,0 +1,122 @@
+using System;
+using System.IO;
+using HarfBuzzSharp;
+using SkiaSharp;
+
+namespace Microsoft.ReportingServices.Rendering.RichText
+{
+	/// <summary>
+	/// Prototype "shaping layer" for tasks/pdf-text-shaping-abstraction.md's P4 step 3:
+	/// shapes a run of text with HarfBuzzSharp and translates the result into the same
+	/// <see cref="GlyphData"/>/<see cref="GlyphShapeData"/>/<see cref="ABC"/>/
+	/// <see cref="GOFFSET"/> shapes that <see cref="TextRun.ShapeAndPlace"/>/
+	/// <see cref="TextRun.TextScriptPlace"/> already produce from Win32's
+	/// ScriptShape/ScriptPlace - so a future increment could swap the producer without
+	/// changing what <see cref="LineBreaker"/>/<see cref="TextBox"/> consume.
+	///
+	/// Deliberately NOT wired into <see cref="TextRun"/>/<see cref="FontCache"/> yet -
+	/// this is an exploratory prototype (per the "explore the depth of a feature, keep it
+	/// if it works, discard it if not" approach) proving the translation itself is
+	/// feasible before touching the much larger, riskier production call graph (61
+	/// <c>Win32DCSafeHandle</c> call sites across `TextRun`/`LineBreaker`/`TextBox`/
+	/// `TextLine`, per this doc's step-3 scoping note).
+	///
+	/// Scope, honestly: covers plain LTR, non-ligated-cluster-reordering text only -
+	/// the "realistic majority case" this doc's phased plan calls out (Latin/Cyrillic/
+	/// Greek/numbers/punctuation). What's NOT attempted here:
+	/// - <see cref="SCRIPT_VISATTR"/> is left zeroed. This codebase never reads its bits
+	///   itself (grepped: every reference just passes the array opaquely to further
+	///   Win32 calls this prototype doesn't call), so zeroing is safe for this
+	///   prototype's own contract, but a real port feeding these into actual Uniscribe
+	///   calls (e.g. via a mixed old/new pipeline) would need real cluster-start/
+	///   diacritic/RTL flags.
+	/// - Per-character cluster mapping assumes HarfBuzz cluster indices are
+	///   non-decreasing glyph-to-glyph (true for LTR text with no glyph reordering;
+	///   false for RTL and some complex-script ligature/reordering cases).
+	/// - No fallback-font-on-missing-glyph logic (mirrors <see cref="FontCache.GetFallbackFont"/>
+	///   /<see cref="TextRun.ShapeAndPlace"/>'s .notdef retry loop) - a missing glyph
+	///   here just shapes as .notdef (codepoint 0), it does not retry with a fallback font.
+	/// - No bidi reordering, no line-break/soft-break flag production (<see cref="SCRIPT_LOGATTR"/>
+	///   is not touched by this class at all - that's <see cref="LineBreaker"/>'s
+	///   ScriptBreak-derived data, a separate concern from shaping).
+	/// </summary>
+	internal static class HarfBuzzTextShaper
+	{
+		internal static GlyphData Shape(string text, SkiaCachedFont font)
+		{
+			if (font == null)
+			{
+				throw new ArgumentNullException(nameof(font));
+			}
+			if (string.IsNullOrEmpty(text))
+			{
+				GlyphShapeData emptyShapeData = new GlyphShapeData(0, 0);
+				return new GlyphData(emptyShapeData);
+			}
+
+			int unitsPerEm = font.Typeface.UnitsPerEm;
+			float unitsToPixels = font.Font.Size / unitsPerEm;
+
+			using Blob blob = OpenTypefaceBlob(font.Typeface);
+			using Face hbFace = new Face(blob, 0);
+			using HarfBuzzSharp.Font hbFont = new HarfBuzzSharp.Font(hbFace);
+			hbFont.SetScale(unitsPerEm, unitsPerEm);
+
+			using HarfBuzzSharp.Buffer buffer = new HarfBuzzSharp.Buffer();
+			buffer.AddUtf16(text);
+			buffer.GuessSegmentProperties();
+			hbFont.Shape(buffer);
+
+			GlyphInfo[] infos = buffer.GlyphInfos;
+			GlyphPosition[] positions = buffer.GlyphPositions;
+			int glyphCount = infos.Length;
+
+			GlyphShapeData glyphShapeData = new GlyphShapeData(Math.Max(glyphCount, 1), text.Length)
+			{
+				GlyphCount = glyphCount
+			};
+
+			for (int g = 0; g < glyphCount; g++)
+			{
+				glyphShapeData.Glyphs[g] = unchecked((short)infos[g].Codepoint);
+
+				int clusterStart = (int)infos[g].Cluster;
+				int clusterEnd = (g + 1 < glyphCount) ? (int)infos[g + 1].Cluster : text.Length;
+				for (int c = clusterStart; c < clusterEnd && c < text.Length; c++)
+				{
+					glyphShapeData.Clusters[c] = (short)g;
+				}
+			}
+			glyphShapeData.TrimToGlyphCount();
+
+			GlyphData glyphData = new GlyphData(glyphShapeData);
+			int totalAdvance = 0;
+			for (int g = 0; g < glyphCount; g++)
+			{
+				int advance = (int)MathF.Round(positions[g].XAdvance * unitsToPixels);
+				glyphData.RawAdvances[g] = advance;
+				glyphData.RawGOffsets[g] = new GOFFSET
+				{
+					du = (int)MathF.Round(positions[g].XOffset * unitsToPixels),
+					dv = (int)MathF.Round(positions[g].YOffset * unitsToPixels)
+				};
+				totalAdvance += advance;
+			}
+			glyphData.ABC = new ABC
+			{
+				abcA = 0,
+				abcB = (uint)Math.Max(totalAdvance, 0),
+				abcC = 0
+			};
+
+			return glyphData;
+		}
+
+		private static Blob OpenTypefaceBlob(SKTypeface typeface)
+		{
+			using SKStreamAsset stream = typeface.OpenStream(out _);
+			using SKData data = SKData.Create(stream);
+			return Blob.FromStream(new MemoryStream(data.ToArray()));
+		}
+	}
+}
