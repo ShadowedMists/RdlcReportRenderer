@@ -5,6 +5,7 @@ This folder contains documentation for ReportViewerCore. Most of it is internal 
 ## Documents
 
 - [usage-guide.md](usage-guide.md) — **start here if you're integrating this library into your own app.** How to load a report and render it to HTML, Excel, or PDF, with sample code.
+- [coding-standards.md](coding-standards.md) — coding guidelines, design conventions, testing philosophy, and lessons learned from the Chart/Gauge migration — **start here if you're contributing code.**
 - [rendering-abstractions.md](rendering-abstractions.md) — explains the renderer interfaces, platform-specific implementations, design patterns, and integration points
 - [architecture-map.md](architecture-map.md) — outlines the current end-to-end render flow from report processing to output generation
 - [platform-support.md](platform-support.md) — summarizes current Windows, Linux, and macOS support and the remaining gaps
