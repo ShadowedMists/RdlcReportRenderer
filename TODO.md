@@ -14,7 +14,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (no Skia backend — not started, low priority) | HIGH |
 | 🔵 **LOW** | PDF: cross-platform rendering | ✅ COMPLETE — see `docs/platform-support.md`'s "PDF (RDL engine)" section | LOW |
 | 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | ✅ DONE except 2 Map-engine sites, deliberately deferred with the rest of the Map engine; see `tasks/webrequest-httpclient-migration.md` | LOW |
-| 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Not started; see `tasks/xmlvalidatingreader-migration.md` | MEDIUM |
+| 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | ✅ DONE (2026-07-27); see `tasks/xmlvalidatingreader-migration.md` | LOW |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred; see `docs/decisions.md`'s Map engine entry | HIGH |
 | 🔵 **LOW** | Remaining CS0649 dead-field warnings (~54) | 📋 Each needs its own judgment call; see `tasks/remaining-warning-cleanup.md` | LOW |
 | 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 📋 NOT STARTED; see `tasks/word-renderer-cross-platform.md` | LOW |
