@@ -2366,13 +2366,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Cross-platform counterpart to <see cref="WriteEmbeddedFont"/>'s Win32
 		/// FontPackage.Generate call: reads the SKTypeface's own font-file bytes directly
-		/// (no HDC/HFONT needed) and writes them as-is via the existing WriteFontBuffer
-		/// helper. Honest gap: unlike the Win32 path, this does not subset the font to
-		/// only the glyphs actually used (<see cref="EmbeddedFont.GetGlyphIdArray"/> is
-		/// unused here) - it embeds the whole font file, which is correct but produces a
-		/// larger PDF than a real subset would. Real subsetting would need to parse and
-		/// rewrite the sfnt tables (glyf/loca/hmtx/etc.) - a follow-up increment, not
-		/// attempted here.
+		/// (no HDC/HFONT needed). <see cref="TrueTypeGlyphSubsetter"/> then reduces those
+		/// bytes to only the glyphs actually used (<see cref="EmbeddedFont.GetGlyphIdArray"/>)
+		/// when the font is a TrueType-outline (glyf/loca) font it can safely rewrite; for
+		/// CFF-flavored/collection fonts outside that scope, the whole font file is embedded
+		/// unchanged, same as before this increment.
 		/// </summary>
 		private void WriteSkiaEmbeddedFont(EmbeddedFont embeddedFont)
 		{
@@ -2382,6 +2380,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				using SKStreamAsset stream = pdfFont.SkiaTypeface.OpenStream(out _);
 				using SKData data = SKData.Create(stream);
 				byte[] buffer = data.ToArray();
+				if (TrueTypeGlyphSubsetter.TrySubset(buffer, embeddedFont.GetGlyphIdArray(), out byte[] subsetBuffer))
+				{
+					buffer = subsetBuffer;
+				}
 				WriteFontBuffer(embeddedFont.ObjectId, buffer);
 				foreach (PDFFont font in embeddedFont.PDFFonts)
 				{
