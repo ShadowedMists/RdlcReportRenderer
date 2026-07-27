@@ -96,5 +96,39 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
 
             Assert.AreEqual(glyphData.GlyphScriptShapeData.GlyphCount, glyphData.RawGOffsets.Length);
         }
+
+        [TestMethod]
+        public void PlainLatinText_ReportsNoMissingGlyph()
+        {
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+
+            HarfBuzzTextShaper.Shape("Hello", font, out int missingGlyphCodepoint);
+
+            Assert.AreEqual(-1, missingGlyphCodepoint, "Arial covers plain Latin text - nothing should be reported missing");
+        }
+
+        [TestMethod]
+        public void CjkCharacterAgainstLatinOnlyFont_ReportsItsCodepointAsMissing()
+        {
+            // Arial has no CJK coverage, so shaping a Han character against it should shape
+            // to .notdef (glyph id 0) and report that character's codepoint back - the
+            // signal TextRun.ShapeAndPlaceCrossPlatform uses to trigger a fallback-font retry.
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+            const string text = "A中B";
+
+            HarfBuzzTextShaper.Shape(text, font, out int missingGlyphCodepoint);
+
+            Assert.AreEqual((int)'中', missingGlyphCodepoint);
+        }
+
+        [TestMethod]
+        public void WhitespaceShapingToNotdef_IsNotReportedAsMissing()
+        {
+            using var font = new SkiaCachedFont("Arial", 16f, bold: false, italic: false);
+
+            HarfBuzzTextShaper.Shape("Hello World", font, out int missingGlyphCodepoint);
+
+            Assert.AreEqual(-1, missingGlyphCodepoint, "A missing glyph is only meaningful for non-whitespace/control characters");
+        }
     }
 }

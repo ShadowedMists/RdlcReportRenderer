@@ -203,6 +203,54 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void ShapeAndPlaceCrossPlatform_MissingGlyph_RetriesWithFallbackFontAndFlagsIt()
+        {
+            FontCache fontCache = new FontCache(96f);
+            // Arial has no CJK coverage - this should trigger GetFallbackFontCrossPlatform's
+            // SKFontManager.MatchCharacter retry rather than silently drawing .notdef boxes.
+            TextRun run = new TextRun("中文", new FakeTextRunProps());
+
+            run.ShapeAndPlaceCrossPlatform(fontCache);
+
+            Assert.IsTrue(run.FallbackFont, "A font missing glyphs for the run's text should trigger the fallback-font retry");
+            Assert.IsNotNull(run.CachedFont.SkiaFont);
+            Assert.IsTrue(run.GetWidth(Win32DCSafeHandle.Zero, fontCache) > 0, "The re-shaped run against the fallback font should still produce real advances");
+        }
+
+        [TestMethod]
+        public void ShapeAndPlaceCrossPlatform_PlainLatinText_DoesNotTriggerFallback()
+        {
+            FontCache fontCache = new FontCache(96f);
+            TextRun run = new TextRun("Hello", new FakeTextRunProps());
+
+            run.ShapeAndPlaceCrossPlatform(fontCache);
+
+            Assert.IsFalse(run.FallbackFont, "Arial covers plain Latin text - no fallback retry should happen");
+        }
+
+        [TestMethod]
+        public void GetFallbackFontCrossPlatform_MissingCjkGlyph_ResolvesAFontThatCoversIt()
+        {
+            FontCache fontCache = new FontCache(96f);
+
+            CachedFont fallback = fontCache.GetFallbackFontCrossPlatform(new FakeTextRunProps(), (int)'中');
+
+            Assert.IsNotNull(fallback, "This dev box has CJK system fonts installed (e.g. simsun.ttc/msyh.ttc) - SKFontManager should resolve one");
+            Assert.IsNotNull(fallback.SkiaFont);
+        }
+
+        [TestMethod]
+        public void GetFallbackFontCrossPlatform_ReusesCachedResultForSameCodepoint()
+        {
+            FontCache fontCache = new FontCache(96f);
+
+            CachedFont first = fontCache.GetFallbackFontCrossPlatform(new FakeTextRunProps(), (int)'中');
+            CachedFont second = fontCache.GetFallbackFontCrossPlatform(new FakeTextRunProps(), (int)'中');
+
+            Assert.AreSame(first, second, "Repeated fallback lookups for the same missing codepoint/style should reuse the cached CachedFont, not re-resolve via SKFontManager each time");
+        }
+
+        [TestMethod]
         public void ScriptLayoutCrossPlatform_ComputesUnderlineHeightsWithoutAnHdc()
         {
             FontCache fontCache = new FontCache(96f);

@@ -522,11 +522,20 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		/// <see cref="HarfBuzzTextShaper"/>/<see cref="SkiaCachedFont"/> instead of
 		/// Win32's ScriptShape/ScriptPlace, so no HDC/HFONT/GDI+ <see cref="System.Drawing.Font"/>
 		/// is ever constructed. Per tasks/pdf-text-shaping-abstraction.md's documented
-		/// scope: no fallback-font-on-missing-glyph retry, no vertical-font support,
-		/// charset is not used to select a Skia typeface (SkiaSharp resolves by family
-		/// name/style only) - <see cref="GetCharset"/> is deliberately not called here,
-		/// since <see cref="ScriptProperties"/>'s static constructor itself P/Invokes
-		/// Win32.ScriptGetProperties and would crash on first touch on this platform.
+		/// scope: no vertical-font support, charset is not used to select a Skia typeface
+		/// (SkiaSharp resolves by family name/style only) - <see cref="GetCharset"/> is
+		/// deliberately not called here, since <see cref="ScriptProperties"/>'s static
+		/// constructor itself P/Invokes Win32.ScriptGetProperties and would crash on first
+		/// touch on this platform.
+		///
+		/// Fallback-font retry (mirrors <see cref="ShapeAndPlace"/>'s own .notdef retry via
+		/// <see cref="FontCache.GetFallbackFont"/>): if the resolved font is missing a real
+		/// glyph for some character (reported by <see cref="HarfBuzzTextShaper.Shape(string, SkiaCachedFont, out int)"/>),
+		/// re-shape once against whatever system font <see cref="FontCache.GetFallbackFontCrossPlatform"/>
+		/// resolves for that missing codepoint - e.g. a CJK character requested against a
+		/// Latin-only font family. Only retried once per run (not once per still-missing
+		/// glyph after the retry) - matches the Win32 path's own single-retry shape, and
+		/// keeps this bounded even if the fallback font itself is incomplete.
 		/// </summary>
 		internal void ShapeAndPlaceCrossPlatform(FontCache fontCache)
 		{
@@ -535,7 +544,17 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				m_cachedFont = fontCache.GetFontCrossPlatform(m_textRunProps);
 				FallbackFont = false;
 			}
-			m_cachedGlyphData = HarfBuzzTextShaper.Shape(m_text, m_cachedFont.SkiaFont);
+			m_cachedGlyphData = HarfBuzzTextShaper.Shape(m_text, m_cachedFont.SkiaFont, out int missingGlyphCodepoint);
+			if (!FallbackFont && missingGlyphCodepoint >= 0)
+			{
+				CachedFont fallbackFont = fontCache.GetFallbackFontCrossPlatform(m_textRunProps, missingGlyphCodepoint);
+				if (fallbackFont != null)
+				{
+					m_cachedFont = fallbackFont;
+					FallbackFont = true;
+					m_cachedGlyphData = HarfBuzzTextShaper.Shape(m_text, m_cachedFont.SkiaFont);
+				}
+			}
 			m_cachedGlyphData.NeedGlyphPlaceData = false;
 			m_cachedGlyphData.ScaleFactor = m_cachedFont.ScaleFactor;
 		}

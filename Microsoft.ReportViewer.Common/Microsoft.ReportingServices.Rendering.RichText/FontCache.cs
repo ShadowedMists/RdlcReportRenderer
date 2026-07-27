@@ -1,4 +1,5 @@
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -161,6 +162,44 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			CachedFont cachedFont = new CachedFont();
 			m_fontDict.Add(key, cachedFont);
 			cachedFont.SkiaFont = new SkiaCachedFont(fontFamily ?? textRunProps.FontFamily, fontSize, textRunProps.Bold, textRunProps.Italic);
+			return cachedFont;
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="GetFallbackFont(ITextRunProps, byte, int, bool)"/>:
+		/// called by <see cref="TextRun.ShapeAndPlaceCrossPlatform"/> when
+		/// <see cref="HarfBuzzTextShaper.Shape(string, SkiaCachedFont, out int)"/> reports a
+		/// missing glyph. Unlike the Win32 path (a fixed 28-entry script-id-to-family table
+		/// built from real Uniscribe script ids), <see cref="UnicodeTextItemizer"/>'s
+		/// itemized runs never populate a real Uniscribe script id (<c>eScript</c> is always
+		/// 0 - see <see cref="UnicodeTextItemizer.BuildItem"/>), so that table has nothing to
+		/// key off of here, and its font names (e.g. "Mangal", "Latha") are Windows-specific
+		/// and not guaranteed to exist cross-platform anyway. Instead this asks SkiaSharp's
+		/// own font manager which installed system font actually covers the missing
+		/// codepoint (<see cref="SKFontManager.MatchCharacter(string, SKFontStyle, string[], int)"/>) -
+		/// a more portable equivalent that works the same way on Windows/Linux/macOS,
+		/// whatever fonts are actually installed there.
+		/// </summary>
+		internal CachedFont GetFallbackFontCrossPlatform(ITextRunProps textRunProps, int missingGlyphCodepoint)
+		{
+			string runKey = GetRunKey(textRunProps, out string fontFamily, out float fontSize);
+			string key = GetKey(runKey, charset: 1, verticalFont: false, "fallback:" + missingGlyphCodepoint, null);
+			if (m_fontDict.TryGetValue(key, out CachedFont value))
+			{
+				return value;
+			}
+			SKFontStyle style = new SKFontStyle(
+				textRunProps.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal,
+				SKFontStyleWidth.Normal,
+				textRunProps.Italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
+			SKTypeface fallbackTypeface = SKFontManager.Default.MatchCharacter(fontFamily ?? textRunProps.FontFamily, style, null, missingGlyphCodepoint);
+			if (fallbackTypeface == null)
+			{
+				return null;
+			}
+			CachedFont cachedFont = new CachedFont();
+			m_fontDict.Add(key, cachedFont);
+			cachedFont.SkiaFont = new SkiaCachedFont(fallbackTypeface, fontSize);
 			return cachedFont;
 		}
 

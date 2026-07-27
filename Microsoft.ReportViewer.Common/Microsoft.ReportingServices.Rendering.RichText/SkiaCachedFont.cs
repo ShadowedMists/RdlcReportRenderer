@@ -76,6 +76,21 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			m_shaper = new SKShaper(m_typeface);
 		}
 
+		/// <summary>
+		/// Wraps an already-resolved <see cref="SKTypeface"/> directly, rather than
+		/// re-resolving one by family name - used by <see cref="FontCache.GetFallbackFontCrossPlatform"/>,
+		/// whose whole job is to hand back the specific system typeface
+		/// <see cref="SkiaSharp.SKFontManager.MatchCharacter(string, SKFontStyle, string[], int)"/>
+		/// already picked as covering a missing glyph, not a family name to re-resolve.
+		/// </summary>
+		internal SkiaCachedFont(SKTypeface typeface, float fontSizePixels)
+		{
+			m_typeface = typeface ?? SKTypeface.Default;
+			m_font = new SKFont(m_typeface, fontSizePixels);
+			m_metrics = m_font.Metrics;
+			m_shaper = new SKShaper(m_typeface);
+		}
+
 		/// <summary>Mirrors <see cref="CachedFont.GetHeight"/> (GDI TEXTMETRIC's tmHeight): ascent + descent + internal leading.</summary>
 		internal int GetHeight()
 		{

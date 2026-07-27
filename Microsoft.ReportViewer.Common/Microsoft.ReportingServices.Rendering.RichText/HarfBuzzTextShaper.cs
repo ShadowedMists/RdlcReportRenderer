@@ -33,9 +33,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// - Per-character cluster mapping assumes <see cref="SKShaper.Result.Clusters"/>
 	///   indices are non-decreasing glyph-to-glyph (true for LTR text with no glyph
 	///   reordering; false for RTL and some complex-script ligature/reordering cases).
-	/// - No fallback-font-on-missing-glyph logic (mirrors <see cref="FontCache.GetFallbackFont"/>
-	///   /<see cref="TextRun.ShapeAndPlace"/>'s .notdef retry loop) - a missing glyph
-	///   here just shapes as .notdef (codepoint 0), it does not retry with a fallback font.
+	/// - Fallback-font retry itself lives in <see cref="TextRun.ShapeAndPlaceCrossPlatform"/>/
+	///   <see cref="FontCache.GetFallbackFontCrossPlatform"/> (mirroring <see cref="FontCache.GetFallbackFont"/>
+	///   /<see cref="TextRun.ShapeAndPlace"/>'s .notdef retry loop) - this class's own job is
+	///   only to report the first missing glyph's source codepoint via the
+	///   <see cref="Shape(string, SkiaCachedFont, out int)"/> overload, not to retry itself.
 	/// - No bidi reordering, no line-break/soft-break flag production (<see cref="SCRIPT_LOGATTR"/>
 	///   is not touched by this class at all - that's <see cref="LineBreaker"/>'s
 	///   ScriptBreak-derived data, a separate concern from shaping).
@@ -49,6 +51,21 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	{
 		internal static GlyphData Shape(string text, SkiaCachedFont font)
 		{
+			return Shape(text, font, out _);
+		}
+
+		/// <summary>
+		/// Same as <see cref="Shape(string, SkiaCachedFont)"/>, but also reports the source
+		/// Unicode codepoint of the first character whose glyph came back as glyph id 0
+		/// (HarfBuzz's ".notdef" - the font has no real glyph for it) via
+		/// <paramref name="firstMissingGlyphCodepoint"/> (-1 if every character shaped to a
+		/// real glyph). Whitespace/control characters are never reported even if their glyph
+		/// id happens to be 0, since a missing glyph there isn't visually meaningful and
+		/// shouldn't trigger a fallback-font retry on its own.
+		/// </summary>
+		internal static GlyphData Shape(string text, SkiaCachedFont font, out int firstMissingGlyphCodepoint)
+		{
+			firstMissingGlyphCodepoint = -1;
 			if (font == null)
 			{
 				throw new ArgumentNullException(nameof(font));
@@ -78,6 +95,13 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				for (int c = clusterStart; c < clusterEnd && c < text.Length; c++)
 				{
 					glyphShapeData.Clusters[c] = (short)g;
+				}
+
+				if (firstMissingGlyphCodepoint < 0 && shaped.Codepoints[g] == 0 && clusterStart < text.Length && !char.IsWhiteSpace(text[clusterStart]) && !char.IsControl(text[clusterStart]))
+				{
+					firstMissingGlyphCodepoint = (char.IsHighSurrogate(text[clusterStart]) && clusterStart + 1 < text.Length && char.IsLowSurrogate(text[clusterStart + 1]))
+						? char.ConvertToUtf32(text[clusterStart], text[clusterStart + 1])
+						: text[clusterStart];
 				}
 			}
 			glyphShapeData.TrimToGlyphCount();

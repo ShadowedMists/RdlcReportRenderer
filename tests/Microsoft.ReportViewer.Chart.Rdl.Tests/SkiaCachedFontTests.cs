@@ -1,5 +1,6 @@
 using Microsoft.ReportingServices.Rendering.RichText;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SkiaSharp;
 
 namespace Microsoft.ReportViewer.Chart.Rdl.Tests
 {
@@ -69,6 +70,27 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             int scaledHeight = font.GetHeight();
 
             Assert.IsTrue(scaledHeight < unscaledHeight);
+        }
+
+        [TestMethod]
+        public void FromResolvedTypeface_ProducesUsableMetrics()
+        {
+            // FontCache.GetFallbackFontCrossPlatform wraps an already-resolved SKTypeface
+            // (from SKFontManager.MatchCharacter) via this constructor, rather than
+            // re-resolving one by family name.
+            using SKTypeface typeface = SKTypeface.FromFamilyName("Arial");
+            using var font = new SkiaCachedFont(typeface, 16f);
+
+            Assert.IsTrue(font.GetHeight() > 0);
+            Assert.AreSame(typeface, font.Typeface);
+        }
+
+        [TestMethod]
+        public void FromResolvedTypeface_NullTypeface_FallsBackWithoutThrowing()
+        {
+            using var font = new SkiaCachedFont((SKTypeface)null, 16f);
+
+            Assert.IsTrue(font.GetHeight() > 0);
         }
     }
 }
