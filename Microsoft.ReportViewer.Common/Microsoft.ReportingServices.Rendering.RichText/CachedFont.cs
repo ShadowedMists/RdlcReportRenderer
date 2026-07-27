@@ -19,6 +19,27 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		private short? m_defaultGlyph;
 
+		private SkiaCachedFont m_skiaFont;
+
+		/// <summary>
+		/// Set instead of <see cref="Hfont"/>/<see cref="Font"/> when this <see cref="CachedFont"/>
+		/// was created on a non-Windows platform (<see cref="FontCache.CreateFont"/>) - metrics
+		/// come from SkiaSharp instead of a real HFONT+TEXTMETRIC, so <see cref="GetHeight"/>/
+		/// <see cref="GetAscent"/>/<see cref="GetDescent"/>/<see cref="GetLeading"/> read this
+		/// instead of calling <see cref="Win32.GetTextMetrics"/>.
+		/// </summary>
+		internal SkiaCachedFont SkiaFont
+		{
+			get
+			{
+				return m_skiaFont;
+			}
+			set
+			{
+				m_skiaFont = value;
+			}
+		}
+
 		internal Win32ObjectSafeHandle Hfont
 		{
 			get
@@ -80,6 +101,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				m_font.Dispose();
 				m_font = null;
 			}
+			if (disposing && m_skiaFont != null)
+			{
+				m_skiaFont.Dispose();
+				m_skiaFont = null;
+			}
 			if (m_hfont != null && !m_hfont.IsInvalid)
 			{
 				m_hfont.Close();
@@ -120,6 +146,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal int GetHeight(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
+			if (m_skiaFont != null)
+			{
+				return m_skiaFont.GetHeight();
+			}
 			if (!m_initialized)
 			{
 				Initialize(hdc, fontCache);
@@ -129,6 +159,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal int GetAscent(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
+			if (m_skiaFont != null)
+			{
+				return m_skiaFont.GetAscent();
+			}
 			if (!m_initialized)
 			{
 				Initialize(hdc, fontCache);
@@ -138,6 +172,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal int GetDescent(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
+			if (m_skiaFont != null)
+			{
+				return m_skiaFont.GetDescent();
+			}
 			if (!m_initialized)
 			{
 				Initialize(hdc, fontCache);
@@ -147,6 +185,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal int GetLeading(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
+			if (m_skiaFont != null)
+			{
+				return m_skiaFont.GetLeading();
+			}
 			if (!m_initialized)
 			{
 				Initialize(hdc, fontCache);

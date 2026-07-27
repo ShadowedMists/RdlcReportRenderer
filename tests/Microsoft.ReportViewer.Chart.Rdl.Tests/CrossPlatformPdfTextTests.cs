@@ -19,6 +19,15 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
     /// this exact code on every platform/CI run - possible because this test assembly is
     /// signed with the same key as Microsoft.ReportViewer.Common (see AssemblyInfo.cs's
     /// InternalsVisibleTo grant), not a new trust boundary.
+    ///
+    /// Also covers PDFWriter.DrawTextRunCrossPlatform/ProcessDrawStringFontCrossPlatform -
+    /// the real TextBox.RenderParagraph pipeline's PDF glyph-drawing hook, as opposed to
+    /// the DrawWrappedText/DrawWrappedRichText MVP bypass above. DrawTextRunCrossPlatform
+    /// bypasses the OperatingSystem.IsWindows() check inside DrawTextRun the same way
+    /// TextRun.ShapeAndPlaceCrossPlatform/Paragraph.ScriptItemizeCrossPlatform already do,
+    /// since DrawTextRun's real dispatch (via ITextBoxProps.DrawTextRun -&gt;
+    /// WriterBase.DrawTextRun) always resolves to the Windows branch when actually running
+    /// on this Windows dev box/CI runner, regardless of how the TextRun was shaped.
     /// </summary>
     [TestClass]
     public class CrossPlatformPdfTextTests
@@ -154,6 +163,75 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
                 searchStart = found + 1;
             }
             Assert.AreEqual(2, fillRectangleCount, "Expected one fill rectangle each for the underlined and struck-through fragments, none for the normal fragment");
+        }
+
+        [TestMethod]
+        public void DrawTextRunCrossPlatform_Base14_EmitsTjOperatorWithGivenText()
+        {
+            string pdf = RenderContentStream(writer =>
+            {
+                FontCache fontCache = new FontCache(96f);
+                TextRun run = new TextRun("Hello", new TestTextRunProps());
+                run.ShapeAndPlaceCrossPlatform(fontCache);
+
+                writer.DrawTextRunCrossPlatform(Win32DCSafeHandle.Zero, fontCache, textBox: null, run, System.TypeCode.String,
+                    RPLFormat.TextAlignments.Left, RPLFormat.VerticalAlignments.Top, RPLFormat.WritingModes.Horizontal,
+                    RPLFormat.Directions.LTR, new Point(0, 20), new System.Drawing.Rectangle(0, 0, 200, 50), lHeight: 24, baselineY: 20);
+            });
+
+            StringAssert.Contains(pdf, "BT ");
+            StringAssert.Contains(pdf, "(Hello) Tj");
+        }
+
+        [TestMethod]
+        public void DrawTextRunCrossPlatform_EmbeddedSubsetFont_EmitsCompositeGlyphHexTjOperator()
+        {
+            string pdf = RenderContentStream(writer =>
+            {
+                writer.EmbedFonts = FontEmbedding.Subset;
+                FontCache fontCache = new FontCache(96f);
+                TextRun run = new TextRun("Hello", new TestTextRunProps());
+                run.ShapeAndPlaceCrossPlatform(fontCache);
+
+                writer.DrawTextRunCrossPlatform(Win32DCSafeHandle.Zero, fontCache, textBox: null, run, System.TypeCode.String,
+                    RPLFormat.TextAlignments.Left, RPLFormat.VerticalAlignments.Top, RPLFormat.WritingModes.Horizontal,
+                    RPLFormat.Directions.LTR, new Point(0, 20), new System.Drawing.Rectangle(0, 0, 200, 50), lHeight: 24, baselineY: 20);
+            });
+
+            StringAssert.Contains(pdf, "BT ");
+            // Composite (Identity-H) fonts write glyph ids as a hex string, not the literal
+            // text, so no "(Hello) Tj" - just a "<...> Tj" with real HarfBuzz/Skia glyph ids.
+            Assert.IsFalse(pdf.Contains("(Hello) Tj"), "A composite/embedded font should not draw via the literal-text Tj branch");
+            StringAssert.Matches(pdf, new System.Text.RegularExpressions.Regex("<[0-9A-Fa-f]+> Tj"));
+        }
+
+        [TestMethod]
+        public void DrawTextRunCrossPlatform_ReusesSameFontIdAcrossRunsWithSameStyle()
+        {
+            string pdf = RenderContentStream(writer =>
+            {
+                FontCache fontCache = new FontCache(96f);
+                TextRun run1 = new TextRun("First", new TestTextRunProps());
+                TextRun run2 = new TextRun("Second", new TestTextRunProps());
+                run1.ShapeAndPlaceCrossPlatform(fontCache);
+                run2.ShapeAndPlaceCrossPlatform(fontCache);
+
+                writer.DrawTextRunCrossPlatform(Win32DCSafeHandle.Zero, fontCache, textBox: null, run1, System.TypeCode.String,
+                    RPLFormat.TextAlignments.Left, RPLFormat.VerticalAlignments.Top, RPLFormat.WritingModes.Horizontal,
+                    RPLFormat.Directions.LTR, new Point(0, 20), new System.Drawing.Rectangle(0, 0, 200, 50), lHeight: 24, baselineY: 20);
+                writer.DrawTextRunCrossPlatform(Win32DCSafeHandle.Zero, fontCache, textBox: null, run2, System.TypeCode.String,
+                    RPLFormat.TextAlignments.Left, RPLFormat.VerticalAlignments.Top, RPLFormat.WritingModes.Horizontal,
+                    RPLFormat.Directions.LTR, new Point(0, 40), new System.Drawing.Rectangle(0, 0, 200, 50), lHeight: 24, baselineY: 40);
+            });
+
+            StringAssert.Contains(pdf, "(First) Tj");
+            StringAssert.Contains(pdf, "(Second) Tj");
+            // Both runs share the same (family, bold, italic) style, so PDFWriter's font
+            // cache (GetOrCreateBase14Font, keyed by style) should hand back the same
+            // PDFFont/FontId for both - not allocate a second embedded font object.
+            System.Text.RegularExpressions.MatchCollection fontIds = System.Text.RegularExpressions.Regex.Matches(pdf, @"/F(\d+) \d");
+            Assert.IsTrue(fontIds.Count >= 2, "Expected at least two /F<id> <size> Tf operators, one per run");
+            Assert.AreEqual(fontIds[0].Groups[1].Value, fontIds[1].Groups[1].Value, "Both runs use identical style and should reuse the same cached font id");
         }
     }
 }

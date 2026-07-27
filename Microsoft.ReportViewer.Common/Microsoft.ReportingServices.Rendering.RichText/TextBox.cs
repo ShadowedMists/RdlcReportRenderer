@@ -193,9 +193,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				layoutRectangle2 = new Rectangle(ConvertToPixels(layoutRectangle.X, dpiX), ConvertToPixels(layoutRectangle.Y, dpiX), ConvertToPixels(layoutRectangle.Width, dpiX), ConvertToPixels(layoutRectangle.Height, dpiX));
 				point = new Point(ConvertToPixels(offset.X, dpiX), ConvertToPixels(offset.Y, dpiX));
 			}
-			uint fMode = Win32.SetTextAlign(hdc, 24u);
-			int iBkMode = Win32.SetBkMode(hdc, 1);
-			Win32ObjectSafeHandle win32ObjectSafeHandle = Win32.SelectObject(hdc, Win32ObjectSafeHandle.Zero);
+			bool isWindows = OperatingSystem.IsWindows();
+			uint fMode = isWindows ? Win32.SetTextAlign(hdc, 24u) : 0u;
+			int iBkMode = isWindows ? Win32.SetBkMode(hdc, 1) : 0;
+			Win32ObjectSafeHandle win32ObjectSafeHandle = isWindows ? Win32.SelectObject(hdc, Win32ObjectSafeHandle.Zero) : Win32ObjectSafeHandle.Zero;
 			try
 			{
 				fontCache.WritingMode = textBox.TextBoxProps.WritingMode;
@@ -207,8 +208,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			}
 			finally
 			{
-				fMode = Win32.SetTextAlign(hdc, fMode);
-				iBkMode = Win32.SetBkMode(hdc, iBkMode);
+				if (isWindows)
+				{
+					fMode = Win32.SetTextAlign(hdc, fMode);
+					iBkMode = Win32.SetBkMode(hdc, iBkMode);
+				}
 				if (!win32ObjectSafeHandle.IsInvalid)
 				{
 					Win32.SelectObject(hdc, win32ObjectSafeHandle).SetHandleAsInvalid();
@@ -371,7 +375,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 							bool flag2 = (flag && k + 1 == count) || (!flag && k == 0);
 							if (width > 0 || flag2)
 							{
-								if (graphics == null)
+								if (graphics == null && OperatingSystem.IsWindows())
 								{
 									graphics = Graphics.FromHdc(hdc.Handle);
 								}
@@ -458,9 +462,15 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 					{
 						color = InvertColor(textBox.TextBoxProps.BackgroundColor);
 					}
-					using (Brush brush = new SolidBrush(color))
+					rectangle = ((!textBox.HorizontalText) ? new Rectangle?(new Rectangle(layoutRectangle.Right - offsetY, layoutRectangle.Y + x + num2, lineHeight, num3 - num2)) : new Rectangle?(new Rectangle(layoutRectangle.X + x + num2, layoutRectangle.Y + offsetY - lineHeight, num3 - num2, lineHeight)));
+					// Highlight background painting needs a real GDI+ Graphics/Brush, which
+					// cannot be constructed at all on non-Windows (see GraphicsBase.cs); on
+					// that platform the highlighted run's text/clip still draws below via
+					// ITextBoxProps.DrawTextRun/DrawClippedTextRun, only the background fill
+					// rectangle itself is a documented gap for now.
+					if (g != null)
 					{
-						rectangle = ((!textBox.HorizontalText) ? new Rectangle?(new Rectangle(layoutRectangle.Right - offsetY, layoutRectangle.Y + x + num2, lineHeight, num3 - num2)) : new Rectangle?(new Rectangle(layoutRectangle.X + x + num2, layoutRectangle.Y + offsetY - lineHeight, num3 - num2, lineHeight)));
+						using Brush brush = new SolidBrush(color);
 						g.FillRectangle(brush, rectangle.Value);
 					}
 					if (run.AllowColorInversion && NeedsColorInversion(color, run.TextRunProperties.Color))

@@ -272,6 +272,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		{
 		}
 
+		/// <summary>
+		/// Whether this writer's RichText.TextBox/LineBreaker orchestration (itemize/shape/
+		/// measure/draw via DrawTextRun above) can run on non-Windows platforms. False by
+		/// default: ImageWriter's GDI+/EMF output still requires a real Win32 HDC end to end.
+		/// PDFWriter overrides this to true once its own DrawTextRun/ProcessDrawStringFont
+		/// no longer need one - see tasks/pdf-text-shaping-abstraction.md.
+		/// </summary>
+		internal virtual bool SupportsCrossPlatformRichTextPipeline => false;
+
 		internal virtual void UnClipTextboxRectangle(Win32DCSafeHandle hdc)
 		{
 		}

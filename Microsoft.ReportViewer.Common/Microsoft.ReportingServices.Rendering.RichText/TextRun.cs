@@ -269,6 +269,10 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		internal int[] GetLogicalWidths(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
 			GlyphData glyphData = GetGlyphData(hdc, fontCache);
+			if (!OperatingSystem.IsWindows())
+			{
+				return GetLogicalWidthsCrossPlatform(glyphData);
+			}
 			int[] array = new int[m_text.Length];
 			int num = Win32.ScriptGetLogicalWidths(ref SCRIPT_ANALYSIS, m_text.Length, glyphData.GlyphScriptShapeData.GlyphCount, glyphData.ScaledAdvances, glyphData.GlyphScriptShapeData.Clusters, glyphData.GlyphScriptShapeData.VisAttrs, array);
 			if (Win32.Failed(num))
@@ -283,6 +287,65 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				}
 			}
 			return array;
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="GetLogicalWidths"/>'s Win32
+		/// ScriptGetLogicalWidths call - converts per-glyph advances back into
+		/// per-character widths using <see cref="HarfBuzzTextShaper"/>'s cluster mapping
+		/// (<see cref="GlyphShapeData.Clusters"/>: character index -&gt; owning glyph
+		/// index) instead of Uniscribe. Backs <see cref="LineBreaker"/>'s character-level
+		/// line-fold path (<c>FindWidthToBreakPosition</c>/<c>FindFoldTextPosition_CharacterTrim</c>),
+		/// hit whenever a line needs to break mid-run rather than at a run boundary.
+		///
+		/// For a simple 1-char-per-glyph cluster (the common case for plain Latin text)
+		/// this returns exactly that glyph's advance. For a multi-character cluster (a
+		/// ligature, or several combining characters shaped into one glyph) the glyph's
+		/// total advance is split evenly across its characters, with any remainder from
+		/// integer division added to the cluster's last character - an approximation,
+		/// not a byte-for-byte port of Uniscribe's own splitting rule, but one that
+		/// preserves the invariant every caller actually needs: summing this array over
+		/// any prefix of the text yields (up to rounding) that prefix's real shaped width.
+		/// Exposed as its own internal method (not just inlined in <see cref="GetLogicalWidths"/>)
+		/// so tests can exercise it directly regardless of host OS, matching this
+		/// codebase's existing convention for platform-gated RichText code.
+		/// </summary>
+		internal int[] GetLogicalWidthsCrossPlatform(GlyphData glyphData)
+		{
+			int[] result = new int[m_text.Length];
+			if (m_text.Length == 0)
+			{
+				return result;
+			}
+			short[] clusters = glyphData.GlyphScriptShapeData.Clusters;
+			int[] advances = glyphData.RawAdvances;
+			int i = 0;
+			while (i < m_text.Length)
+			{
+				short glyphIndex = clusters[i];
+				int clusterEnd = i;
+				while (clusterEnd + 1 < m_text.Length && clusters[clusterEnd + 1] == glyphIndex)
+				{
+					clusterEnd++;
+				}
+				int clusterLength = clusterEnd - i + 1;
+				int glyphAdvance = (glyphIndex >= 0 && glyphIndex < advances.Length) ? advances[glyphIndex] : 0;
+				int perCharWidth = glyphAdvance / clusterLength;
+				for (int c = i; c <= clusterEnd; c++)
+				{
+					result[c] = perCharWidth;
+				}
+				result[clusterEnd] += glyphAdvance - perCharWidth * clusterLength;
+				i = clusterEnd + 1;
+			}
+			if (glyphData.Scaled)
+			{
+				for (int j = 0; j < result.Length; j++)
+				{
+					result[j] = glyphData.Scale(result[j]);
+				}
+			}
+			return result;
 		}
 
 		internal void TerminateAt(int index)
@@ -355,6 +418,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal void ShapeAndPlace(Win32DCSafeHandle hdc, FontCache fontCache)
 		{
+			if (!OperatingSystem.IsWindows())
+			{
+				ShapeAndPlaceCrossPlatform(fontCache);
+				return;
+			}
 			bool verticalFont = false;
 			if (fontCache.AllowVerticalFont)
 			{
@@ -448,6 +516,29 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			m_cachedGlyphData.TrimToGlyphCount();
 			m_cachedGlyphData.ScaleFactor = m_cachedFont.ScaleFactor;
 			TextScriptPlace(hdc, flag, fontCache);
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="ShapeAndPlace"/> - shapes via
+		/// <see cref="HarfBuzzTextShaper"/>/<see cref="SkiaCachedFont"/> instead of
+		/// Win32's ScriptShape/ScriptPlace, so no HDC/HFONT/GDI+ <see cref="System.Drawing.Font"/>
+		/// is ever constructed. Per tasks/pdf-text-shaping-abstraction.md's documented
+		/// scope: no fallback-font-on-missing-glyph retry, no vertical-font support,
+		/// charset is not used to select a Skia typeface (SkiaSharp resolves by family
+		/// name/style only) - <see cref="GetCharset"/> is deliberately not called here,
+		/// since <see cref="ScriptProperties"/>'s static constructor itself P/Invokes
+		/// Win32.ScriptGetProperties and would crash on first touch on this platform.
+		/// </summary>
+		internal void ShapeAndPlaceCrossPlatform(FontCache fontCache)
+		{
+			if (m_cachedFont == null)
+			{
+				m_cachedFont = fontCache.GetFontCrossPlatform(m_textRunProps);
+				FallbackFont = false;
+			}
+			m_cachedGlyphData = HarfBuzzTextShaper.Shape(m_text, m_cachedFont.SkiaFont);
+			m_cachedGlyphData.NeedGlyphPlaceData = false;
+			m_cachedGlyphData.ScaleFactor = m_cachedFont.ScaleFactor;
 		}
 
 		private void TextScriptPlace(Win32DCSafeHandle hdc, bool fontSelected, FontCache fontCache)

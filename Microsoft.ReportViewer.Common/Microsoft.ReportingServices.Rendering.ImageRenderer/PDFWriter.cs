@@ -418,6 +418,24 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal override void DrawTextRun(Win32DCSafeHandle hdc, FontCache fontCache, ReportTextBox textBox, Microsoft.ReportingServices.Rendering.RichText.TextRun run, TypeCode typeCode, RPLFormat.TextAlignments textAlign, RPLFormat.VerticalAlignments verticalAlign, RPLFormat.WritingModes writingMode, RPLFormat.Directions direction, Point position, System.Drawing.Rectangle layoutRectangle, int lHeight, int baselineY)
 		{
+			DrawTextRunCore(hdc, fontCache, textBox, run, typeCode, textAlign, verticalAlign, writingMode, direction, position, layoutRectangle, lHeight, baselineY, System.OperatingSystem.IsWindows());
+		}
+
+		/// <summary>
+		/// Directly-callable cross-platform counterpart to <see cref="DrawTextRun"/>, mirroring
+		/// the TextRun.ShapeAndPlaceCrossPlatform/Paragraph.ScriptItemizeCrossPlatform
+		/// convention: bypasses the OperatingSystem.IsWindows() check so this exact code path
+		/// (font resolution via ProcessDrawStringFontCrossPlatform, not the GDI+ Font/HDC one)
+		/// is directly unit-testable from a Windows dev box/CI runner too, not just when
+		/// actually running on Linux.
+		/// </summary>
+		internal void DrawTextRunCrossPlatform(Win32DCSafeHandle hdc, FontCache fontCache, ReportTextBox textBox, Microsoft.ReportingServices.Rendering.RichText.TextRun run, TypeCode typeCode, RPLFormat.TextAlignments textAlign, RPLFormat.VerticalAlignments verticalAlign, RPLFormat.WritingModes writingMode, RPLFormat.Directions direction, Point position, System.Drawing.Rectangle layoutRectangle, int lHeight, int baselineY)
+		{
+			DrawTextRunCore(hdc, fontCache, textBox, run, typeCode, textAlign, verticalAlign, writingMode, direction, position, layoutRectangle, lHeight, baselineY, useWindowsFontResolution: false);
+		}
+
+		private void DrawTextRunCore(Win32DCSafeHandle hdc, FontCache fontCache, ReportTextBox textBox, Microsoft.ReportingServices.Rendering.RichText.TextRun run, TypeCode typeCode, RPLFormat.TextAlignments textAlign, RPLFormat.VerticalAlignments verticalAlign, RPLFormat.WritingModes writingMode, RPLFormat.Directions direction, Point position, System.Drawing.Rectangle layoutRectangle, int lHeight, int baselineY, bool useWindowsFontResolution)
+		{
 			if (string.IsNullOrEmpty(run.Text))
 			{
 				return;
@@ -426,7 +444,9 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			bool flag = run.TextRunProperties.TextDecoration == RPLFormat.TextDecorations.Underline;
 			bool flag2 = run.TextRunProperties.TextDecoration == RPLFormat.TextDecorations.LineThrough;
 			bool flag3 = run.HasEastAsianChars && writingMode == RPLFormat.WritingModes.Vertical;
-			PDFFont pDFFont = ProcessDrawStringFont(run, typeCode, textAlign, verticalAlign, writingMode, direction);
+			PDFFont pDFFont = useWindowsFontResolution
+				? ProcessDrawStringFont(run, typeCode, textAlign, verticalAlign, writingMode, direction)
+				: ProcessDrawStringFontCrossPlatform(run);
 			PointF pointF;
 			switch (writingMode)
 			{
@@ -1717,6 +1737,29 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				stringBuilder.Append(",Italic");
 			}
 			return stringBuilder.ToString();
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="ProcessDrawStringFont"/>: resolves the
+		/// same (family, bold, italic) style to a PDFFont via the exact
+		/// GetOrCreateEmbeddedFont/GetOrCreateBase14Font helpers <see cref="DrawWrappedText"/>
+		/// already uses, keyed off <see cref="Microsoft.ReportingServices.Rendering.RichText.CachedFont.SkiaFont"/>
+		/// (set by <see cref="FontCache.GetFontCrossPlatform"/>) instead of the GDI+
+		/// <see cref="Font"/>/HDC-bound path below, which is null/unavailable on this
+		/// platform. This is the one Win32-only piece blocking the real
+		/// TextBox.RenderParagraph pipeline (via PDFWriter.DrawTextRun) from running
+		/// cross-platform - everything downstream (WriteText/WriteGlyph) already reads
+		/// glyph ids/advances straight from TextRun.GlyphData and is platform-agnostic.
+		/// </summary>
+		internal PDFFont ProcessDrawStringFontCrossPlatform(Microsoft.ReportingServices.Rendering.RichText.TextRun run)
+		{
+			ITextRunProps textRunProperties = run.TextRunProperties;
+			Microsoft.ReportingServices.Rendering.RichText.SkiaCachedFont skiaFont = run.CachedFont.SkiaFont;
+			if (EmbedFonts == FontEmbedding.Subset)
+			{
+				return GetOrCreateEmbeddedFont(textRunProperties.FontFamily, textRunProperties.Bold, textRunProperties.Italic, skiaFont);
+			}
+			return GetOrCreateBase14Font(textRunProperties.FontFamily, textRunProperties.Bold, textRunProperties.Italic);
 		}
 
 		private PDFFont ProcessDrawStringFont(Microsoft.ReportingServices.Rendering.RichText.TextRun run, TypeCode typeCode, RPLFormat.TextAlignments textAlign, RPLFormat.VerticalAlignments verticalAlign, RPLFormat.WritingModes writingMode, RPLFormat.Directions direction)
@@ -3071,6 +3114,8 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			sb.Append(comment);
 			sb.Append("\r\n");
 		}
+
+		internal override bool SupportsCrossPlatformRichTextPipeline => true;
 
 		internal override void ClipTextboxRectangle(Win32DCSafeHandle hdc, RectangleF textposition)
 		{

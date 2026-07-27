@@ -75,7 +75,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			TextBoxContext context = flowContext.Context;
 			RPLFormat.Directions direction = textBox.TextBoxProps.Direction;
 			List<Paragraph> list = new List<Paragraph>();
-			Win32ObjectSafeHandle win32ObjectSafeHandle = Win32.SelectObject(hdc, Win32ObjectSafeHandle.Zero);
+			Win32ObjectSafeHandle win32ObjectSafeHandle = OperatingSystem.IsWindows() ? Win32.SelectObject(hdc, Win32ObjectSafeHandle.Zero) : Win32ObjectSafeHandle.Zero;
 			SizeF flowContextSize;
 			if (!textBox.VerticalText)
 			{

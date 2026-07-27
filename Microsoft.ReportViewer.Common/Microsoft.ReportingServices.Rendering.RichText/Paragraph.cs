@@ -121,7 +121,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			m_runs = new List<TextRun>(textRunCount);
 		}
 
-		private List<TextRun> ExtractRuns(int startingParaCharIndex, int endingParaCharIndex, SCRIPT_ANALYSIS analysis)
+		private List<TextRun> ExtractRuns(int startingParaCharIndex, int endingParaCharIndex, SCRIPT_ANALYSIS analysis, SCRIPT_LOGATTR[] fullLogAttr = null)
 		{
 			List<TextRun> list = new List<TextRun>();
 			StringBuilder stringBuilder = new StringBuilder();
@@ -156,7 +156,14 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 							textRun.SCRIPT_ANALYSIS = analysis;
 							list.Add(textRun);
 						}
-						AnalyzeForBreakPositions(list, stringBuilder.ToString());
+						if (fullLogAttr != null)
+						{
+							AssignBreakPositions(list, fullLogAttr, startingParaCharIndex, stringBuilder.Length);
+						}
+						else
+						{
+							AnalyzeForBreakPositions(list, stringBuilder.ToString());
+						}
 						return list;
 					}
 					textRun = textRun2.GetSubRun(num3);
@@ -166,7 +173,14 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				}
 				num = num2 + 1;
 			}
-			AnalyzeForBreakPositions(list, stringBuilder.ToString());
+			if (fullLogAttr != null)
+			{
+				AssignBreakPositions(list, fullLogAttr, startingParaCharIndex, stringBuilder.Length);
+			}
+			else
+			{
+				AnalyzeForBreakPositions(list, stringBuilder.ToString());
+			}
 			return list;
 		}
 
@@ -194,8 +208,39 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			}
 		}
 
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="AnalyzeForBreakPositions"/>: assigns
+		/// each run's <see cref="TextRun.ScriptLogAttr"/> slice from a paragraph-wide
+		/// array already produced by <see cref="UnicodeLineBreakAnalyzer"/> (whose
+		/// heuristic, unlike Win32.ScriptBreak, does not need to run per-item - see
+		/// <see cref="ScriptItemizeCrossPlatform"/>), instead of calling Win32.ScriptBreak
+		/// on just this item's text.
+		/// </summary>
+		private static void AssignBreakPositions(List<TextRun> itemRuns, SCRIPT_LOGATTR[] fullLogAttr, int startCharPos, int totalLength)
+		{
+			if (totalLength == 0)
+			{
+				return;
+			}
+			int num = startCharPos;
+			for (int i = 0; i < itemRuns.Count; i++)
+			{
+				TextRun textRun = itemRuns[i];
+				int length = textRun.Text.Length;
+				SCRIPT_LOGATTR[] array = new SCRIPT_LOGATTR[length];
+				Array.Copy(fullLogAttr, num, array, 0, length);
+				textRun.ScriptLogAttr = array;
+				num += length;
+			}
+		}
+
 		internal void ScriptItemize(RPLFormat.Directions direction)
 		{
+			if (!OperatingSystem.IsWindows())
+			{
+				ScriptItemizeCrossPlatform();
+				return;
+			}
 			SCRIPT_ITEM[] array = null;
 			int num = 0;
 			StringBuilder stringBuilder = new StringBuilder();
@@ -286,6 +331,52 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				int iCharPos = list[l].iCharPos;
 				int endingParaCharIndex = list[l + 1].iCharPos - 1;
 				List<TextRun> collection = ExtractRuns(iCharPos, endingParaCharIndex, list[l].analysis);
+				list2.AddRange(collection);
+			}
+			m_runs = list2;
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="ScriptItemize"/>: itemizes via
+		/// <see cref="UnicodeTextItemizer"/> and computes line-break attributes via
+		/// <see cref="UnicodeLineBreakAnalyzer"/> instead of Win32's ScriptItemize/
+		/// ScriptBreak. Deliberately simpler than the Win32 path - no
+		/// <see cref="CanMergeItemizedRuns"/>-style item-merging heuristic (the itemizer
+		/// already merges "Common"-script characters into neighboring runs itself), and
+		/// direction/bidi-level nuance beyond <see cref="UnicodeTextItemizer"/>'s two-level
+		/// model is not attempted (tasks/pdf-text-shaping-abstraction.md's documented
+		/// scope).
+		/// </summary>
+		internal void ScriptItemizeCrossPlatform()
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			string nextTextBlock;
+			while ((nextTextBlock = GetNextTextBlock()) != null)
+			{
+				stringBuilder.Append(nextTextBlock);
+			}
+			string text = stringBuilder.ToString();
+			if (text.Length == 0)
+			{
+				return;
+			}
+			SCRIPT_LOGATTR[] logAttrs = UnicodeLineBreakAnalyzer.Analyze(text);
+			List<TextItem> items = UnicodeTextItemizer.Itemize(text);
+			if (items.Count <= 1)
+			{
+				SCRIPT_ANALYSIS analysis = items.Count == 1 ? items[0].Analysis : default;
+				for (int k = 0; k < m_runs.Count; k++)
+				{
+					m_runs[k].SCRIPT_ANALYSIS = analysis;
+				}
+				AssignBreakPositions(m_runs, logAttrs, 0, text.Length);
+				return;
+			}
+			List<TextRun> list2 = new List<TextRun>();
+			for (int l = 0; l < items.Count; l++)
+			{
+				TextItem item = items[l];
+				List<TextRun> collection = ExtractRuns(item.CharPos, item.CharPos + item.Length - 1, item.Analysis, logAttrs);
 				list2.AddRange(collection);
 			}
 			m_runs = list2;

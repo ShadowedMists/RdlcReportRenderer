@@ -137,6 +137,33 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			return value;
 		}
 
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="GetFont(ITextRunProps, byte, bool)"/>:
+		/// always resolves a <see cref="SkiaCachedFont"/>-backed <see cref="CachedFont"/>,
+		/// regardless of <see cref="OperatingSystem.IsWindows"/> - called directly by
+		/// <see cref="TextRun.ShapeAndPlaceCrossPlatform"/> (itself only reached via
+		/// <see cref="TextRun.ShapeAndPlace"/>'s own platform check) rather than through
+		/// <see cref="GetFont(ITextRunProps, byte, bool)"/>/<see cref="CreateFont"/>'s own
+		/// internal platform check, so it can be exercised directly in tests on any host
+		/// OS (matching this codebase's existing convention for platform-gated RichText
+		/// code, e.g. <see cref="Paragraph.ScriptItemizeCrossPlatform"/>).
+		/// </summary>
+		internal CachedFont GetFontCrossPlatform(ITextRunProps textRunProps)
+		{
+			string fontFamily;
+			float fontSize;
+			string runKey = GetRunKey(textRunProps, out fontFamily, out fontSize);
+			string key = GetKey(runKey, charset: 1, verticalFont: false, null, null);
+			if (m_fontDict.TryGetValue(key, out CachedFont value))
+			{
+				return value;
+			}
+			CachedFont cachedFont = new CachedFont();
+			m_fontDict.Add(key, cachedFont);
+			cachedFont.SkiaFont = new SkiaCachedFont(fontFamily ?? textRunProps.FontFamily, fontSize, textRunProps.Bold, textRunProps.Italic);
+			return cachedFont;
+		}
+
 		internal CachedFont GetFallbackFont(ITextRunProps textRunProps, byte charset, int script, bool verticalFont)
 		{
 			string fontFamily = null;
@@ -177,6 +204,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			m_fontDict.Add(key, cachedFont);
 			bool bold = textRun.Bold;
 			bool italic = textRun.Italic;
+			if (!OperatingSystem.IsWindows())
+			{
+				cachedFont.SkiaFont = new SkiaCachedFont(fontFamily ?? textRun.FontFamily, fontSize, bold, italic);
+				return cachedFont;
+			}
 			bool lineThrough = textRun.TextDecoration == RPLFormat.TextDecorations.LineThrough;
 			cachedFont.Font = CreateGdiPlusFont(fontFamily, textRun.FontSize, ref bold, ref italic, lineThrough, underLine: false);
 			int num = 0;

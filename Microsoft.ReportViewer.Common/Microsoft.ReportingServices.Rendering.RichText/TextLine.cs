@@ -247,26 +247,59 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			{
 				return;
 			}
-			byte[] array = new byte[count];
-			int[] array2 = new int[count];
-			for (int i = 0; i < count; i++)
+			if (!OperatingSystem.IsWindows())
 			{
-				array[i] = (byte)m_logicalRuns[i].ScriptAnalysis.s.uBidiLevel;
+				ScriptLayoutCrossPlatform();
 			}
-			int num = Win32.ScriptLayout(count, array, null, array2);
-			if (Win32.Failed(num))
+			else
 			{
-				Marshal.ThrowExceptionForHR(num);
+				byte[] array = new byte[count];
+				int[] array2 = new int[count];
+				for (int i = 0; i < count; i++)
+				{
+					array[i] = (byte)m_logicalRuns[i].ScriptAnalysis.s.uBidiLevel;
+				}
+				int num = Win32.ScriptLayout(count, array, null, array2);
+				if (Win32.Failed(num))
+				{
+					Marshal.ThrowExceptionForHR(num);
+				}
+				m_visualRuns = new List<TextRun>(count);
+				for (int j = 0; j < count; j++)
+				{
+					m_visualRuns.Add(null);
+				}
+				for (int k = 0; k < count; k++)
+				{
+					m_visualRuns[array2[k]] = m_logicalRuns[k];
+				}
 			}
-			m_visualRuns = new List<TextRun>(count);
-			for (int j = 0; j < count; j++)
-			{
-				m_visualRuns.Add(null);
-			}
-			for (int k = 0; k < count; k++)
-			{
-				m_visualRuns[array2[k]] = m_logicalRuns[k];
-			}
+			ApplyUnderlineHeights(hdc, fontCache, count);
+		}
+
+		/// <summary>
+		/// Cross-platform counterpart to <see cref="ScriptLayout"/>'s Win32.ScriptLayout
+		/// call: reorders <see cref="m_logicalRuns"/> into <see cref="m_visualRuns"/> via
+		/// <see cref="BidiRunReorderer"/>'s run-granularity UAX #9 L2 algorithm instead.
+		/// Exposed as its own internal method (rather than inlined only in
+		/// <see cref="ScriptLayout"/>) so tests can exercise it directly regardless of
+		/// host OS, matching this codebase's existing convention for platform-gated
+		/// RichText code (tasks/pdf-text-shaping-abstraction.md).
+		/// </summary>
+		internal void ScriptLayoutCrossPlatform()
+		{
+			m_visualRuns = new List<TextRun>(m_logicalRuns);
+			BidiRunReorderer.ReorderToVisualOrder(m_visualRuns, (TextRun tr) => tr.ScriptAnalysis.fRTL != 0);
+		}
+
+		/// <summary>
+		/// Shared tail of <see cref="ScriptLayout"/>'s Windows and cross-platform branches:
+		/// once <see cref="m_visualRuns"/> is populated (by either Win32.ScriptLayout or
+		/// <see cref="BidiRunReorderer"/>), compute each underlined run's shared underline
+		/// height across contiguous underlined stretches.
+		/// </summary>
+		internal void ApplyUnderlineHeights(Win32DCSafeHandle hdc, FontCache fontCache, int count)
+		{
 			int num2 = 0;
 			int l = -1;
 			for (int m = 0; m < count; m++)

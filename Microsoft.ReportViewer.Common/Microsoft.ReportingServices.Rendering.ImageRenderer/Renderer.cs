@@ -1095,14 +1095,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		protected virtual void ProcessSimpleTextBox(string value, RectangleF textPosition, ReportTextBox rptTextBox, ReportParagraph reportParagraph, ReportTextRun reportTextRun, PointF offset)
 		{
 			// RichText's LineBreaker/TextBox/FontCache/CachedFont pipeline requires a real
-			// Win32 HDC and GDI+ Font construction at every step (Uniscribe ScriptItemize/
-			// ScriptShape/ScriptPlace, CreateFont, GetTextMetrics, SetTextAlign/SetBkMode),
-			// none of which can run at all on non-Windows platforms - see
-			// tasks/pdf-text-shaping-abstraction.md for the full trace. On non-Windows,
-			// route simple (single-style) text boxes through DrawWrappedText instead, which
-			// bypasses this pipeline entirely; rich (multi-run) text boxes remain a
-			// documented gap for now (ProcessRichTextBox is unchanged).
-			if (!System.OperatingSystem.IsWindows())
+			// Win32 HDC and GDI+ Font construction at every step on Windows (Uniscribe
+			// ScriptItemize/ScriptShape/ScriptPlace, CreateFont, GetTextMetrics,
+			// SetTextAlign/SetBkMode) - see tasks/pdf-text-shaping-abstraction.md for the
+			// full trace. On non-Windows, that same pipeline instead routes through
+			// FontCache.GetFontCrossPlatform/HarfBuzzTextShaper end to end, HDC-free -
+			// writers that support it (PDFWriter.SupportsCrossPlatformRichTextPipeline)
+			// fall through below; other writers (ImageWriter's GDI+/EMF output) still fall
+			// back to DrawWrappedText, which bypasses this pipeline entirely.
+			if (!System.OperatingSystem.IsWindows() && !Writer.SupportsCrossPlatformRichTextPipeline)
 			{
 				RPLFormat.TextAlignments alignment = ResolveTextAlignment(reportParagraph.Alignment, rptTextBox);
 				Writer.DrawWrappedText(textPosition, offset, value, reportTextRun, alignment);
@@ -1140,10 +1141,20 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Writer.CommonGraphics.ExecuteSync(delegate
 			{
 				Win32DCSafeHandle hdc = Win32DCSafeHandle.Zero;
+				bool acquiredHdc = false;
 				try
 				{
-					Writer.GetHdc(m_beginPage, out hdc, out float dpiX);
-					m_beginPage = false;
+					float dpiX;
+					if (System.OperatingSystem.IsWindows())
+					{
+						Writer.GetHdc(m_beginPage, out hdc, out dpiX);
+						m_beginPage = false;
+						acquiredHdc = true;
+					}
+					else
+					{
+						dpiX = Writer.CommonGraphics.DpiX;
+					}
 					FlowContext flowContext = new FlowContext(textPosition.Width, textPosition.Height, wordTrim: true, lineLimit: false);
 					if (richTextBox.VerticalText)
 					{
@@ -1171,14 +1182,17 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 				finally
 				{
-					Writer.ReleaseHdc(release: false);
+					if (acquiredHdc)
+					{
+						Writer.ReleaseHdc(release: false);
+					}
 				}
 			});
 		}
 
 		protected virtual void ProcessRichTextBox(RectangleF textPosition, RPLTextBox textbox, ReportTextBox rptTextBox, PointF offset)
 		{
-			if (!System.OperatingSystem.IsWindows())
+			if (!System.OperatingSystem.IsWindows() && !Writer.SupportsCrossPlatformRichTextPipeline)
 			{
 				var crossPlatformParagraphs = new List<(RPLFormat.TextAlignments Alignment, List<(string Text, Microsoft.ReportingServices.Rendering.RichText.ITextRunProps Style)> Runs)>();
 				RPLParagraph crossPlatformParagraph;
@@ -1267,10 +1281,20 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Writer.CommonGraphics.ExecuteSync(delegate
 			{
 				Win32DCSafeHandle hdc = Win32DCSafeHandle.Zero;
+				bool acquiredHdc = false;
 				try
 				{
-					Writer.GetHdc(m_beginPage, out hdc, out float dpiX);
-					m_beginPage = false;
+					float dpiX;
+					if (System.OperatingSystem.IsWindows())
+					{
+						Writer.GetHdc(m_beginPage, out hdc, out dpiX);
+						m_beginPage = false;
+						acquiredHdc = true;
+					}
+					else
+					{
+						dpiX = Writer.CommonGraphics.DpiX;
+					}
 					FlowContext flowContext = new FlowContext(textPosition.Width, textPosition.Height, wordTrim: true, lineLimit: false);
 					if (richTextBox.VerticalText)
 					{
@@ -1301,7 +1325,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 				finally
 				{
-					Writer.ReleaseHdc(release: false);
+					if (acquiredHdc)
+					{
+						Writer.ReleaseHdc(release: false);
+					}
 				}
 			});
 		}
