@@ -12,14 +12,18 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// Honest scope: this implements the same two flags <see cref="LineBreaker"/> already
 	/// reads from SCRIPT_LOGATTR-shaped data - a break opportunity before this character
 	/// (fSoftBreak) and whether the character is itself whitespace (fWhiteSpace) - using
-	/// simple rules: a break is allowed before any character that follows whitespace, or
-	/// follows a hyphen (mid-word hyphenation break, e.g. "well-known" can wrap after
-	/// "well-"). It does NOT implement the Unicode Line Breaking Algorithm (UAX #14) -
-	/// no East Asian line-breaking classes, no non-breaking-space/glue characters, no
-	/// locale-specific rules, no CJK character-by-character wrapping (every CJK character
-	/// would need its own break opportunity under real UAX #14 rules; this heuristic
-	/// only breaks at whitespace/hyphen boundaries, same limitation as the existing
-	/// approximate word-wrap in CrossPlatformTextLayout.cs's SimpleTextWrapper).
+	/// rules a step closer to UAX #14 than a plain "break after any whitespace" heuristic:
+	/// a break is allowed before any character that follows whitespace (excluding
+	/// no-break/glue spaces - <see cref="IsNoBreakSpace"/>), follows a hyphen or dash
+	/// (mid-word hyphenation break, e.g. "well-known" can wrap after "well-"), or is
+	/// itself part of a run of CJK ideographs/kana/Hangul syllables following another one
+	/// (<see cref="IsWrappableIdeograph"/>) - those scripts permit a break between almost
+	/// every adjacent character pair under UAX #14's ID/H2/H3 classes, unlike Latin-style
+	/// scripts which only break at whitespace/hyphen boundaries. This is still NOT a full
+	/// UAX #14 implementation: no full break-class table (AI/CJ/NS/etc. tailoring), no
+	/// locale-specific rules, no context-sensitive numeric/quote handling. Good enough to
+	/// let CJK text actually wrap without whitespace and to stop breaking after
+	/// non-breaking spaces, which the prior heuristic got wrong.
 	/// </summary>
 	internal static class UnicodeLineBreakAnalyzer
 	{
@@ -28,11 +32,41 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			SCRIPT_LOGATTR[] result = new SCRIPT_LOGATTR[text.Length];
 			for (int i = 0; i < text.Length; i++)
 			{
-				bool isWhiteSpace = char.IsWhiteSpace(text[i]);
-				bool isSoftBreak = i == 0 || char.IsWhiteSpace(text[i - 1]) || text[i - 1] == '-';
+				char c = text[i];
+				bool isWhiteSpace = char.IsWhiteSpace(c) && !IsNoBreakSpace(c);
+				bool isSoftBreak = i == 0
+					|| IsBreakingCharacter(text[i - 1])
+					|| (IsWrappableIdeograph(c) && IsWrappableIdeograph(text[i - 1]));
 				result[i] = SCRIPT_LOGATTR.FromFlags(isSoftBreak, isWhiteSpace);
 			}
 			return result;
+		}
+
+		private static bool IsBreakingCharacter(char c)
+		{
+			// U+002D hyphen-minus, U+2010 hyphen, U+2013 en dash, U+2014 em dash.
+			return (char.IsWhiteSpace(c) && !IsNoBreakSpace(c)) || c == '-' || c == '‐' || c == '–' || c == '—';
+		}
+
+		/// <summary>
+		/// No-break/glue spaces (UAX #14's GL class) - Unicode whitespace that must NOT
+		/// allow a line break on either side, unlike ordinary spaces: U+00A0 no-break
+		/// space, U+202F narrow no-break space, U+2007 figure space.
+		/// </summary>
+		private static bool IsNoBreakSpace(char c)
+		{
+			return c == ' ' || c == ' ' || c == ' ';
+		}
+
+		/// <summary>
+		/// CJK Unified Ideographs (U+4E00-U+9FFF), Hiragana/Katakana (U+3040-U+30FF), and
+		/// Hangul syllables (U+AC00-U+D7A3) - scripts whose UAX #14 break classes
+		/// (ID/H2/H3) permit a break between almost every adjacent character pair, since
+		/// (unlike Latin-style scripts) they aren't conventionally space-delimited.
+		/// </summary>
+		private static bool IsWrappableIdeograph(char c)
+		{
+			return (c >= '一' && c <= '鿿') || (c >= '぀' && c <= 'ヿ') || (c >= '가' && c <= '힣');
 		}
 	}
 }
