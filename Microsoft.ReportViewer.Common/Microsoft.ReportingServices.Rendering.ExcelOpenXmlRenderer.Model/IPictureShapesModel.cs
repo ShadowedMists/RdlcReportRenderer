@@ -11,6 +11,6 @@ namespace Microsoft.ReportingServices.Rendering.ExcelOpenXmlRenderer.Model
 
 		IPictureShapeModel CreatePicture(string uniqueId, string extension, Stream pictureStream, AnchorModel startPosition, AnchorModel endPosition);
 
-		new string ToString();
+		string ToString();
 	}
 }

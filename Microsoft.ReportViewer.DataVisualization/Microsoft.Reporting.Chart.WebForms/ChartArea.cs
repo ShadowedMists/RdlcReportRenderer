@@ -1142,10 +1142,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					plotArea.Width -= num4;
 				}
-				if (1 == 0)
-				{
-					continue;
-				}
 				if (axis3.AxisPosition == AxisPosition.Bottom || axis3.AxisPosition == AxisPosition.Top)
 				{
 					if (axis3.labelNearOffset != 0f && axis3.labelNearOffset < Position.X)

@@ -82,11 +82,17 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			Global.Tracer.Assert(condition: false, "Update(...) should not be called on ActionInfoWithDynamicImageMap");
 		}
 
+		// CS0809: base ActionInfo.SetNewContext() is deliberately not obsolete - other
+		// subclasses legitimately support it. Only this always-volatile subclass disables
+		// it (matching the Obsolete Update() override above, same rationale message),
+		// which is intentional, not an oversight - suppressed rather than removed.
+#pragma warning disable CS0809
 		[Obsolete("ActionInfoWithDynamicImageMap objects are completely volatile, so there is no reason to reuse the same instance of this class. Hence there is no need to support Update and SetNewContext methods.")]
 		internal override void SetNewContext()
 		{
 			Global.Tracer.Assert(condition: false, "SetNewContext() should not be called on ActionInfoWithDynamicImageMap");
 		}
+#pragma warning restore CS0809
 
 		void IPersistable.Serialize(IntermediateFormatWriter writer)
 		{

@@ -267,7 +267,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 					Height = imageInfo.Height;
 					HorizontalResolution = (float)imageInfo.Metadata.HorizontalResolution;
 					VerticalResolution = (float)imageInfo.Metadata.VerticalResolution;
-					if (m_imageFormat == null)
+					if (m_imageFormat == ImageFormatType.Unknown)
 					{
 						m_imageFormat = DetermineImageFormat();
 					}

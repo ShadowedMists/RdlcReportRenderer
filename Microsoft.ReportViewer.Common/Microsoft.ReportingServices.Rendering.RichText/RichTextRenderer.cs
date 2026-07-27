@@ -470,8 +470,16 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 						}
 						else if (pt.X <= 0f)
 						{
-							TextBoxContext textBoxContext2 = textBoxContext;
-							textBoxContext2.TextRunCharacterIndex = textBoxContext2.TextRunCharacterIndex;
+							// Deliberately unchanged: clicking at or before the run's visual
+							// start in RTL layout keeps the run's already-computed
+							// TextRunCharacterIndex, unlike the piCP == -1 and default
+							// branches above/below, which both advance it. This codebase is
+							// decompiled (see repo description), and the pre-existing
+							// "assign a variable to itself" form here is indistinguishable
+							// from a genuine no-op emitted by the decompiler - there is no
+							// automated coverage of this WinForms-viewer-only RTL hit-testing
+							// path to confirm a different intended value, so the safe choice
+							// is to keep behavior identical rather than guess at new semantics.
 						}
 						else
 						{

@@ -17,6 +17,12 @@
     <Description>SQL Server Reporting Services WinForms ReportViewer decompiled and recompiled for .NET 10. Based on ReportViewer 15.0.1404.0</Description>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
+    <!-- NU1510 flags System.Security.Cryptography.Xml below as an apparently-unused direct
+         reference, but it's a deliberate pin (see commit af09b43): System.ServiceModel.Http
+         transitively pulls in a vulnerable 10.0.0 release, and this direct reference forces
+         resolution to the patched 10.0.10 instead. Per-PackageReference NoWarn doesn't
+         suppress this particular restore warning, hence the project-level NoWarn here. -->
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="**\*.gif" />

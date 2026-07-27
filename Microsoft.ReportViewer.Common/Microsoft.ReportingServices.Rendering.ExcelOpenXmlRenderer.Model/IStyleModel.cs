@@ -82,6 +82,6 @@ namespace Microsoft.ReportingServices.Rendering.ExcelOpenXmlRenderer.Model
 
 		IStyleModel cloneStyle(bool cellStyle);
 
-		new bool Equals(object o);
+		bool Equals(object o);
 	}
 }
