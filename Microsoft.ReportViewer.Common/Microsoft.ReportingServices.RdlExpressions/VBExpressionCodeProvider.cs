@@ -7,6 +7,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace Microsoft.ReportingServices.RdlExpressions
 {
@@ -25,6 +26,41 @@ namespace Microsoft.ReportingServices.RdlExpressions
 			roslynReferences.Add(MetadataReference.CreateFromFile(file));
 		}
 
+		// Assembly.Location is empty for any assembly bundled into a single-file publish
+		// (there's no separate on-disk DLL to point at), which made CheckAndAddReference
+		// silently skip it via its IsNullOrEmpty guard - the expression compiler would then
+		// fail with real "type not found" Roslyn errors for any report containing a
+		// non-trivial expression. AssemblyExtensions.TryGetRawMetadata reads the assembly's
+		// PE metadata directly out of the loaded module in memory, which works whether the
+		// assembly came from a normal file, a single-file bundle, or any other loader that
+		// doesn't leave a `.Location` behind.
+		private unsafe MetadataReference CreateReferenceFromLoadedAssembly(Assembly assembly)
+		{
+			if (assembly == null) return null;
+			if (!System.Reflection.Metadata.AssemblyExtensions.TryGetRawMetadata(assembly, out byte* blob, out int length))
+			{
+				return null;
+			}
+			var moduleMetadata = ModuleMetadata.CreateFromMetadata((IntPtr)blob, length);
+			return AssemblyMetadata.Create(moduleMetadata).GetReference();
+		}
+
+		private void CheckAndAddReference(List<MetadataReference> roslynReferences, Assembly assembly)
+		{
+			if (assembly == null) return;
+			string location = assembly.Location;
+			if (!String.IsNullOrEmpty(location) && File.Exists(location))
+			{
+				roslynReferences.Add(MetadataReference.CreateFromFile(location));
+				return;
+			}
+			MetadataReference reference = CreateReferenceFromLoadedAssembly(assembly);
+			if (reference != null)
+			{
+				roslynReferences.Add(reference);
+			}
+		}
+
 		public override CompilerResults CompileAssemblyFromDom(CompilerParameters options, params CodeCompileUnit[] compilationUnits)
 		{
 			var writer = new StringWriter();
@@ -32,12 +68,12 @@ namespace Microsoft.ReportingServices.RdlExpressions
 			var roslynTree = SyntaxFactory.ParseSyntaxTree(writer.ToString(), null, "");
 			var roslynOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
 			var roslynReferences = new List<MetadataReference>();
-			CheckAndAddReference(roslynReferences, System.Reflection.Assembly.Load("System.Private.CoreLib").Location);
-			CheckAndAddReference(roslynReferences, System.Reflection.Assembly.Load("Microsoft.VisualBasic.Core").Location);
-			CheckAndAddReference(roslynReferences, System.Reflection.Assembly.Load("System.Runtime").Location);
-			CheckAndAddReference(roslynReferences, System.Reflection.Assembly.Load("System.Text.RegularExpressions").Location);
+			CheckAndAddReference(roslynReferences, Assembly.Load("System.Private.CoreLib"));
+			CheckAndAddReference(roslynReferences, Assembly.Load("Microsoft.VisualBasic.Core"));
+			CheckAndAddReference(roslynReferences, Assembly.Load("System.Runtime"));
+			CheckAndAddReference(roslynReferences, Assembly.Load("System.Text.RegularExpressions"));
 #if NETSTANDARD2_0_OR_GREATER
-			CheckAndAddReference(roslynReferences, System.Reflection.Assembly.Load("netstandard").Location);
+			CheckAndAddReference(roslynReferences, Assembly.Load("netstandard"));
 #endif
 			foreach (var assembly in options.ReferencedAssemblies)
 			{
