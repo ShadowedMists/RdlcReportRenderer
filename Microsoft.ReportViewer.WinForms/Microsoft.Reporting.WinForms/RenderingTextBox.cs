@@ -199,6 +199,15 @@ namespace Microsoft.Reporting.WinForms
 			}
 		}
 
+		public void FillHighlightRectangle(FontCache fontCache, Rectangle rect, Color color)
+		{
+			// Unreachable: the WinForms live viewer is Windows-only and always has a real
+			// System.Drawing.Graphics in RenderHighlightedTextRun (TextBox.cs), so that
+			// caller never falls through to this ITextBoxProps hook - it exists only for
+			// PDFWriter's non-Windows path (see ReportTextBox.FillHighlightRectangle).
+			throw new NotSupportedException();
+		}
+
 		internal override void ProcessRenderingElementContent(RPLElement rplElement, GdiContext context, RectangleF bounds)
 		{
 			RPLTextBox rPLTextBox = rplElement as RPLTextBox;

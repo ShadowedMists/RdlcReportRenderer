@@ -140,5 +140,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		public void DrawClippedTextRun(TextRun run, Paragraph paragraph, Win32DCSafeHandle hdc, float dpiX, FontCache fontCache, int x, int y, int baselineY, int lineHeight, Rectangle layoutRectangle, uint fontColorOverride, Rectangle clipRect)
 		{
 		}
+
+		public void FillHighlightRectangle(FontCache fontCache, Rectangle rect, Color color)
+		{
+			RectangleF rectangle = new RectangleF(SharedRenderer.ConvertToMillimeters(rect.X, fontCache.Dpi), SharedRenderer.ConvertToMillimeters(rect.Y, fontCache.Dpi), SharedRenderer.ConvertToMillimeters(rect.Width, fontCache.Dpi), SharedRenderer.ConvertToMillimeters(rect.Height, fontCache.Dpi));
+			m_writer.FillRectangle(color, rectangle);
+		}
 	}
 }

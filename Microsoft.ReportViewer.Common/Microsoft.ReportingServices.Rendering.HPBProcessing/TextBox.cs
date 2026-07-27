@@ -1837,5 +1837,9 @@ namespace Microsoft.ReportingServices.Rendering.HPBProcessing
 		public void DrawClippedTextRun(Microsoft.ReportingServices.Rendering.RichText.TextRun run, Microsoft.ReportingServices.Rendering.RichText.Paragraph paragraph, Win32DCSafeHandle hdc, float dpiX, FontCache fontCache, int x, int y, int baselineY, int lineHeight, System.Drawing.Rectangle layoutRectangle, uint fontColorOverride, System.Drawing.Rectangle clipRect)
 		{
 		}
+
+		public void FillHighlightRectangle(FontCache fontCache, System.Drawing.Rectangle rect, Color color)
+		{
+		}
 	}
 }

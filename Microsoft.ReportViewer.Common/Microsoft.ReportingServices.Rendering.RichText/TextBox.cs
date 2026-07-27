@@ -463,15 +463,18 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 						color = InvertColor(textBox.TextBoxProps.BackgroundColor);
 					}
 					rectangle = ((!textBox.HorizontalText) ? new Rectangle?(new Rectangle(layoutRectangle.Right - offsetY, layoutRectangle.Y + x + num2, lineHeight, num3 - num2)) : new Rectangle?(new Rectangle(layoutRectangle.X + x + num2, layoutRectangle.Y + offsetY - lineHeight, num3 - num2, lineHeight)));
-					// Highlight background painting needs a real GDI+ Graphics/Brush, which
-					// cannot be constructed at all on non-Windows (see GraphicsBase.cs); on
-					// that platform the highlighted run's text/clip still draws below via
-					// ITextBoxProps.DrawTextRun/DrawClippedTextRun, only the background fill
-					// rectangle itself is a documented gap for now.
+					// GDI+ Graphics/Brush construction is impossible on non-Windows (see
+					// GraphicsBase.cs), so the fill routes through ITextBoxProps there
+					// instead - PDFWriter's implementation reuses its existing FillRectangle
+					// content-stream primitive (already used for page/item backgrounds).
 					if (g != null)
 					{
 						using Brush brush = new SolidBrush(color);
 						g.FillRectangle(brush, rectangle.Value);
+					}
+					else
+					{
+						textBox.TextBoxProps.FillHighlightRectangle(fontCache, rectangle.Value, color);
 					}
 					if (run.AllowColorInversion && NeedsColorInversion(color, run.TextRunProperties.Color))
 					{

@@ -233,5 +233,25 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             Assert.IsTrue(fontIds.Count >= 2, "Expected at least two /F<id> <size> Tf operators, one per run");
             Assert.AreEqual(fontIds[0].Groups[1].Value, fontIds[1].Groups[1].Value, "Both runs use identical style and should reuse the same cached font id");
         }
+
+        [TestMethod]
+        public void FillHighlightRectangle_EmitsFilledRectangleOperatorInDeviceRectPosition()
+        {
+            string pdf = RenderContentStream(writer =>
+            {
+                FontCache fontCache = new FontCache(96f);
+                ReportTextBox reportTextBox = new ReportTextBox(null, writer);
+
+                // ReportTextBox.FillHighlightRectangle (TextBox.RenderHighlightedTextRun's
+                // cross-platform counterpart to g.FillRectangle - see TextBox.cs) is called
+                // directly here the same way DrawTextRunCrossPlatform is above: its real
+                // caller only reaches it when no System.Drawing.Graphics exists, which on
+                // this Windows dev box never happens, so there is no separate OS check to
+                // bypass - just a normal internal method to call directly.
+                reportTextBox.FillHighlightRectangle(fontCache, new Rectangle(10, 20, 30, 5), Color.Yellow);
+            });
+
+            StringAssert.Contains(pdf, " re f");
+        }
     }
 }

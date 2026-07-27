@@ -229,6 +229,10 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 		{
 		}
 
+		public void FillHighlightRectangle(FontCache fontCache, System.Drawing.Rectangle rect, Color color)
+		{
+		}
+
 		internal override bool CalculatePage(RPLWriter rplWriter, PageItemHelper lastPageInfo, PageContext pageContext, PageItem[] siblings, RepeatWithItem[] repeatWithItems, double parentTopInPage, ref double parentPageHeight, Interactivity interactivity)
 		{
 			AdjustOriginFromItemsAbove(siblings, repeatWithItems);
