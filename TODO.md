@@ -118,7 +118,7 @@ Added `IImageProvider`/`WindowsImageProvider`/`CrossPlatformImageProvider`/`Imag
 - `tasks/adapter-layer-refactor.md` — broader adapter-layer scope and README compatibility-gap follow-ups
 - `tasks/webrequest-httpclient-migration.md` — SYSLIB0014 `WebRequest`/`HttpWebRequest` → `HttpClient` migration scope (not started)
 - `tasks/xmlvalidatingreader-migration.md` — CS0618 `XmlValidatingReader` → `XmlReader`/`XmlReaderSettings` migration scope for the RDL/RML schema validator (not started)
-- `tasks/remaining-warning-cleanup.md` — remaining accomplishable build-warning categories (CS0219, CA2022, CS0414, CS0649 stragglers, CS0108/CS0109/CS0162/CS0472/CS0809/CS1717, NU1510) with per-category effort/risk triage (not started)
+- `tasks/remaining-warning-cleanup.md` — accomplishable build-warning categories (CS0219, CA2022, CS0414, CS0108/CS0109/CS0162/CS0472/CS0809/CS1717, NU1510, and 3 CS0649 fields) — done (2026-07-27); ~54 CS0649 fields remain, each needing its own judgment call
 - `tasks/chart-library-decision.md` / `tasks/chart-image-abstraction-analysis.md` — retraction/superseded pointers
 
 ## Notes
