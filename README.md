@@ -1,100 +1,136 @@
-# ReportViewer Core
-This project is a port of Microsoft Reporting Services (Report Viewer) to .NET 6+. It is feature-complete and ready for production use, but keep in mind it is not officially supported by Microsoft.
+# RdlCore
 
-For version history and recent fixes, see [changelog](CHANGELOG.md).
+**A cross-platform .NET rendering engine for RDL/RDLC reports** — the format historically produced by SQL Server Reporting Services and Report Designer. RdlCore lets you load, process, and render `.rdlc`/RDL report definitions to PDF, Excel, Word, HTML, CSV, XML, and image formats on Windows, Linux, and macOS, from ASP.NET Core, console apps, services, or WinForms desktop applications — no SQL Server Reporting Services installation required.
 
-# Why
-With WinForms inclusion in .NET Core 3.1 and .NET 5 as a replacement for .NET Framework, it became feasible to port existing business desktop applications to .NET Core SDK to benefit from new C# and JIT features. Microsoft team stated on multiple occasions (https://github.com/dotnet/aspnetcore/issues/1528, https://github.com/dotnet/aspnetcore/issues/12666, https://github.com/dotnet/aspnetcore/issues/22304, https://github.com/dotnet/docs/issues/9607) that there are no plans to have official Reporting Services / ReportViewer package for .NET Core, which is a showstopper for applications using this technology for printing and reporting. The goal of this project is to provide transitional solution for such applications, until existing reports are reimplemented using more modern technology.
+> **Licensing notice:** Large parts of this codebase originate from decompiling a proprietary Microsoft product. That code is **not** covered by an open-source license, and no license granted by this project can extend one to it. See [License](#license) below before using this project in anything you redistribute. This is not legal advice — if that matters to your use case, consult your own counsel.
 
-# How to use
-You should be able to replace references to Report Viewer in your WinForms project with ones provided in this repo and use `Microsoft.Reporting.WinForms.ReportViewer` as usual. For ASP.NET Core applications, add a reference to `Microsoft.Reporting.NETCore`, which is based on the WinForms version with stripped UI, and load/render the report programmatically.
+For version history and recent fixes, see the [changelog](CHANGELOG.md).
 
-There is no interactive, web-based report viewer provided in this project, but there are `HTML4.0` and `HTML5` rendering formats available. `HTML5` format has been modified to also work without JavaScript.
+## Acknowledgements
 
-**For step-by-step instructions and sample code covering local reports, report-server reports, and rendering to HTML/Excel/PDF, see [docs/usage-guide.md](docs/usage-guide.md).**
+RdlCore builds directly on the extraordinary work of **[Łukasz Kosson](https://github.com/lkosson)**, whose [reportviewercore](https://github.com/lkosson/reportviewercore) project first decompiled and ported Microsoft's Report Viewer for WinForms to .NET Core, and kept it alive and usable long after Microsoft made clear there would be no official successor. Every renderer in this repository — Excel, PDF, Word, Chart, Gauge, and the RDL processing engine itself — exists because of that original effort. This project is a fork and continuation of that work, focused specifically on removing the remaining Windows-only dependencies so the engine can run natively wherever .NET runs.
 
-# Designing new reports
+## Mission
 
-Visual Studio 2019 (version 16.9 and similar) does not include Report Designer by default. There is an extension provided by Microsoft called "[Microsoft RDLC Report Designer](https://marketplace.visualstudio.com/items?itemName=ProBITools.MicrosoftRdlcReportDesignerforVisualStudio-18001)" you need to be able to open and modify your reports. For Visual Studio 2022, you need "[Microsoft RDLC Report Designer 2022](https://marketplace.visualstudio.com/items?itemName=ProBITools.MicrosoftRdlcReportDesignerforVisualStudio2022)" extension.
+Reporting Services' report definition format (RDL/RDLC) is mature, well-tooled (Visual Studio's Report Designer), and used in a huge number of existing business applications — but the only engine that could render it was tied to Windows, GDI+, and a Microsoft product line with no cross-platform future. RdlCore's mission is to turn that engine into a real cross-platform reporting **platform**: one that runs in Linux containers, in cloud-native deployments, and on macOS development machines, with the same fidelity it always had on Windows — so that applications built around RDL reports don't have to choose between keeping their reports and modernizing their infrastructure.
 
-Even after installing the extension, new dataset wizard fails to show classes from your project and .NET Core projects don't have `.datasource` file support either. The workaround is to create and add `.xsd` file to your project with definitions of types you want to use in your reports. You can either create this file by hand or use the following snippet to produce one for all the classes you need:
+This is an incremental effort. Each rendering engine is migrated from direct GDI+/Windows dependencies to a small set of platform-neutral interfaces (an `IImageProvider`, an `IRenderSurface`, and similar seams), with a platform-specific implementation registered behind each — Windows keeps its original GDI+ path unchanged, while Linux and macOS get a SkiaSharp-, ImageSharp-, or ClosedXML-backed equivalent. Where a real architectural wall exists (a handful of Windows-only primitives with no cross-platform equivalent, documented below), we say so plainly rather than pretend it's solved.
 
-    var types = new[] { typeof(ReportItemClass1), typeof(ReportItemClass2), typeof(ReportItemClass3) };
-    var xri = new System.Xml.Serialization.XmlReflectionImporter();
-    var xss = new System.Xml.Serialization.XmlSchemas();
-    var xse = new System.Xml.Serialization.XmlSchemaExporter(xss);
-    foreach (var type in types)
-    {
-        var xtm = xri.ImportTypeMapping(type);
-        xse.ExportTypeMapping(xtm);
-    }
-    using var sw = new System.IO.StreamWriter("ReportItemSchemas.xsd", false, Encoding.UTF8);
-    for (int i = 0; i < xss.Count; i++)
-    {
-        var xs = xss[i];
-        xs.Id = "ReportItemSchemas";
-        xs.Write(sw);
-    }
+## What works today
 
-After including `ReportItemSchemas.xsd` file in your project, Report Designer should see a new datasource called `ReportItemSchemas` which you can use to add a dataset to your report.
+* RDLC file loading, parsing, and compiling
+* Local and remote (Report Server / SOAP) data sources
+* Parameters, expressions, and the full RDL expression language (VB-based, compiled via Roslyn)
+* WinForms report preview control
+* All rendering formats listed below, on Windows; the majority on Linux and macOS as well — see the support matrix
+* MSChart (2D and 3D) and Gauge report items
 
-# What works
- * RDLC file loading and compiling
- * Local data sources
- * Parameter passing
- * All rendering formats, including PDF and XLS
- * WinForms report preview
- * Remote processing using Reporting Services
- * Linux and MacOS support
- * MSChart control
+## Supported rendering formats
 
-# Supported rendering formats
+| Format | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| PDF | Yes | Yes | Not yet tested |
+| HTML5 / HTML4.0 / MHTML | Yes | Yes | Not yet tested |
+| EXCELOPENXML (Excel Open XML) | Yes | Yes | Not yet tested |
+| EXCEL (Excel 97/2003) | Yes | Yes | Not yet tested |
+| WORDOPENXML (Word Open XML) | Yes | Yes | Not yet tested |
+| WORD (Word 97/2003) | Yes | No — Windows-only OLE Structured Storage dependency | Not yet tested |
+| CSV | Yes | Yes | Not yet tested |
+| XML | Yes | Yes | Not yet tested |
+| IMAGE (TIFF/EMF) | Yes | No — not yet started | Not yet tested |
 
-All formats are supported on Windows, Linux and Mac OS. For formats marked with asterisk (*), see "Linux rendering workaround" section below.
+Chart and Gauge report items render through the same cross-platform path as the rest of the engine (Skia-backed on Linux/macOS) and are usable inside any of the formats above. Map report items are Windows-only today; that migration is deliberately deferred (see `docs/decisions.md`).
 
- * HTML4.0 / HTML5 / MHTML
- * PDF (*)
- * IMAGE (TIFF/EMF) (*)
- * EXCEL (Microsoft Excel 97/2003) (*)
- * EXCELOPENXML (Microsoft Excel Open XML)
- * WORD (Microsoft Word 97/2003) (*)
- * WORDOPENXML (Microsoft Word Open XML)
- * CSV
- * XML
+For the detailed, continuously-updated breakdown — including exactly which code paths route through which backend, and precisely what's blocked and why — see [docs/platform-support.md](docs/platform-support.md).
 
-# Linux rendering workaround
+## Known permanent limitations
 
-Some rendering formats (most notably PDF) uses Windows-provided native libraries for font measurements (Uniscribe), which are unavailable on other platforms. They are, however, provided in barely working condition, by [Wine](https://www.winehq.org/) version 5.0 or higher. To export your reports to PDF, TIFF or XLS:
+A small number of gaps are architectural, not "not ported yet":
 
- * Install Wine 5.0 or newer. For Debian Bullseye, `apt install wine` will do.
- * Download **Windows version** of .NET runtime **binaries** from `https://dotnet.microsoft.com/en-us/download/dotnet` - e.g. `https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.30-windows-x86-binaries`.
- * Extract/install those binaries to some local folder, e.g. `~/dotnet-3.1-windows`.
- * Start your application using 64-bit version of Wine and Windows version of .NET, e.g. `wine64 ~/dotnet-3.1-windows/dotnet.exe YourApplication.dll`.
+* **EMF/Metafile export** (Chart's `SaveIntoMetafile`, IMAGE format's EMF output) needs a raw Windows HDC (`Graphics.GetHdc()`) with no cross-platform equivalent.
+* **WORD (binary Word 97/2003) container writing** uses real Windows COM interop (OLE Structured Storage) with no cross-platform equivalent. Use WORDOPENXML on Linux/macOS instead.
+* **Expression sandboxing.** There is no isolation between report expression code and the host process — this was true of the original Reporting Services CodeDom design and remains true under Roslyn. Do not load and render reports from untrusted sources. See `tasks/expression-compiler-modernization.md` for the full reasoning.
+* **Single-file (`PublishSingleFile`) deployment** is not currently supported — the Roslyn expression compiler needs on-disk assembly references at runtime. Partially addressed; see `tasks/expression-compiler-modernization.md` for current status.
+* **Spatial SQL types** (`Microsoft.SqlServer.Types`/`SqlGeography`) are .NET Framework-only and unavailable in .NET Core; reports depending on them won't load.
+* **Interactive web report preview** (the WebForms-era browser preview UI) was never ported — it's tightly coupled to WebForms/ASP.NET architecture that has no ASP.NET Core equivalent. `HTML5`/`HTML4.0` rendering formats (including a no-JavaScript-required HTML5 mode) are available as a substitute.
+* **WinForms control designer support** is not available. Add the `ReportViewer` control programmatically instead — see [docs/usage-guide.md](docs/usage-guide.md#6-interactive-preview-in-winforms-reportviewer-control).
 
-If your application crashes with `unsupported flags 00000020` somewhere inside `bcrypt`, make sure you have proper version of Wine installed. Version 4.1 provided in Debian Buster and earlier won't work.
+## Getting started
 
-# What doesn't work
- * Spatial SQL types. Those require `Microsoft.SqlServer.Types` package, which is available only in .NET Framework. Reports using SqlGeography won't load.
- * Expression sandboxing and code security. Do not load and run reports from untrusted sources.
- * Interactive web report preview. It is closely tied to WebForms and ASP.NET architecture and porting it to ASP.NET Core would involve rewriting significant portions of the codebase.
- * WinForms control designer. To use ReportViewer in your WinForms project, add the control programmatically — see [docs/usage-guide.md](docs/usage-guide.md#6-interactive-preview-in-winforms-reportviewer-control).
- * Single .exe deployment. Roslyn needs to be able to reference .NET and ReportViewer assemblies at runtime. When compiled to a single file, those are unavailable and any non-trivial report won't compile.
- * Map control. Not really tested, but included in project anyway.
- * As of .NET 6, Microsoft [deprecated](https://aka.ms/systemdrawingnonwindows) `System.Drawing` on non-windows platforms and removed it completely in .NET 7. This breaks reports using images on those platforms. Using a workaround mentioned above in `Linux rendering workaround` might help in those cases.
+**For step-by-step instructions and sample code** covering local reports, report-server reports, and rendering to HTML/Excel/PDF, see [docs/usage-guide.md](docs/usage-guide.md).
 
-If you get `Version conflict detected for "Microsoft.CodeAnalysis.Common"` error when adding this NuGet package, try first adding `Microsoft.CodeAnalysis.CSharp.Workspaces 3.6.0` or `Microsoft.CodeAnalysis.Common 3.6.0` (manually selecting version 3.6.0) package to your project. For .NET 5 use 3.8.0 version. For .NET 6 use 4.0.1.
+Reference either package depending on your application type:
 
-# Reporting bugs
+| Scenario | Package | Namespace |
+| --- | --- | --- |
+| ASP.NET Core, console apps, services, headless rendering | `Microsoft.ReportViewer.NETCore` | `Microsoft.Reporting.NETCore` |
+| WinForms desktop app with interactive preview | `Microsoft.ReportViewer.WinForms` | `Microsoft.Reporting.WinForms` |
 
-Before reporting issue, please make sure that your problem occurs only when using this package, i.e. it doesn't happen on original Report Viewer. When filing an issue, include full exception stack trace and - where possible - provide relevant RDLC or a sample project.
+Package and namespace names are unchanged from the upstream `ReportViewerCore` project on purpose, so existing applications can move to RdlCore as a drop-in replacement without code changes.
 
-# Sources
-Source code for this project comes from decompiling Report Viewer for WinForms, version 15.0.1404.0 using ILSpy. Original Reporting Services use external Visual Basic and `System.CodeDom` compilation, both of which are not available in .NET Core. Those have been replaced with Roslyn Visual Basic compiler. References to .NET Framework assemblies have been updated to NuGet packages where possible. References to unavailable assemblies, such as `Microsoft.SqlServer.Types`, have been removed along with functionalities that depend on them. Sources are intentionally left formatted as decompiled by ILSpy.
+### Designing reports
 
-Project `Microsoft.ReportViewer.WinForms` is mostly one-to-one recompilation of original ReportViewer for WinForms. Project `Microsoft.ReportViewer.NETCore` is heavilly stripped down version suitable for web applications, web services and batch processing.
+Visual Studio doesn't include Report Designer by default. Install Microsoft's **[RDLC Report Designer](https://marketplace.visualstudio.com/items?itemName=ProBITools.MicrosoftRdlcReportDesignerforVisualStudio-18001)** extension (VS2019) or **[RDLC Report Designer 2022](https://marketplace.visualstudio.com/items?itemName=ProBITools.MicrosoftRdlcReportDesignerforVisualStudio2022)** (VS2022).
 
-# Binary package
-A precompiled package is available as `ReportViewerCore.NETCore` and `ReportViewerCore.WinForms` at nuget.org: [ReportViewerCore.NETCore](https://www.nuget.org/packages/ReportViewerCore.NETCore/), [ReportViewerCore.WinForms](https://www.nuget.org/packages/ReportViewerCore.WinForms/). Legal aspects of redistributing binary package are uncertain. Feel free to compile this project on your own. You'll need Visual Studio 2022 (Community version will do) and .NET 6 SDK. Reference either `Microsoft.ReportViewer.NETCore.dll` or `Microsoft.ReportViewer.WinForms.dll` in your solution.
+The dataset wizard won't discover classes from a .NET Core/.NET project (and `.datasource` files aren't supported), so add a hand-built or generated `.xsd` describing the types you want to bind to your reports:
 
-# License
-Reporting Services is a free Microsoft product. While decompiling and modifying it for compatibility reasons is legal in my local jurisdiction, redistributing modified version most likely is not. Use at your own risk.
+```csharp
+var types = new[] { typeof(ReportItemClass1), typeof(ReportItemClass2), typeof(ReportItemClass3) };
+var xri = new System.Xml.Serialization.XmlReflectionImporter();
+var xss = new System.Xml.Serialization.XmlSchemas();
+var xse = new System.Xml.Serialization.XmlSchemaExporter(xss);
+foreach (var type in types)
+{
+    var xtm = xri.ImportTypeMapping(type);
+    xse.ExportTypeMapping(xtm);
+}
+using var sw = new System.IO.StreamWriter("ReportItemSchemas.xsd", false, Encoding.UTF8);
+for (int i = 0; i < xss.Count; i++)
+{
+    var xs = xss[i];
+    xs.Id = "ReportItemSchemas";
+    xs.Write(sw);
+}
+```
+
+After adding `ReportItemSchemas.xsd` to your project, Report Designer will offer a new datasource called `ReportItemSchemas` you can use when building datasets.
+
+### Running on Linux/macOS
+
+Cross-platform rendering (PDF, HTML, Excel, Word Open XML, CSV, XML, Chart, Gauge) works natively — no Wine, no Windows compatibility shims. Just reference `Microsoft.ReportViewer.NETCore` and run.
+
+If you also need the small subset of formats still gated to Windows (binary WORD, IMAGE/TIFF/EMF), you'll need to run on an actual Windows host or container until those are ported — see the limitations above.
+
+## Architecture
+
+RdlCore's cross-platform work follows a Ports & Adapters pattern: a small interface for each Windows-coupled contract (image decoding, 2D drawing surfaces, font metrics), one adapter backed by the original GDI+/Windows implementation, and one backed by a portable library (SkiaSharp, ImageSharp, ClosedXML, PdfSharpCore, HarfBuzz). A factory selects the right adapter at runtime based on the current OS.
+
+* [docs/rendering-abstractions.md](docs/rendering-abstractions.md) — renderer interfaces and the Chart/Gauge Ports & Adapters design
+* [docs/architecture-map.md](docs/architecture-map.md) — end-to-end render flow
+* [docs/platform-support.md](docs/platform-support.md) — current Windows/Linux/macOS support matrix and known gaps
+* [docs/decisions.md](docs/decisions.md) — architecture decisions and why
+* [docs/coding-standards.md](docs/coding-standards.md) — engineering conventions and migration lessons learned
+* [docs/renderer-extension-guide.md](docs/renderer-extension-guide.md) — how to add another renderer implementation
+* [docs/troubleshooting.md](docs/troubleshooting.md) / [docs/build-and-test.md](docs/build-and-test.md) / [docs/examples.md](docs/examples.md) — supporting reference docs
+
+`TODO.md` tracks current priorities and links every active task; `tasks/*.md` files hold the working detail for anything still in progress.
+
+## Reporting bugs
+
+Before filing an issue, please confirm the problem is specific to this package — i.e. it doesn't reproduce against the original Microsoft ReportViewer control, if you have a way to check. Include the full exception stack trace and, where possible, a minimal `.rdlc` or sample project that reproduces it.
+
+If you hit `Version conflict detected for "Microsoft.CodeAnalysis.Common"` when adding this package: add `Microsoft.CodeAnalysis.CSharp.Workspaces`/`Microsoft.CodeAnalysis.Common` yourself first, pinned to a version matching your target framework (3.6.0 for .NET Core 3.1, 3.8.0 for .NET 5, 4.0.1 for .NET 6+).
+
+## Provenance
+
+Source code originates from decompiling Microsoft Report Viewer for WinForms (version 15.0.1404.0, via ILSpy) — Reporting Services' original client-side rendering engine. The original CodeDom/System.CodeDom Visual Basic compilation (unavailable on .NET Core) has been replaced with the Roslyn Visual Basic compiler; references to .NET Framework-only assemblies unavailable on .NET Core (e.g. `Microsoft.SqlServer.Types`) have been removed along with the functionality that depended on them. Source formatting is intentionally left as ILSpy produced it, rather than reformatted, to keep diffs against the original decompilation meaningful.
+
+`Microsoft.ReportViewer.WinForms` is close to a one-to-one recompilation of the original WinForms ReportViewer. `Microsoft.ReportViewer.NETCore` is a heavily stripped-down variant suitable for web applications, web services, and batch processing, with no WinForms UI dependency.
+
+## License
+
+**No open-source license is granted over the Microsoft-derived portions of this codebase, because this project does not hold copyright over them.** The core rendering engine — the RDL processing pipeline, the WinForms/NETCore report objects, and the Excel/PDF/Word/Chart/Gauge renderers inherited from the original decompilation — is a derivative work of Microsoft's proprietary Report Viewer for WinForms. Reporting Services is a free-to-use Microsoft product, but "free to use" is not the same as "licensed for redistribution of modified derivative works," and Microsoft has not published terms that clearly permit it. Decompiling it for local, personal compatibility purposes may be legal depending on your jurisdiction; redistributing a modified version — which is what using this repository necessarily involves — is a separate question this project cannot answer on your behalf. Applying an MIT/Apache/GPL-style license header to this code would not change that; it would only misrepresent that such rights exist.
+
+The parts of this repository written directly by its contributors and not derived from Microsoft's decompiled source — the cross-platform rendering adapters (Skia/ImageSharp/ClosedXML/PdfSharpCore backends), the associated interfaces and factories, tests, and documentation — are original work, but are layered on top of and depend on the Microsoft-derived core described above, so they cannot be extracted and used independently under a separate license in any way that matters in practice.
+
+**Use this repository at your own risk.** If you plan to redistribute binaries built from it, embed it in a commercial product, or otherwise need legal certainty about your rights to do so, consult your own legal counsel — this document is not a substitute for that.
