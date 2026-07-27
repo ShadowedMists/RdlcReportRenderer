@@ -13,7 +13,7 @@
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | 🔄 Substantially complete (Milestones A-C, D2, E1, E2, D3-real, F all done; D3 [concrete-overload removal] permanently blocked by design) | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (all milestones and open items closed) | HIGH |
 | 🔵 **LOW** | PDF: cross-platform rendering (P1-P4) | ✅ P1-P3 done; simple + rich-text MVP done (2026-07-26, real text renders on Linux); real font embedding, bidi/RTL reordering, embedding-rights check, glyph subsetting all done (2026-07-26); real RichText/Uniscribe production-pipeline wiring **wired into PDF end to end** (2026-07-26, same day — "Option B": `LineBreaker`/`TextBox`/`FontCache`/`TextRun`/`PDFWriter.DrawTextRun` all cross-platform-safe, `Renderer.ProcessSimpleTextBox`/`ProcessRichTextBox` route to it instead of the MVP bypass). Remaining narrow gaps: highlighted-run background fill, vertical-text measurement (`LineBreaker.FlowVertical`) — see `tasks/pdf-text-shaping-abstraction.md` | LOW |
-| 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | 📋 Documented (2026-07-26), not started — scheduled after PDF work, before Map engine | MEDIUM |
+| 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | 🔄 Partially done — 3 ImageLoader sites + `ExternalResourceLoader.cs` fixed (2026-07-26); 5 sites remain (`WebRequestHelper.cs` x2, 3 Map-engine sites) | MEDIUM |
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Documented (2026-07-26), not started — RDL/RML schema validator redesign | MEDIUM |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred until after PDF work | HIGH |
 

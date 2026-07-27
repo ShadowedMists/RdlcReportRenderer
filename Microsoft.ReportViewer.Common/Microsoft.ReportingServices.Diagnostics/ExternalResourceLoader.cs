@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Threading;
 
 namespace Microsoft.ReportingServices.Diagnostics
 {
@@ -10,36 +12,36 @@ namespace Microsoft.ReportingServices.Diagnostics
 
 		public static byte[] GetExternalResource(string resourceUrl, bool impersonate, string surrogateUser, string surrogatePassword, string surrogateDomain, int webTimeout, int maxResourceSizeBytes, ExternalResourceAbortHelper abortHelper, out string mimeType, out bool resourceExceededMaxSize)
 		{
-			byte[] result = null;
+			byte[] result;
 			mimeType = null;
-			Uri uri = new Uri(resourceUrl);
-			WebRequest webRequest = (!uri.IsFile) ? ((WebRequest)(HttpWebRequest)WebRequest.Create(uri)) : ((WebRequest)(FileWebRequest)WebRequest.Create(uri));
-			int timeout = 600000;
-			if (webTimeout > 0 && webTimeout < 2147483)
-			{
-				webRequest.Timeout = webTimeout * 1000;
-			}
-			else
-			{
-				webRequest.Timeout = timeout;
-			}
-			if (surrogateUser != null)
-			{
-				webRequest.Credentials = new NetworkCredential(surrogateUser, surrogatePassword, surrogateDomain);
-			}
-			else if (impersonate)
-			{
-				webRequest.Credentials = CredentialCache.DefaultCredentials;
-			}
-			else
-			{
-				webRequest.Credentials = null;
-			}
 			resourceExceededMaxSize = false;
-			using (WebResponse webResponse = RequestExternalResource(webRequest, abortHelper))
+			Uri uri = new Uri(resourceUrl);
+			int timeoutMs = (webTimeout > 0 && webTimeout < 2147483) ? webTimeout * 1000 : 600000;
+
+			if (uri.IsFile)
 			{
-				mimeType = webResponse.ContentType;
-				using (Stream s = webResponse.GetResponseStream())
+				using (Stream fileStream = File.OpenRead(uri.LocalPath))
+				{
+					result = ((maxResourceSizeBytes != MaxResourceSizeUnlimited) ? StreamSupport.ReadToEndNotUsingLength(fileStream, 1024, maxResourceSizeBytes, out resourceExceededMaxSize) : StreamSupport.ReadToEndNotUsingLength(fileStream, 1024));
+				}
+			}
+			else
+			{
+				using HttpClientHandler handler = new HttpClientHandler();
+				if (surrogateUser != null)
+				{
+					handler.Credentials = new NetworkCredential(surrogateUser, surrogatePassword, surrogateDomain);
+				}
+				else if (impersonate)
+				{
+					handler.Credentials = CredentialCache.DefaultCredentials;
+				}
+				using HttpClient httpClient = new HttpClient(handler);
+				using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
+				using CancellationTokenSource cts = new CancellationTokenSource(timeoutMs);
+				using HttpResponseMessage webResponse = RequestExternalResource(httpClient, request, abortHelper, cts);
+				mimeType = webResponse.Content.Headers.ContentType?.MediaType;
+				using (Stream s = webResponse.Content.ReadAsStream(cts.Token))
 				{
 					result = ((maxResourceSizeBytes != MaxResourceSizeUnlimited) ? StreamSupport.ReadToEndNotUsingLength(s, 1024, maxResourceSizeBytes, out resourceExceededMaxSize) : StreamSupport.ReadToEndNotUsingLength(s, 1024));
 				}
@@ -69,21 +71,23 @@ namespace Microsoft.ReportingServices.Diagnostics
 			return true;
 		}
 
-		private static WebResponse RequestExternalResource(WebRequest request, ExternalResourceAbortHelper abortHelper)
+		// abortHelper polling is folded onto the same timeout CancellationTokenSource:
+		// the original code raced a 1s-polling loop against WebRequest.Abort(); HttpClient
+		// has no equivalent abort-in-flight primitive, so cancelling the same token that
+		// already bounds the request achieves the same effect (fail the in-flight send).
+		private static HttpResponseMessage RequestExternalResource(HttpClient httpClient, HttpRequestMessage request, ExternalResourceAbortHelper abortHelper, CancellationTokenSource cts)
 		{
-			if (abortHelper == null)
-			{
-				return request.GetResponse();
-			}
-			IAsyncResult asyncResult = request.BeginGetResponse(null, null);
-			while (!asyncResult.AsyncWaitHandle.WaitOne(1000, exitContext: false))
+			using System.Threading.Timer abortPollTimer = (abortHelper == null) ? null : new System.Threading.Timer(delegate
 			{
 				if (abortHelper.IsAborted)
 				{
-					request.Abort();
+					cts.Cancel();
 				}
-			}
-			return request.EndGetResponse(asyncResult);
+			}, null, 1000, 1000);
+
+			HttpResponseMessage response = httpClient.Send(request, cts.Token);
+			response.EnsureSuccessStatusCode();
+			return response;
 		}
 
 		public static string GetMimeTypeByRegistryLookup(string extension)
