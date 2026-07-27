@@ -16,6 +16,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		Hebrew,
 		Arabic,
 		Han,
+		Thai,
+		Devanagari,
+		Hangul,
+		Syriac,
+		Thaana,
 		Other
 	}
 
@@ -52,11 +57,22 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// Uniscribe at all. <see cref="UnicodeScriptKind.Common"/> characters (whitespace,
 	/// digits, ASCII punctuation) merge into whichever neighboring script run they're
 	/// adjacent to (mirroring Uniscribe's own "common" script merge behavior) rather than
-	/// forcing a new item per punctuation mark. <see cref="UnicodeScriptKind.Other"/> is
-	/// everything not explicitly bucketed (Thai/Devanagari/Hangul/etc.) - it gets its own
-	/// item, treated as LTR, which is wrong for scripts with real shaping/reordering rules;
-	/// this is the same "RTL/complex-script is a known, explicit gap" boundary the rest of
-	/// this doc already draws.
+	/// forcing a new item per punctuation mark.
+	///
+	/// <see cref="UnicodeScriptKind.Thai"/>, <see cref="UnicodeScriptKind.Devanagari"/>,
+	/// and <see cref="UnicodeScriptKind.Hangul"/> get their own item/script bucket (all
+	/// correctly LTR) rather than falling into <see cref="UnicodeScriptKind.Other"/> - this
+	/// itemizer still does not model their real shaping/reordering rules (e.g. Devanagari
+	/// consonant-conjunct reordering, Thai's lack of word-boundary spacing), which is left
+	/// to whatever shapes the run's glyphs (<see cref="HarfBuzzTextShaper"/>) rather than
+	/// to itemization. <see cref="UnicodeScriptKind.Syriac"/> and
+	/// <see cref="UnicodeScriptKind.Thaana"/> are itemized and correctly marked RTL,
+	/// alongside <see cref="UnicodeScriptKind.Hebrew"/>/<see cref="UnicodeScriptKind.Arabic"/>.
+	/// <see cref="UnicodeScriptKind.Other"/> is everything still not explicitly bucketed
+	/// (N'Ko, Samaritan, Mandaic, Adlam, etc.) - it gets its own item, treated as LTR, which
+	/// is wrong for the RTL scripts among those; this is the same "not every script is
+	/// modeled - a known, explicit gap" boundary the rest of this doc already draws, just
+	/// narrower than before.
 	/// </summary>
 	internal static class UnicodeTextItemizer
 	{
@@ -111,7 +127,8 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		private static bool IsRtlScript(UnicodeScriptKind script)
 		{
-			return script == UnicodeScriptKind.Hebrew || script == UnicodeScriptKind.Arabic;
+			return script == UnicodeScriptKind.Hebrew || script == UnicodeScriptKind.Arabic
+				|| script == UnicodeScriptKind.Syriac || script == UnicodeScriptKind.Thaana;
 		}
 
 		private static UnicodeScriptKind ClassifyChar(char c)
@@ -140,9 +157,29 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			{
 				return UnicodeScriptKind.Arabic;
 			}
+			if (c is >= 'ܐ' and <= 'ݏ')
+			{
+				return UnicodeScriptKind.Syriac;
+			}
+			if (c is >= 'ހ' and <= '޿')
+			{
+				return UnicodeScriptKind.Thaana;
+			}
 			if (c is (>= '一' and <= '鿿') or (>= '぀' and <= 'ヿ'))
 			{
 				return UnicodeScriptKind.Han;
+			}
+			if (c is >= 'ऀ' and <= 'ॿ')
+			{
+				return UnicodeScriptKind.Devanagari;
+			}
+			if (c is >= '฀' and <= '๿')
+			{
+				return UnicodeScriptKind.Thai;
+			}
+			if (c is (>= 'ᄀ' and <= 'ᇿ') or (>= '가' and <= '힣') or (>= '㄰' and <= '㆏'))
+			{
+				return UnicodeScriptKind.Hangul;
 			}
 			return UnicodeScriptKind.Other;
 		}

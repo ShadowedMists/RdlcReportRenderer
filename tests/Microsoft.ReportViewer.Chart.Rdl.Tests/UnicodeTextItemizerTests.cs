@@ -70,6 +70,71 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void ThaiText_IsItsOwnLtrScriptBucket()
+        {
+            const string thaiText = "สวัสดี";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(thaiText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Thai, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(0, analysis.fRTL, "Thai is a left-to-right script");
+        }
+
+        [TestMethod]
+        public void DevanagariText_IsItsOwnLtrScriptBucket()
+        {
+            const string devanagariText = "नमस्ते";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(devanagariText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Devanagari, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(0, analysis.fRTL, "Devanagari is a left-to-right script");
+        }
+
+        [TestMethod]
+        public void HangulText_IsItsOwnLtrScriptBucket()
+        {
+            const string hangulText = "안녕하세요";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(hangulText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Hangul, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(0, analysis.fRTL, "Hangul is a left-to-right script");
+        }
+
+        [TestMethod]
+        public void SyriacText_IsItemizedAsRtl()
+        {
+            const string syriacText = "ܫܠܡܐ";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(syriacText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Syriac, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "Syriac is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
+        public void ThaanaText_IsItemizedAsRtl()
+        {
+            const string thaanaText = "ދިވެހި";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(thaanaText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Thaana, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "Thaana is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
         public void EmptyText_ProducesNoItems()
         {
             List<TextItem> items = UnicodeTextItemizer.Itemize(string.Empty);
