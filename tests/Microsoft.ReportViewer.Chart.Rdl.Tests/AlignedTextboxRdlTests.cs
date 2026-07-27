@@ -31,7 +31,11 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
                 report.LoadReportDefinition(fs);
             }
 
-            var actual = report.Render("PDF", "<DeviceInfo><HumanReadablePdf>true</HumanReadablePdf></DeviceInfo>");
+            // EmbedFonts=None forces the base-14 literal-WinAnsi-Tj path (see PDFWriter's
+            // DrawWrappedText) rather than the default Subset/composite-CID-font embedding,
+            // where drawn text is written as opaque hex glyph ids and can't be recovered by
+            // a plain substring check regardless of platform.
+            var actual = report.Render("PDF", "<DeviceInfo><HumanReadablePdf>true</HumanReadablePdf><EmbedFonts>None</EmbedFonts></DeviceInfo>");
 
             Assert.IsTrue(actual.Length > 0, "PDF output should not be empty");
             string header = Encoding.ASCII.GetString(actual, 0, Math.Min(5, actual.Length));

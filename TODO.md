@@ -18,8 +18,6 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred; see `docs/decisions.md`'s Map engine entry | HIGH |
 | 🔵 **LOW** | Remaining CS0649 dead-field warnings (~54) | 📋 Each needs its own judgment call; see `tasks/remaining-warning-cleanup.md` | LOW |
 
-> The prior "Chart Library Migration (OxyPlot)" decision was retracted — see `docs/decisions.md`. Charts/gauges are rendered by vendored GDI+ engines this repo owns, not external libraries; the plan re-targets their existing rendering seams to SkiaSharp.
-
 ### Long-Term Vision
 
 The architecture should support Windows, Linux, and macOS rendering, third-party rendering engines, and future rendering technologies — the rendering system should become a platform rather than a collection of built-in renderers. See `AGENTS.md`'s Mission statement for the one-line version; this file (not AGENTS.md) tracks how close each renderer actually is to that goal.

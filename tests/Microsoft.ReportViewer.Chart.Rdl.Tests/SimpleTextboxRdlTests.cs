@@ -37,14 +37,22 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
                 report.LoadReportDefinition(fs);
             }
 
-            var actual = report.Render("PDF", "<DeviceInfo><HumanReadablePdf>true</HumanReadablePdf></DeviceInfo>");
+            // EmbedFonts=None forces the base-14 literal-WinAnsi-Tj path (see PDFWriter's
+            // DrawWrappedText) rather than the default Subset/composite-CID-font embedding,
+            // where drawn text is written as opaque hex glyph ids and can't be recovered by
+            // a plain substring check regardless of platform.
+            var actual = report.Render("PDF", "<DeviceInfo><HumanReadablePdf>true</HumanReadablePdf><EmbedFonts>None</EmbedFonts></DeviceInfo>");
 
             Assert.IsTrue(actual.Length > 0, "PDF output should not be empty");
             string header = Encoding.ASCII.GetString(actual, 0, Math.Min(5, actual.Length));
             Assert.AreEqual("%PDF-", header, "Output should be a well-formed PDF document");
 
+            // Checked as two separate substrings, not one "quick brown" phrase: the base-14
+            // approximate word-wrap doesn't necessarily break at the same column as embedded
+            // real-font metrics would, so the wrap point can land between these two words.
             string content = Encoding.Latin1.GetString(actual);
-            StringAssert.Contains(content, "The quick brown");
+            StringAssert.Contains(content, "The quick");
+            StringAssert.Contains(content, "brown fox");
             StringAssert.Contains(content, "Tj");
         }
     }

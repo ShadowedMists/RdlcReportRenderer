@@ -220,7 +220,16 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				m_cachedFont = shapeData.Font;
 				m_itemizedScriptId = shapeData.ItemizedScriptId;
 				m_runState = shapeData.State;
-				if (shapeData.GlyphData != null)
+				// shapeData.GlyphData only ever holds the Windows ScriptShape step's output
+				// (glyphs/clusters/VisAttrs) - ScriptPlace still has to run later, lazily,
+				// against a real HDC (see LoadGlyphData). The cross-platform HarfBuzz path has
+				// no such shape/place split: SKShaper.Shape produces both together in one call,
+				// so there's no placement step to defer and nothing usable to reuse here.
+				// Leaving m_cachedGlyphData null makes the first GetWidth/GetGlyphData call
+				// fall through to ShapeAndPlace -> ShapeAndPlaceCrossPlatform and re-shape for
+				// real, instead of LoadGlyphData trying to Win32.ScriptPlace non-existent
+				// placement data on a platform that has no such API.
+				if (shapeData.GlyphData != null && OperatingSystem.IsWindows())
 				{
 					m_cachedGlyphData = new GlyphData(shapeData.GlyphData);
 				}
