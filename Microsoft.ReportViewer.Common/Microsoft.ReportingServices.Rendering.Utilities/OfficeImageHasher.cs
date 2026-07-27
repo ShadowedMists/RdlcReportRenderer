@@ -71,7 +71,7 @@ namespace Microsoft.ReportingServices.Rendering.Utilities
 			int num3 = (num2 >= 56) ? (64 - num2 + 64) : (64 - num2);
 			int num4 = (int)inputStream.Length + num3;
 			byte[] array = new byte[num4];
-			inputStream.Read(array, 0, (int)inputStream.Length);
+			inputStream.ReadExactly(array, 0, (int)inputStream.Length);
 			array[(int)inputStream.Length] = 128;
 			for (int i = 0; i < 8; i++)
 			{

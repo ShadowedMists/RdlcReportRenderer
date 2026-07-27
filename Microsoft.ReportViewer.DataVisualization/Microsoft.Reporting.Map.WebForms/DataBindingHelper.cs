@@ -625,7 +625,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		public static string GetDataSourceDefaultDataMember(object dataSource)
 		{
-			string text = "";
 			DataSet dataSet = dataSource as DataSet;
 			if (dataSet != null && dataSet.Tables.Count > 0)
 			{

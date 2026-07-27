@@ -55,7 +55,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 						stream.Write(array2, 0, 69);
 						int num3 = num2 - 69;
 						byte[] array3 = new byte[num3];
-						currentImageStream.Read(array3, 0, num3);
+						currentImageStream.ReadExactly(array3, 0, num3);
 						stream.Write(array3, 0, array3.Length);
 						currentLength += num2;
 						dggContainer.StreamList[currentBlip].Offset = (int)currentImageStream.Position;
@@ -66,7 +66,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 					stream.Write(array2, 0, array2.Length);
 					int num4 = (int)(currentImageStream.Length - currentImageStream.Position);
 					byte[] array4 = new byte[num4];
-					currentImageStream.Read(array4, 0, num4);
+					currentImageStream.ReadExactly(array4, 0, num4);
 					stream.Write(array4, 0, array4.Length);
 					currentLength += num4 + 69;
 					dggContainer.StreamList[currentBlip].Offset = -1;
@@ -173,7 +173,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 					if (num4 > 0)
 					{
 						byte[] array2 = new byte[num4];
-						currentImageStream.Read(array2, 0, array2.Length);
+						currentImageStream.ReadExactly(array2, 0, array2.Length);
 						output.BaseStream.Write(array2, 0, array2.Length);
 						currentLength += array2.Length;
 					}
@@ -190,7 +190,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 				else
 				{
 					byte[] buffer = new byte[num3];
-					currentImageStream.Read(buffer, 0, num3);
+					currentImageStream.ReadExactly(buffer, 0, num3);
 					output.BaseStream.Write(buffer, 0, num3);
 					dggContainer.StreamList[currentBlip].Offset = (int)currentImageStream.Position;
 				}

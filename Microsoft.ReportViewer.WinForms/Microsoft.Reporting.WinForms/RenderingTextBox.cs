@@ -587,7 +587,6 @@ namespace Microsoft.Reporting.WinForms
 			RPLFormat.VerticalAlignments verticalAlign = VerticalAlign;
 			if (firstParagraph)
 			{
-				bool flag = false;
 				if ((writingMode != 0) ? (totalContent < TextPosition.Width) : (totalContent < TextPosition.Height))
 				{
 					switch (verticalAlign)

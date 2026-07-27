@@ -540,7 +540,6 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 
 		private bool GetTextAlignForType(TypeCode typeCode)
 		{
-			bool flag = false;
 			if ((uint)(typeCode - 4) <= 12u)
 			{
 				return true;

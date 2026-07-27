@@ -91,7 +91,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		public Stream GetCoreXml()
 		{
-			Stream stream = null;
 			using (IGaugeMapper gaugeMapper = GaugeMapperFactory.CreateGaugeMapperInstance((GaugePanel)m_reportElementDef, GetDefaultFontFamily()))
 			{
 				gaugeMapper.DpiX = m_dpiX;

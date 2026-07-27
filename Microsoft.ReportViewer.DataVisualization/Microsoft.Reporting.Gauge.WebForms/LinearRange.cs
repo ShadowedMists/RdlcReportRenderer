@@ -154,7 +154,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				return null;
 			}
-			LinearScale linearScale = null;
 			try
 			{
 				return GetGauge().Scales[base.ScaleName];

@@ -27,7 +27,7 @@ namespace Microsoft.Reporting.WinForms
 				stream.Position = 0L;
 				stream.Position = 0L;
 				m_mainStreamBytes = new byte[stream.Length];
-				stream.Read(m_mainStreamBytes, 0, (int)stream.Length);
+				stream.ReadExactly(m_mainStreamBytes, 0, (int)stream.Length);
 			}
 		}
 

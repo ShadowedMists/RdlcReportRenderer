@@ -176,7 +176,6 @@ namespace Microsoft.ReportingServices.ReportRendering
 
 		private int IndexCellDefinition(Microsoft.ReportingServices.ReportProcessing.Matrix matrixDef)
 		{
-			int num = 0;
 			if (m_owner.NoRows)
 			{
 				return m_rowIndex * matrixDef.MatrixColumns.Count + m_columnIndex;

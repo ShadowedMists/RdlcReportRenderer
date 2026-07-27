@@ -12,7 +12,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 			{
 				return 0;
 			}
-			int num = 0;
 			using (SPBProcessing sPBProcessing = new SPBProcessing(report, totalPages, needTotalPages: true))
 			{
 				sPBProcessing.CanTracePagination = true;
@@ -27,7 +26,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 			{
 				return 0;
 			}
-			int num = 0;
 			using (SPBProcessing sPBProcessing = new SPBProcessing(report, 0, needTotalPages: false))
 			{
 				sPBProcessing.CanTracePagination = true;
@@ -70,7 +68,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 				return null;
 			}
 			int lastPageCollected = 0;
-			string text = null;
 			using (SPBProcessing sPBProcessing = new SPBProcessing(report, totalPages, needTotalPages: true))
 			{
 				sPBProcessing.CanTracePagination = true;

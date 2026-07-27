@@ -1278,7 +1278,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal float GetTickMarkOffset(CustomTickMark tickMark)
 		{
-			float num = 0f;
 			switch (tickMark.Placement)
 			{
 			case Placement.Inside:
@@ -1344,7 +1343,6 @@ namespace Microsoft.Reporting.Map.WebForms
 				gap.SetOffsetBase(MinorTickMark.Placement, MinorTickMark.Length);
 			}
 			gap.SetBase();
-			float num = 0f;
 			switch (placement)
 			{
 			case Placement.Inside:
@@ -1640,7 +1638,6 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			double valueAgainstScaleRatio = GetValueAgainstScaleRatio(value);
 			double num = endPos - startPos;
-			float num2 = 0f;
 			if (IsReversed())
 			{
 				return (float)((double)endPos - num * valueAgainstScaleRatio);

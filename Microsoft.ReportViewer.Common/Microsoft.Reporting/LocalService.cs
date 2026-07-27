@@ -413,7 +413,7 @@ namespace Microsoft.Reporting
 				if (chunk != null)
 				{
 					byte[] array = new byte[chunk.Length];
-					chunk.Read(array, 0, (int)chunk.Length);
+					chunk.ReadExactly(array, 0, (int)chunk.Length);
 					return array;
 				}
 			}

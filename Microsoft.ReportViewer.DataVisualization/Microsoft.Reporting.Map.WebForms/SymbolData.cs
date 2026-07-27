@@ -82,14 +82,14 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			byte[] array = new byte[Marshal.SizeOf(typeof(int))];
 			byte[] array2 = new byte[Marshal.SizeOf(typeof(double))];
-			stream.Read(array, 0, array.Length);
+			stream.ReadExactly(array, 0, array.Length);
 			int num = BitConverter.ToInt32(array, 0);
 			Points = new MapPoint[num];
 			for (int i = 0; i < num; i++)
 			{
-				stream.Read(array2, 0, array2.Length);
+				stream.ReadExactly(array2, 0, array2.Length);
 				Points[i].X = BitConverter.ToDouble(array2, 0);
-				stream.Read(array2, 0, array2.Length);
+				stream.ReadExactly(array2, 0, array2.Length);
 				Points[i].Y = BitConverter.ToDouble(array2, 0);
 			}
 		}

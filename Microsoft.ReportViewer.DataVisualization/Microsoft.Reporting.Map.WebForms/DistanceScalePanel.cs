@@ -205,7 +205,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal override object GetDefaultPropertyValue(string prop, object currentValue)
 		{
-			object obj = null;
 			switch (prop)
 			{
 			case "Size":

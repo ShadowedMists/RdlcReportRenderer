@@ -73,7 +73,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			if (dataSetTokenIDs != null && m_dataSetTokenIDs != null)
 			{
 				DrillthroughParameters drillthroughParameters = new DrillthroughParameters();
-				object obj = null;
 				for (int i = 0; i < m_dataSetTokenIDs.Count; i++)
 				{
 					drillthroughParameters.Add(value: (m_dataSetTokenIDs[i] < 0) ? m_reportParameters.GetValue(i) : dataSetTokenIDs[m_dataSetTokenIDs[i]], key: m_reportParameters.GetKey(i));

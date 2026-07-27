@@ -51,7 +51,7 @@ namespace Microsoft.ReportingServices
 							stream = itemContext.EmbeddedResourceAssembly.GetManifestResourceStream(itemContext.PreviewStorePath);
 						}
 						value = new byte[stream.Length];
-						stream.Read(value, 0, (int)stream.Length);
+						stream.ReadExactly(value, 0, (int)stream.Length);
 					}
 					finally
 					{

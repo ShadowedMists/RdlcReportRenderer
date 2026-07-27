@@ -315,7 +315,6 @@ namespace Microsoft.ReportingServices.ReportRendering
 		{
 			get
 			{
-				string text = null;
 				if (Rendering.m_actionDef.DrillthroughReportName.Type == ExpressionInfo.Types.Constant)
 				{
 					return Rendering.m_actionDef.DrillthroughReportName.Value;

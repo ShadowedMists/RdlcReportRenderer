@@ -5886,7 +5886,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private Region GetClipRegion()
 		{
-			Region region = null;
 			using (GraphicsPath graphicsPath = new GraphicsPath())
 			{
 				foreach (HotRegion item in HotRegionList.List)

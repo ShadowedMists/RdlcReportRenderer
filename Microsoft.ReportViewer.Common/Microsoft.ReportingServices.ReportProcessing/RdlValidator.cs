@@ -89,7 +89,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 					if (!m_validationNamespaces.Contains(text3))
 					{
 						int num = 0;
-						int num2 = 0;
 						IXmlLineInfo obj = (IXmlLineInfo)m_reader;
 						num = obj.LineNumber;
 						message = RDLValidatingReaderStrings.rdlValidationUnknownRequiredNamespaces(position: obj.LinePosition.ToString(CultureInfo.InvariantCulture.NumberFormat), xmlns: text2, prefix: text3, sqlServerVersionName: "Microsoft SQL Server 2019 Community Technology Preview 2.3", linenumber: num.ToString(CultureInfo.InvariantCulture.NumberFormat));

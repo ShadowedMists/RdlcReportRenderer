@@ -1431,7 +1431,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal static Brush GetBackBrush(MapGraphics g, GraphicsPath path, RectangleF pathBounds, Color fillColor, Color secondaryColor, GradientType gradientType, MapHatchStyle hatchStyle)
 		{
-			Brush brush = null;
 			if (hatchStyle != 0)
 			{
 				return MapGraphics.GetHatchBrush(hatchStyle, fillColor, secondaryColor);

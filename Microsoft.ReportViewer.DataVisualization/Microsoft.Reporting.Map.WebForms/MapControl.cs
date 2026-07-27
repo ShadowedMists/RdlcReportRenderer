@@ -1290,7 +1290,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(MapControl).Namespace + ".DundasMap.js");
 				byte[] array = new byte[manifestResourceStream.Length];
-				manifestResourceStream.Read(array, 0, array.Length);
+				manifestResourceStream.ReadExactly(array, 0, array.Length);
 				string value = ObfuscateJavaScript(Encoding.UTF8.GetString(array));
 				try
 				{
@@ -1380,7 +1380,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				Stream manifestResourceStream2 = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(MapControl).Namespace + ".Empty.gif");
 				byte[] array2 = new byte[manifestResourceStream2.Length];
-				manifestResourceStream2.Read(array2, 0, array2.Length);
+				manifestResourceStream2.ReadExactly(array2, 0, array2.Length);
 				try
 				{
 					FileStream fileStream = File.Create(text2);
@@ -1400,7 +1400,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				Stream manifestResourceStream3 = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(MapControl).Namespace + ".Rendering.gif");
 				byte[] array3 = new byte[manifestResourceStream3.Length];
-				manifestResourceStream3.Read(array3, 0, array3.Length);
+				manifestResourceStream3.ReadExactly(array3, 0, array3.Length);
 				try
 				{
 					FileStream fileStream2 = File.Create(text3);

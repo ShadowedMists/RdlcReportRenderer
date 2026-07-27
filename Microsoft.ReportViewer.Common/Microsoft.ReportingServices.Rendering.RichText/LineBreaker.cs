@@ -46,7 +46,6 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal static List<Paragraph> Flow(TextBox textBox, Graphics g, FontCache fontCache, FlowContext flowContext, bool keepLines, out float height)
 		{
-			List<Paragraph> list = null;
 			float dpiX = g.DpiX;
 			Win32DCSafeHandle win32DCSafeHandle = new Win32DCSafeHandle(g.GetHdc(), ownsHandle: false);
 			try

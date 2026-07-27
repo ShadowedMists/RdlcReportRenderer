@@ -356,7 +356,6 @@ namespace Microsoft.ReportingServices.OnDemandProcessing
 
 		internal static IDbConnection OpenConnection(Microsoft.ReportingServices.ReportIntermediateFormat.DataSource dataSourceObj, Microsoft.ReportingServices.ReportIntermediateFormat.DataSet dataSetObj, OnDemandProcessingContext pc, DataProcessingMetrics metrics)
 		{
-			IDbConnection dbConnection = null;
 			try
 			{
 				metrics.StartTimer(DataProcessingMetrics.MetricType.OpenConnection);

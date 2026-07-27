@@ -218,7 +218,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 				{
 					return true;
 				}
-				bool flag = false;
 				if (m_source.Visibility.Hidden.IsExpression)
 				{
 					return m_source.Instance.Visibility.StartHidden;
@@ -798,7 +797,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 			{
 				return false;
 			}
-			bool flag = false;
 			if (m_source.Visibility.Hidden.IsExpression)
 			{
 				return m_source.Instance.Visibility.CurrentlyHidden;

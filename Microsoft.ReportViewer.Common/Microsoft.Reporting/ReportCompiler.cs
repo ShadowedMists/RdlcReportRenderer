@@ -9,7 +9,6 @@ namespace Microsoft.Reporting
 	{
 		public static PublishingResult CompileReport(ICatalogItemContext context, byte[] reportDefinition, bool generateExpressionHostWithRefusedPermissions, out ControlSnapshot snapshot)
 		{
-			PublishingResult publishingResult = null;
 			snapshot = null;
 			try
 			{

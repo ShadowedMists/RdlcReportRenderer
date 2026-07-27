@@ -110,7 +110,6 @@ namespace Microsoft.ReportingServices.OnDemandProcessing
 
 		private byte[] ReadImageDataFromChunk(string chunkName, Microsoft.ReportingServices.ReportProcessing.ReportProcessing.ReportChunkTypes chunkType)
 		{
-			byte[] array = null;
 			string mimeType;
 			Stream chunk = m_chunkFactory.GetChunk(chunkName, chunkType, ChunkMode.Open, out mimeType);
 			Global.Tracer.Assert(chunk != null, "Could not find expected image data chunk.  Name='{0}', Type={1}", chunkName, chunkType);

@@ -95,7 +95,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			IRIFReportDataScope iRIFReportDataScope = (IRIFReportDataScope)m_memberDef.ReportScope.RIFReportScope;
 			if (iRIFReportDataScope.IsBoundToStreamingScopeInstance && !iRIFReportDataScope.CurrentStreamingScopeInstance.Value().IsNoRows)
 			{
-				List<ScopeValue> list = null;
 				IOnDemandMemberInstance onDemandMemberInstance = (IOnDemandMemberInstance)iRIFReportDataScope.CurrentStreamingScopeInstance.Value();
 				m_scopeID = new ScopeID(EvaluateSortAndGroupExpressionValues(onDemandMemberInstance.GroupExprValues)?.ToArray());
 			}

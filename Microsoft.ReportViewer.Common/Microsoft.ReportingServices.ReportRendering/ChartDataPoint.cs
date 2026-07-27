@@ -229,7 +229,6 @@ namespace Microsoft.ReportingServices.ReportRendering
 
 		private int IndexDataPointDefinition(Microsoft.ReportingServices.ReportProcessing.Chart chartDef)
 		{
-			int num = 0;
 			if (m_owner.NoRows)
 			{
 				return m_seriesIndex * chartDef.StaticCategoryCount + m_categoryIndex;

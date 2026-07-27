@@ -610,7 +610,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal override object GetDefaultPropertyValue(string prop, object currentValue)
 		{
-			object obj = null;
 			if (!(prop == "Dock"))
 			{
 				if (prop == "Size")
@@ -958,7 +957,6 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return new SolidBrush(RangeGapColor);
 			}
-			Brush brush = null;
 			SwatchColor swatchColor = Colors[colorIndex];
 			Color color = swatchColor.Color;
 			Color secondaryColor = swatchColor.SecondaryColor;

@@ -739,7 +739,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal float GetLabelsOffset(GaugeGraphics g)
 		{
-			float num = 0f;
 			float num2 = (LabelStyle.FontUnit != 0) ? (g.GetRelativeSize(new SizeF(LabelStyle.Font.Size * 1.3f, 0f)).Width * (100f / Radius)) : LabelStyle.Font.Size;
 			if (LabelStyle.Placement == Placement.Inside)
 			{

@@ -341,7 +341,6 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private static ImageCodecInfo[] GetGdiImageEncoders()
 		{
-			ImageCodecInfo[] array = null;
 			if (m_encoders == null)
 			{
 				return ImageCodecInfo.GetImageEncoders();

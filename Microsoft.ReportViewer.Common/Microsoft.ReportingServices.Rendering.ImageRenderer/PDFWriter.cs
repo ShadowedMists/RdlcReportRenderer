@@ -311,7 +311,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				array = new byte[(int)imageStream.Length];
 				imageStream.Position = 0L;
-				imageStream.Read(array, 0, (int)imageStream.Length);
+				imageStream.ReadExactly(array, 0, (int)imageStream.Length);
 			}
 			PDFImage pDFImage = GetImage(imageName, array, imageDataOffset, null);
 			bool flag = true;

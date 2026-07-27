@@ -1476,7 +1476,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 			dataManager.ApplyPaletteColors();
 			foreach (Series item in Series)
 			{
-				bool flag = false;
 				if (item.Palette != 0 || chartTypeRegistry.GetChartType(item.ChartTypeName).ApplyPaletteColorsToPoints)
 				{
 					item.ApplyPaletteColors();

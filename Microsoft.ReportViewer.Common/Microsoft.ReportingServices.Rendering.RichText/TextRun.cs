@@ -458,7 +458,6 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			{
 				if (num2 == -2147220992)
 				{
-					int num3 = 0;
 					m_cachedFont = fontCache.GetFallbackFont(script: (!m_itemizedScriptId.HasValue) ? ScriptAnalysis.eScript : m_itemizedScriptId.Value, textRunProps: m_textRunProps, charset: GetCharset(), verticalFont: verticalFont);
 					fontCache.SelectFontObject(hdc, m_cachedFont.Hfont);
 					flag = true;

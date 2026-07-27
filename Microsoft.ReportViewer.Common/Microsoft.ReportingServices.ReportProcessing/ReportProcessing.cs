@@ -22823,7 +22823,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			{
 				return null;
 			}
-			DocumentMapNode documentMapNode = null;
 			ChunkManager.EventsChunkManager eventsChunkManager = null;
 			try
 			{
@@ -23773,7 +23772,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			{
 				cultureInfo = Thread.CurrentThread.CurrentCulture;
 				Thread.CurrentThread.CurrentCulture = Localization.ClientPrimaryCulture;
-				ProcessingMessageList processingMessageList = null;
 				if (flag)
 				{
 					return ProcessReportParameters(report2, onDemandProcessingContext, pc.Parameters);

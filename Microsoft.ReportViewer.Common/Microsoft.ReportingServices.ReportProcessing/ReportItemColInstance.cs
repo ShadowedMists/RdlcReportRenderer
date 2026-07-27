@@ -92,7 +92,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal int GetReportItemUniqueName(int index)
 		{
-			int num = -1;
 			ReportItem reportItem = null;
 			Global.Tracer.Assert(index >= 0 && index < m_reportItemColDef.Count);
 			m_reportItemColDef.GetReportItem(index, out bool computed, out int internalIndex, out reportItem);

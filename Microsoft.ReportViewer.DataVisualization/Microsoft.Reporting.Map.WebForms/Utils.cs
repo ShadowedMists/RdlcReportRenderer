@@ -159,7 +159,6 @@ namespace Microsoft.Reporting.Map.WebForms
 				angle = 180f - angle % 180f;
 			}
 			float num = Rad2Deg((float)Math.Atan(size.Width / size.Height));
-			float num2 = 0f;
 			if (angle >= num)
 			{
 				return (float)((double)(size.Width / 2f) / Math.Sin(Deg2Rad(angle)));

@@ -356,7 +356,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 
 			internal object GetFieldValue(int aliasIndex)
 			{
-				object obj = null;
 				if (m_recordRow.RecordFields[aliasIndex] == null)
 				{
 					throw new ReportProcessingException_FieldError(DataFieldStatus.IsMissing, null);
@@ -700,7 +699,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 
 			internal static Stream OpenExistingDocumentMapStream(OnDemandMetadata odpMetadata, ICatalogItemContext reportContext, IChunkFactory chunkFactory)
 			{
-				Stream stream = null;
 				if (!odpMetadata.ReportSnapshot.CanUseExistingDocumentMapChunk(reportContext))
 				{
 					return null;
@@ -765,7 +763,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat.Persistence
 
 		private static string GenerateDataChunkName(DataSetInstance dataSetInstance, OnDemandProcessingContext context)
 		{
-			string text = null;
 			DataSet dataSetDef = dataSetInstance.DataSetDef;
 			if (context.InSubreport)
 			{

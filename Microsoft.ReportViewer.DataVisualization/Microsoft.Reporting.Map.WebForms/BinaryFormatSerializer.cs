@@ -360,7 +360,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				Stream obj2 = (Stream)obj;
 				byte[] array3 = new byte[obj2.Length];
 				obj2.Seek(0L, SeekOrigin.Begin);
-				obj2.Read(array3, 0, array3.Length);
+				obj2.ReadExactly(array3, 0, array3.Length);
 				writer.Write(array3.Length);
 				writer.Write(array3);
 				return;

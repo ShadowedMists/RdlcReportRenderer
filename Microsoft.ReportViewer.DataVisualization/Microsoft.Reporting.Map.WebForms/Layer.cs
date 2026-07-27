@@ -421,7 +421,6 @@ namespace Microsoft.Reporting.Map.WebForms
 			RectangleF rectangleF = RectangleF.Empty;
 			foreach (ISelectable layerElement in GetLayerElements())
 			{
-				bool flag = false;
 				if ((layerElement as IContentElement)?.IsVisible(g, this, allLayers: false, clipRect) ?? layerElement.IsVisible())
 				{
 					rectangleF = ((!rectangleF.IsEmpty) ? RectangleF.Union(rectangleF, layerElement.GetSelectionRectangle(g, clipRect)) : layerElement.GetSelectionRectangle(g, clipRect));

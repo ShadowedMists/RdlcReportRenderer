@@ -14,7 +14,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal static IRenderingExtension GetNewRenderer(string format, IExtensionFactory extFactory)
 		{
-			IRenderingExtension renderingExtension = null;
 			try
 			{
 				return (IRenderingExtension)extFactory.GetNewRendererExtensionClass(format);

@@ -214,24 +214,24 @@ namespace Microsoft.Reporting.Map.WebForms
 			byte[] array = new byte[Marshal.SizeOf(typeof(byte))];
 			byte[] array2 = new byte[Marshal.SizeOf(typeof(int))];
 			byte[] array3 = new byte[Marshal.SizeOf(typeof(double))];
-			stream.Read(array2, 0, array2.Length);
+			stream.ReadExactly(array2, 0, array2.Length);
 			int num = BitConverter.ToInt32(array2, 0);
 			Segments = new ShapeSegment[num];
 			for (int i = 0; i < num; i++)
 			{
-				stream.Read(array, 0, array.Length);
+				stream.ReadExactly(array, 0, array.Length);
 				Segments[i].Type = (SegmentType)array[0];
-				stream.Read(array2, 0, array2.Length);
+				stream.ReadExactly(array2, 0, array2.Length);
 				Segments[i].Length = BitConverter.ToInt32(array2, 0);
 			}
-			stream.Read(array2, 0, array2.Length);
+			stream.ReadExactly(array2, 0, array2.Length);
 			int num2 = BitConverter.ToInt32(array2, 0);
 			Points = new MapPoint[num2];
 			for (int j = 0; j < num2; j++)
 			{
-				stream.Read(array3, 0, array3.Length);
+				stream.ReadExactly(array3, 0, array3.Length);
 				Points[j].X = BitConverter.ToDouble(array3, 0);
-				stream.Read(array3, 0, array3.Length);
+				stream.ReadExactly(array3, 0, array3.Length);
 				Points[j].Y = BitConverter.ToDouble(array3, 0);
 			}
 		}

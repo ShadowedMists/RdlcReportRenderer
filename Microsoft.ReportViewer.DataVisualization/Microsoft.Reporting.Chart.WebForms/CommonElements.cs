@@ -101,7 +101,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal static double ParseDouble(string stringToParse)
 		{
-			double num = 0.0;
 			try
 			{
 				return double.Parse(stringToParse, CultureInfo.InvariantCulture);
@@ -114,7 +113,6 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal static float ParseFloat(string stringToParse)
 		{
-			float num = 0f;
 			try
 			{
 				return float.Parse(stringToParse, CultureInfo.InvariantCulture);

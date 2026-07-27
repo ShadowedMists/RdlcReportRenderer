@@ -155,7 +155,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			{
 				return null;
 			}
-			string text = null;
 			CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
 			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 			try

@@ -186,7 +186,7 @@ namespace Microsoft.ReportingServices.Rendering.RPLProcessing
 			baseStream.Seek(offset, SeekOrigin.Begin);
 			int num = binaryReader.ReadInt32();
 			byte[] array = new byte[num];
-			baseStream.Read(array, 0, num);
+			baseStream.ReadExactly(array, 0, num);
 			return array;
 		}
 

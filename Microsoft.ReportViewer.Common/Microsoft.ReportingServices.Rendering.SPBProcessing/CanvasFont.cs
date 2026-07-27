@@ -134,7 +134,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 
 		private StringAlignment CreateTextStringAlignment(TextAlignments alignment)
 		{
-			StringAlignment stringAlignment = StringAlignment.Near;
 			switch (alignment)
 			{
 			case TextAlignments.Center:

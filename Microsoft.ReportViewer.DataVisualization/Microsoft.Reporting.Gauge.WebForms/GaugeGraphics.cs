@@ -1007,7 +1007,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal Brush GetCircularRangeBrush(RectangleF rect, float startAngle, float sweepAngle, Color backColor, GaugeHatchStyle backHatchStyle, string backImage, GaugeImageWrapMode backImageMode, Color backImageTranspColor, GaugeImageAlign backImageAlign, RangeGradientType backGradientType, Color backGradientEndColor)
 		{
-			Brush brush = null;
 			RectangleF absoluteRectangle = GetAbsoluteRectangle(rect);
 			if (backHatchStyle != 0)
 			{
@@ -1287,7 +1286,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal Brush GetLinearRangeBrush(RectangleF absRect, Color backColor, GaugeHatchStyle backHatchStyle, RangeGradientType backGradientType, Color backGradientEndColor, GaugeOrientation orientation, bool reversedScale, double startValue, double endValue)
 		{
-			Brush brush = null;
 			if (backHatchStyle != 0)
 			{
 				return GetHatchBrush(backHatchStyle, backColor, backGradientEndColor);

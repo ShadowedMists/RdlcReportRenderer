@@ -237,7 +237,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			stream.Seek(0L, SeekOrigin.Begin);
 			byte[] array = new byte[stream.Length];
-			stream.Read(array, 0, array.Length);
+			stream.ReadExactly(array, 0, array.Length);
 			return Convert.ToBase64String(array);
 		}
 

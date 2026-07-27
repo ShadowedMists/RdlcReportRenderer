@@ -507,13 +507,13 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 			if (num4 == 0)
 			{
 				byte[] array = new byte[imageStream.Length];
-				imageStream.Read(array, 0, array.Length);
+				imageStream.ReadExactly(array, 0, array.Length);
 				output.Write(array, 0, array.Length);
 			}
 			else
 			{
 				byte[] array2 = new byte[8192];
-				imageStream.Read(array2, 0, array2.Length);
+				imageStream.ReadExactly(array2, 0, array2.Length);
 				output.Write(array2, 0, array2.Length);
 				for (int i = 0; i < num4; i++)
 				{
@@ -524,7 +524,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 					}
 					WriteHeader(output, 60, num7);
 					byte[] array3 = new byte[num7];
-					imageStream.Read(array3, 0, array3.Length);
+					imageStream.ReadExactly(array3, 0, array3.Length);
 					output.Write(array3, 0, array3.Length);
 				}
 			}

@@ -851,7 +851,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 			{
 				Stream manifestResourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(GaugeContainer).Namespace + ".DundasGauge.js");
 				byte[] array = new byte[manifestResourceStream.Length];
-				manifestResourceStream.Read(array, 0, array.Length);
+				manifestResourceStream.ReadExactly(array, 0, array.Length);
 				string value = ObfuscateJavaScript(Encoding.UTF8.GetString(array));
 				StreamWriter streamWriter = File.CreateText(text);
 				streamWriter.Write(value);

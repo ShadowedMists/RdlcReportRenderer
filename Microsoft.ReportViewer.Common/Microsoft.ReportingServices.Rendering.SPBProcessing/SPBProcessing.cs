@@ -187,7 +187,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 
 		public static int TotalNrOfPages(Microsoft.ReportingServices.OnDemandReportRendering.Report report)
 		{
-			int num = 0;
 			using (SPBProcessing sPBProcessing = new SPBProcessing(report, 0, needTotalPages: false))
 			{
 				if (sPBProcessing.m_totalPages <= 0)
@@ -350,7 +349,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 			{
 				return null;
 			}
-			Dictionary<string, string> dictionary = null;
 			using (SPBProcessing sPBProcessing = new SPBProcessing(report, totalPages, needTotalPages: true))
 			{
 				sPBProcessing.m_pageContext.CanTracePagination = true;

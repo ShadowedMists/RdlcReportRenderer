@@ -563,7 +563,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal SortFilterEventInfoHashtable GetSortFilterEventInfo(ChunkManager.RenderingChunkManager chunkManager)
 		{
-			IntermediateFormatReader intermediateFormatReader = null;
 			if (m_sortFilterEventInfo != null)
 			{
 				return (SortFilterEventInfoHashtable)m_sortFilterEventInfo;

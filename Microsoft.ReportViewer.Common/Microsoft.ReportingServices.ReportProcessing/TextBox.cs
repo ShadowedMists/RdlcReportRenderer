@@ -625,7 +625,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		private InScopeSortFilterHashtable GetSortFiltersInScope(bool create, bool inDetail)
 		{
-			InScopeSortFilterHashtable inScopeSortFilterHashtable = null;
 			ReportItem parent = m_parent;
 			if (inDetail)
 			{

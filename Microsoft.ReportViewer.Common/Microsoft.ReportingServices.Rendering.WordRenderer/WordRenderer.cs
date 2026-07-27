@@ -225,7 +225,7 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 				{
 					array2 = new byte[(int)rPLDynamicImageProps.DynamicImageContent.Length];
 					rPLDynamicImageProps.DynamicImageContent.Position = 0L;
-					rPLDynamicImageProps.DynamicImageContent.Read(array2, 0, (int)rPLDynamicImageProps.DynamicImageContent.Length);
+					rPLDynamicImageProps.DynamicImageContent.ReadExactly(array2, 0, (int)rPLDynamicImageProps.DynamicImageContent.Length);
 				}
 				else if (rPLDynamicImageProps.DynamicImageContentOffset >= 0)
 				{

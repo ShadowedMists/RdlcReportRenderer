@@ -419,7 +419,6 @@ namespace Microsoft.ReportingServices.ReportPublishing
 
 		internal string GetScopeName(IRIFDataScope scope)
 		{
-			string text = null;
 			if (m_scopes.TryGetValue(scope, out ScopeTreeNode value))
 			{
 				return value.ScopeName;

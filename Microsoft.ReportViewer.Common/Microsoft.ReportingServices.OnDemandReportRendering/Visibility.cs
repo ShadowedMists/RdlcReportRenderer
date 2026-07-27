@@ -29,7 +29,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		internal static ReportBoolProperty GetStartHidden(Microsoft.ReportingServices.ReportProcessing.Visibility visibility)
 		{
-			ReportBoolProperty reportBoolProperty = null;
 			if (visibility == null)
 			{
 				return new ReportBoolProperty();
@@ -39,7 +38,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		internal static ReportBoolProperty GetStartHidden(Microsoft.ReportingServices.ReportIntermediateFormat.Visibility visibility)
 		{
-			ReportBoolProperty reportBoolProperty = null;
 			if (visibility == null)
 			{
 				return new ReportBoolProperty();

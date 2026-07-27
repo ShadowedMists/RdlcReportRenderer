@@ -123,7 +123,7 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			UpgradeToCurrent(stream, ref outStream);
 			array = new byte[outStream.Length];
 			outStream.Position = 0L;
-			outStream.Read(array, 0, (int)outStream.Length);
+			outStream.ReadExactly(array, 0, (int)outStream.Length);
 			outStream.Close();
 			return array;
 		}

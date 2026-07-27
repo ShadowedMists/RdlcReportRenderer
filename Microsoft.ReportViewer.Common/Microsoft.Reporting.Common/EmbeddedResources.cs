@@ -16,7 +16,7 @@ namespace Microsoft.Reporting.Common
 			{
 				int num = (int)stream.Length;
 				byte[] array = new byte[num];
-				stream.Read(array, 0, num);
+				stream.ReadExactly(array, 0, num);
 				return array;
 			}
 		}

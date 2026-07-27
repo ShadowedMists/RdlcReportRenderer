@@ -962,7 +962,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		internal float GetTickMarkOffset(CustomTickMark tickMark)
 		{
-			float num = 0f;
 			switch (tickMark.Placement)
 			{
 			case Placement.Inside:
@@ -1048,7 +1047,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				gap.SetOffsetBase(MinorTickMarkInt.Placement, MinorTickMarkInt.Length);
 			}
 			gap.SetBase();
-			float num = 0f;
 			switch (placement)
 			{
 			case Placement.Inside:
@@ -1414,7 +1412,6 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			double valueAgainstScaleRatio = GetValueAgainstScaleRatio(value);
 			double num = endPos - startPos;
-			float num2 = 0f;
 			if (IsReversed())
 			{
 				return (float)((double)endPos - num * valueAgainstScaleRatio);

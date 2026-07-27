@@ -761,7 +761,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 				m_coreChart.Palette = ChartColorPalette.Default;
 				return;
 			}
-			ChartPalette chartPalette = ChartPalette.BrightPastel;
 			switch (m_chart.Palette.IsExpression ? ((ChartInstance)m_chart.Instance).Palette : m_chart.Palette.Value)
 			{
 			case ChartPalette.Default:
@@ -1899,7 +1898,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private void SetAxisArrow(ChartAxis chartAxis, Microsoft.Reporting.Chart.WebForms.Axis axis)
 		{
-			ChartAxisArrow chartAxisArrow = ChartAxisArrow.None;
 			if (chartAxis.Arrows != null)
 			{
 				switch (chartAxis.Arrows.IsExpression ? chartAxis.Instance.Arrows : chartAxis.Arrows.Value)
@@ -2246,7 +2244,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		{
 			if (chartGridLines.Enabled != null)
 			{
-				ChartAutoBool chartAutoBool = ChartAutoBool.Auto;
 				switch (chartGridLines.Enabled.IsExpression ? chartGridLines.Instance.Enabled : chartGridLines.Enabled.Value)
 				{
 				case ChartAutoBool.Auto:
@@ -2662,7 +2659,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			}
 			if (chartLegend.Reversed != null)
 			{
-				ChartAutoBool chartAutoBool = ChartAutoBool.Auto;
 				switch (chartLegend.Reversed.IsExpression ? chartLegend.Instance.Reversed : chartLegend.Reversed.Value)
 				{
 				case ChartAutoBool.Auto:
@@ -3289,7 +3285,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			}
 			if (chartDataLabel.Visible != null)
 			{
-				bool flag = false;
 				if (!(chartDataLabel.Visible.IsExpression ? chartDataLabel.Instance.Visible : chartDataLabel.Visible.Value))
 				{
 					if (isDataPoint)
@@ -3343,7 +3338,6 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private ChartDataLabelPositions GetDataLabelPositionValue(ChartDataLabel chartDataLabel)
 		{
-			ChartDataLabelPositions chartDataLabelPositions = ChartDataLabelPositions.Auto;
 			if (!chartDataLabel.Position.IsExpression)
 			{
 				return chartDataLabel.Position.Value;

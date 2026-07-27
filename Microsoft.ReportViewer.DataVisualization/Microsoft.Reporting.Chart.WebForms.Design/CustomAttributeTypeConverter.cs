@@ -34,7 +34,6 @@ namespace Microsoft.Reporting.Chart.WebForms.Design
 				{
 					return customAttributes.GetUserDefinedAttributes();
 				}
-				object obj = null;
 				string text = customAttributes.DataPointAttributes[name];
 				if (customAttributeInfo != null)
 				{

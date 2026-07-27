@@ -1847,7 +1847,6 @@ namespace Microsoft.Reporting.Map.WebForms
 		internal Brush GetBackBrush(MapGraphics g, GraphicsPath path)
 		{
 			RectangleF bounds = path.GetBounds();
-			Brush brush = null;
 			Color color = ApplyLayerTransparency(ColorInt);
 			Color color2 = ApplyLayerTransparency(SecondaryColorInt);
 			GradientType gradientType = GradientTypeInt;

@@ -489,7 +489,6 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat
 
 		InScopeSortFilterHashtable IInScopeEventSource.GetSortFiltersInScope(bool create, bool inDetail)
 		{
-			InScopeSortFilterHashtable inScopeSortFilterHashtable = null;
 			ReportItem parent = ((IInScopeEventSource)this).Parent;
 			if (inDetail)
 			{

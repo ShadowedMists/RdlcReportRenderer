@@ -728,7 +728,6 @@ namespace Microsoft.Reporting.Map.WebForms
 		internal double GetZoomLevelFromPointerPosition(double pos)
 		{
 			double minimumZoom = MinimumZoom;
-			double num = 0.0;
 			if (ZoomType == ZoomType.Quadratic)
 			{
 				return (MaximumZoom - minimumZoom) / 10000.0 * pos * pos + minimumZoom;
@@ -744,7 +743,6 @@ namespace Microsoft.Reporting.Map.WebForms
 		internal double GetPointerPositionFromZoomLevel(double zoom)
 		{
 			double minimumZoom = MinimumZoom;
-			double num = 0.0;
 			if (ZoomType == ZoomType.Quadratic)
 			{
 				double num2 = (MaximumZoom - minimumZoom) / 10000.0;
@@ -942,7 +940,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal override object GetDefaultPropertyValue(string prop, object currentValue)
 		{
-			object obj = null;
 			if (!(prop == "Size"))
 			{
 				if (prop == "Dock")
