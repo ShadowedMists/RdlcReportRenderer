@@ -2409,25 +2409,32 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Cross-platform counterpart to <see cref="WriteEmbeddedFont"/>'s Win32
 		/// FontPackage.Generate call: reads the SKTypeface's own font-file bytes directly
-		/// (no HDC/HFONT needed). <see cref="TrueTypeGlyphSubsetter"/> then reduces those
-		/// bytes to only the glyphs actually used (<see cref="EmbeddedFont.GetGlyphIdArray"/>)
-		/// when the font is a TrueType-outline (glyf/loca) font it can safely rewrite; for
-		/// CFF-flavored/collection fonts outside that scope, the whole font file is embedded
-		/// unchanged, same as before this increment.
+		/// (no HDC/HFONT needed) via <see cref="TryGetStandaloneFontBytes"/> - which also
+		/// extracts the specific face SkiaSharp resolved out of a TrueType Collection
+		/// ('ttcf') container, since PDF's FontFile2/FontFile3 keys require a single sfnt
+		/// program, not a multi-face TTC blob. <see cref="TrueTypeGlyphSubsetter"/>/
+		/// <see cref="CffGlyphSubsetter"/> then reduce those bytes to only the glyphs
+		/// actually used (<see cref="EmbeddedFont.GetGlyphIdArray"/>), whichever matches the
+		/// font's actual glyph-outline format (<see cref="SfntBinaryUtils.DetectOutlineFormat"/>).
 		/// </summary>
 		private void WriteSkiaEmbeddedFont(EmbeddedFont embeddedFont)
 		{
 			PDFFont pdfFont = embeddedFont.PDFFonts[0];
 			try
 			{
-				using SKStreamAsset stream = pdfFont.SkiaTypeface.OpenStream(out _);
-				using SKData data = SKData.Create(stream);
-				byte[] buffer = data.ToArray();
-				if (TrueTypeGlyphSubsetter.TrySubset(buffer, embeddedFont.GetGlyphIdArray(), out byte[] subsetBuffer))
+				if (!TryGetStandaloneFontBytes(pdfFont.SkiaTypeface, out byte[] buffer, out SfntOutlineFormat outlineFormat))
+				{
+					throw new InvalidOperationException("Unable to resolve a standalone font program from the SkiaSharp typeface (e.g. an unreadable TrueType Collection face).");
+				}
+				if (outlineFormat == SfntOutlineFormat.TrueType && TrueTypeGlyphSubsetter.TrySubset(buffer, embeddedFont.GetGlyphIdArray(), out byte[] subsetBuffer))
 				{
 					buffer = subsetBuffer;
 				}
-				WriteFontBuffer(embeddedFont.ObjectId, buffer);
+				else if (outlineFormat == SfntOutlineFormat.Cff && CffGlyphSubsetter.TrySubset(buffer, embeddedFont.GetGlyphIdArray(), out byte[] cffSubsetBuffer))
+				{
+					buffer = cffSubsetBuffer;
+				}
+				WriteFontBuffer(embeddedFont.ObjectId, buffer, isOpenType: outlineFormat == SfntOutlineFormat.Cff);
 				foreach (PDFFont font in embeddedFont.PDFFonts)
 				{
 					font.FontPDFFamily = "ABCDEE+" + font.FontPDFFamily;
@@ -2789,16 +2796,25 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		}
 
 		/// <summary>
-		/// Writes the Type0/CIDFontType2 font dictionary trio (top-level Type0, descendant
-		/// CIDFontType2, FontDescriptor) for a cross-platform embedded composite font -
-		/// the SkiaSharp-sourced counterpart to the Win32-HDC branch below (same object
-		/// shapes/field names, GetOutlineTextMetrics/GetCharABCWidthsFloat replaced by
-		/// SKFontMetrics/PDFFont.UniqueGlyphs' own widths). CIDToGIDMap is Identity since
-		/// HarfBuzzTextShaper's glyph ids already are this SKTypeface's real glyph indices
-		/// (see WriteCompositeText) - no CID-to-GID indirection is needed. Metrics
-		/// (ascent/descent/bbox/italic angle) are approximate (no font-table parsing
+		/// Writes the Type0/CIDFontTypeN font dictionary trio (top-level Type0, descendant
+		/// CIDFontType0 or CIDFontType2, FontDescriptor) for a cross-platform embedded
+		/// composite font - the SkiaSharp-sourced counterpart to the Win32-HDC branch below
+		/// (same object shapes/field names, GetOutlineTextMetrics/GetCharABCWidthsFloat
+		/// replaced by SKFontMetrics/PDFFont.UniqueGlyphs' own widths). CIDToGIDMap is
+		/// Identity since HarfBuzzTextShaper's glyph ids already are this SKTypeface's real
+		/// glyph indices (see WriteCompositeText) - no CID-to-GID indirection is needed.
+		/// Metrics (ascent/descent/bbox/italic angle) are approximate (no font-table parsing
 		/// beyond what SKFontMetrics/SKTypeface already expose) - the same class of
 		/// approximation the Win32 branch's own OUTLINETEXTMETRIC-derived values are.
+		///
+		/// The descendant Subtype and embedded-file declaration depend on the font's real
+		/// glyph-outline format (per PDF spec 9.7.4/9.9): CIDFontType2 + FontFile2 for
+		/// TrueType (glyf) outlines, CIDFontType0 + FontFile3/OpenType for CFF outlines -
+		/// using CIDFontType2 unconditionally for a CFF-flavored font would be spec-invalid
+		/// (a reader expecting glyf data in FontFile2 for that Subtype). This is decided
+		/// independently of whether <see cref="CffGlyphSubsetter"/> actually subsetted the
+		/// embedded bytes - a CFF font that fell back to whole-file embedding still needs
+		/// the CFF-shaped declaration, not the TrueType one.
 		/// </summary>
 		private void WriteSkiaCompositeFont(StringBuilder stringBuilder, PDFFont pdfFont)
 		{
@@ -2826,9 +2842,12 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				metrics = metricsFont.Metrics;
 			}
+			bool isCffOutline = DetectSkiaTypefaceOutlineFormat(typeface) == SfntOutlineFormat.Cff;
 
 			StringBuilder descendantBuilder = new StringBuilder();
-			descendantBuilder.Append("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /");
+			descendantBuilder.Append("<< /Type /Font /Subtype /");
+			descendantBuilder.Append(isCffOutline ? "CIDFontType0" : "CIDFontType2");
+			descendantBuilder.Append(" /BaseFont /");
 			descendantBuilder.Append(pdfFont.FontPDFFamily);
 			descendantBuilder.Append(" /CIDSystemInfo << /Registry (");
 			descendantBuilder.Append(pdfFont.Registry);
@@ -2836,7 +2855,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			descendantBuilder.Append(pdfFont.Ordering);
 			descendantBuilder.Append(") /Supplement ");
 			descendantBuilder.Append(pdfFont.Supplement);
-			descendantBuilder.Append(" >> /CIDToGIDMap /Identity /DW 1000 /W [");
+			descendantBuilder.Append(" >>");
+			if (!isCffOutline)
+			{
+				// CIDToGIDMap is only meaningful for CIDFontType2 (glyf outlines); for CIDFontType0
+				// with a non-CID-keyed CFF program, CIDs are used directly as GIDs per spec 9.7.4.2 -
+				// no such key exists for that Subtype.
+				descendantBuilder.Append(" /CIDToGIDMap /Identity");
+			}
+			descendantBuilder.Append(" /DW 1000 /W [");
 			foreach (PDFFont.GlyphData glyphData in pdfFont.UniqueGlyphs)
 			{
 				Write(descendantBuilder, glyphData.Glyph);
@@ -2884,12 +2911,68 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			descriptorBuilder.Append(" /StemV 80 ");
 			if (pdfFont.EmbeddedFont != null)
 			{
-				descriptorBuilder.Append(" /FontFile2 ");
+				// FontFile2 requires glyf-outline data (valid only for CIDFontType2); a CFF-flavored
+				// font must be declared via FontFile3 instead (spec 9.9) - the embedded stream's own
+				// /Subtype /OpenType (written by WriteFontBuffer, not here - that Subtype belongs on
+				// the stream dictionary, not the FontDescriptor) reflects that the embedded bytes are
+				// still the whole OTF file (WriteSkiaEmbeddedFont/CffGlyphSubsetter), not a bare CFF table.
+				descriptorBuilder.Append(isCffOutline ? " /FontFile3 " : " /FontFile2 ");
 				Write(descriptorBuilder, pdfFont.EmbeddedFont.ObjectId);
 				descriptorBuilder.Append(" 0 R ");
 			}
 			descriptorBuilder.Append(">>");
 			WriteObject(descriptorId, descriptorBuilder.ToString());
+		}
+
+		/// <summary>
+		/// Reads the sfnt version tag (<see cref="SfntBinaryUtils.DetectOutlineFormat"/>) -
+		/// used by <see cref="WriteSkiaCompositeFont"/> to choose the correct CIDFontType/
+		/// FontFile declaration independently of whether embedding is even happening for this
+		/// font (<c>pdfFont.EmbeddedFont</c> can be null - e.g. embedding-rights refused - and
+		/// the Subtype still needs to describe the real typeface for readers that substitute
+		/// by name). Falls back to <see cref="SfntOutlineFormat.TrueType"/> (the far more common
+		/// case) when the underlying face can't be resolved at all - same "best-effort, not a
+		/// crash" convention <see cref="TryGetStandaloneFontBytes"/>'s other caller uses.
+		/// </summary>
+		private static SfntOutlineFormat DetectSkiaTypefaceOutlineFormat(SKTypeface typeface)
+		{
+			return TryGetStandaloneFontBytes(typeface, out _, out SfntOutlineFormat outlineFormat) ? outlineFormat : SfntOutlineFormat.TrueType;
+		}
+
+		/// <summary>
+		/// Resolves an SKTypeface to a single standalone sfnt font program - reading its raw
+		/// font-file bytes and, when the typeface actually came from a TrueType Collection
+		/// ('ttcf') container (common for CJK/multi-weight system fonts, e.g. simsun.ttc,
+		/// msyh.ttc, cambria.ttc), extracting just the one face SkiaSharp resolved
+		/// (<c>OpenStream</c>'s own <c>ttcIndex</c> out-parameter - the same face index
+		/// SkiaSharp picked when it matched the family/style request that produced this
+		/// typeface) via <see cref="SfntBinaryUtils.TryExtractTtcFace"/>. Every downstream
+		/// consumer (<see cref="SfntBinaryUtils.DetectOutlineFormat"/>,
+		/// <see cref="TrueTypeGlyphSubsetter"/>, <see cref="CffGlyphSubsetter"/>) assumes a
+		/// single-face sfnt whose table directory starts at offset 0 - a raw TTC blob isn't
+		/// that shape, and PDF's FontFile2/FontFile3 keys can only hold one font program, not
+		/// a multi-face container.
+		/// </summary>
+		private static bool TryGetStandaloneFontBytes(SKTypeface typeface, out byte[] fontBytes, out SfntOutlineFormat outlineFormat)
+		{
+			using SKStreamAsset stream = typeface.OpenStream(out int ttcIndex);
+			using SKData data = SKData.Create(stream);
+			byte[] raw = data.ToArray();
+			if (!SfntBinaryUtils.IsTtc(raw))
+			{
+				fontBytes = raw;
+				outlineFormat = SfntBinaryUtils.DetectOutlineFormat(raw);
+				return true;
+			}
+			if (SfntBinaryUtils.TryExtractTtcFace(raw, ttcIndex, out byte[] extracted))
+			{
+				fontBytes = extracted;
+				outlineFormat = SfntBinaryUtils.DetectOutlineFormat(extracted);
+				return true;
+			}
+			fontBytes = null;
+			outlineFormat = SfntOutlineFormat.Unsupported;
+			return false;
 		}
 
 		private void ProcessFontForFontEmbedding(PDFFont pdfFont, Dictionary<string, EmbeddedFont> embeddedFonts)
@@ -3025,7 +3108,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			return objectId;
 		}
 
-		private void WriteFontBuffer(int objectId, byte[] buffer)
+		private void WriteFontBuffer(int objectId, byte[] buffer, bool isOpenType = false)
 		{
 			UpdateCrossRefPosition(objectId);
 			byte[] array = CompressBytes(buffer);
@@ -3034,6 +3117,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			Write(" 0 obj");
 			Write("\r\n");
 			Write("<< /Filter /FlateDecode ");
+			if (isOpenType)
+			{
+				// Only used for the FontFile3 stream backing a CFF-flavored composite font
+				// (WriteSkiaEmbeddedFont) - the stream dictionary itself must declare this
+				// Subtype per PDF spec 9.9, distinct from the descendant CIDFont's own Subtype.
+				Write(" /Subtype /OpenType ");
+			}
 			Write(" /Length ");
 			Write(array.Length);
 			Write(" /Length1 ");

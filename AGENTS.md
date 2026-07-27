@@ -8,34 +8,6 @@ Your primary objective is **to implement cross-platform Excel and PDF rendering 
 
 ---
 
-# Current Project Goals
-
-## Immediate Priorities
-
-**Do not treat the phase lists below as current status** — they drift. `TODO.md` is the single source of truth for what's done/in-progress/not-started; check it first.
-
-**Excel Rendering:** image-format and background-image abstractions (`ImageFormatType`, `IImageProvider`) are complete.
-
-**Chart & Gauge Rendering (Primary — active):** re-targeting the existing vendored GDI+ engines to SkiaSharp behind their existing rendering seams (Ports & Adapters), not replacing either engine with an external library — see `docs/rendering-abstractions.md` for the design and `tasks/chart-gdi-type-abstraction.md`/`tasks/gauge-gdi-type-abstraction.md` for progress. An earlier decision to replace the Chart engine with OxyPlot was retracted (`docs/decisions.md`) after its supporting evidence didn't hold up on review — don't resurrect it without re-reading that retraction first.
-
-**PDF Rendering (Secondary — not started, high risk):** blocked on Metafile/EMF having no cross-platform equivalent, a deeper architectural blocker than Chart/Gauge's. See `tasks/pdf-render-callstack-analysis.md`.
-
----
-
-## Long-Term Vision
-
-The architecture should support:
-
-- Windows rendering
-- Linux rendering
-- macOS rendering
-- Third-party rendering engines
-- Future rendering technologies
-
-The rendering system should become a platform rather than a collection of built-in renderers.
-
----
-
 # Coding Guidelines & Conventions
 
 Engineering principles, cross-platform/adapter design conventions, testing philosophy, design-pattern preferences, documentation-format standards (ADRs/tech specs/PRDs), quality attributes, risk analysis, and the lessons learned during the Chart/Gauge GDI+ migration all live in **`docs/coding-standards.md`** — read it before proposing or reviewing code changes.
@@ -219,7 +191,7 @@ Before starting work, review these files in order:
 3. **docs/rendering-abstractions.md** - Rendering architecture (Excel/PDF renderer factory + Chart/Gauge Ports & Adapters)
 4. **docs/decisions.md** / **docs/platform-support.md** - Why things are built this way, and current known gaps
 5. **tasks/chart-gdi-type-abstraction.md** / **tasks/gauge-gdi-type-abstraction.md** - active Chart/Gauge migration progress
-6. **tasks/pdf-render-callstack-analysis.md** - PDF migration roadmap (not started)
+6. **tasks/pdf-text-shaping-abstraction.md** - active PDF text-shaping work and remaining gaps (`tasks/pdf-render-callstack-analysis.md` is the historical call-chain trace that preceded it)
 
 These contain:
 - Complete call stack analysis
