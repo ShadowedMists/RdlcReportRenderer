@@ -541,6 +541,14 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 
 			internal float MeasureFullTextBoxHeight(Microsoft.ReportingServices.Rendering.RichText.TextBox textBox, FlowContext flowContext, out float contentHeight)
 			{
+				// CreateGraphics() constructs a real GDI+ Bitmap/Graphics, which cannot be
+				// constructed at all on non-Windows (see docs/platform-support.md) - skip it
+				// entirely and use the same 96 DPI CreateGraphics() would have set via
+				// m_hdcBits.SetResolution(96f, 96f).
+				if (!System.OperatingSystem.IsWindows())
+				{
+					return Microsoft.ReportingServices.Rendering.RichText.TextBox.MeasureFullHeightCrossPlatform(textBox, 96f, FontCache, flowContext, out contentHeight);
+				}
 				if (m_bitsGraphics == null)
 				{
 					CreateGraphics();

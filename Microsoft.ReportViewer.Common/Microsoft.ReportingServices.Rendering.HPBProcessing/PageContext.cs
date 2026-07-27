@@ -427,6 +427,15 @@ namespace Microsoft.ReportingServices.Rendering.HPBProcessing
 
 			internal float MeasureFullTextBoxHeight(Microsoft.ReportingServices.Rendering.RichText.TextBox textBox, FlowContext flowContext, out float contentHeight)
 			{
+				// CreateGraphics() constructs a real GDI+ Bitmap/Graphics, which cannot be
+				// constructed at all on non-Windows (see docs/platform-support.md) - skip it
+				// entirely and use m_pagination.MeasureTextDpi directly (a plain float, no
+				// GDI+ involved - CreateGraphics() would only have fed it into
+				// m_hdcBits.SetResolution anyway).
+				if (!System.OperatingSystem.IsWindows())
+				{
+					return Microsoft.ReportingServices.Rendering.RichText.TextBox.MeasureFullHeightCrossPlatform(textBox, m_pagination.MeasureTextDpi, FontCache, flowContext, out contentHeight);
+				}
 				if (m_bitsGraphics == null)
 				{
 					CreateGraphics();
@@ -436,11 +445,16 @@ namespace Microsoft.ReportingServices.Rendering.HPBProcessing
 
 			internal float MeasureTextBoxHeight(Microsoft.ReportingServices.Rendering.RichText.TextBox textBox, FlowContext flowContext)
 			{
+				float height = 0f;
+				if (!System.OperatingSystem.IsWindows())
+				{
+					LineBreaker.Flow(textBox, Win32DCSafeHandle.Zero, m_pagination.MeasureTextDpi, FontCache, flowContext, keepLines: false, out height);
+					return height;
+				}
 				if (m_bitsGraphics == null)
 				{
 					CreateGraphics();
 				}
-				float height = 0f;
 				LineBreaker.Flow(textBox, m_bitsGraphics, FontCache, flowContext, keepLines: false, out height);
 				return height;
 			}

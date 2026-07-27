@@ -152,6 +152,91 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			return num;
 		}
 
+		/// <summary>
+		/// HDC/GDI+-free counterpart to <see cref="MeasureFullHeight(TextBox, Graphics, FontCache, FlowContext, out float)"/>
+		/// for pagination (<c>SPBProcessing</c>/<c>HPBProcessing</c> <c>PageContext.MeasureFullTextBoxHeight</c>) on
+		/// non-Windows, where no real <see cref="Graphics"/> can be constructed at all to source a DPI from (GDI+
+		/// cannot construct any System.Drawing object on Linux - see docs/platform-support.md). Mirrors the same
+		/// vertical-vs-horizontal branch and convergence loop exactly, calling
+		/// <see cref="LineBreaker.FlowVerticalCrossPlatform"/>/<see cref="LineBreaker.Flow(TextBox, Win32DCSafeHandle, float, FontCache, FlowContext, bool, out float)"/>
+		/// with <paramref name="dpiX"/> supplied directly instead of read from a <see cref="Graphics"/>.
+		/// </summary>
+		internal static float MeasureFullHeightCrossPlatform(TextBox textBox, float dpiX, FontCache fontCache, FlowContext flowContext, out float contentHeight)
+		{
+			if (flowContext.Width <= 0f)
+			{
+				contentHeight = 0f;
+				return 0f;
+			}
+			FlowContext flowContext2 = flowContext.Clone();
+			flowContext2.Reset();
+			flowContext2.Height = float.MaxValue;
+			float num = 0f;
+			if (textBox.VerticalText)
+			{
+				flowContext2.LineLimit = false;
+				float width = 0f;
+				float nextWidth = 0f;
+				float num2 = 0f;
+				float num3 = flowContext.Height;
+				float num4 = 0f;
+				if (flowContext.Height == float.MaxValue)
+				{
+					num3 = 0f;
+				}
+				num2 = (contentHeight = LineBreaker.FlowVerticalCrossPlatform(textBox, dpiX, fontCache, flowContext2, out width, out nextWidth));
+				num = width;
+				num4 = width;
+				bool flag = flowContext2.CharTrimmedRunWidth > 0;
+				float num5 = 0f;
+				while (num2 < flowContext.Width && width > num3)
+				{
+					flowContext2.Reset();
+					flowContext2.Height = Math.Max(nextWidth, num3);
+					flowContext2.Width = float.MaxValue;
+					num2 = LineBreaker.FlowVerticalCrossPlatform(textBox, dpiX, fontCache, flowContext2, out width, out nextWidth);
+					if (num2 < flowContext.Width)
+					{
+						num5 = num2 - contentHeight;
+						if (num2 <= contentHeight || num5 <= 0.1f)
+						{
+							if (flag)
+							{
+								contentHeight = num2;
+								num = flowContext2.Height;
+								break;
+							}
+							if (flowContext2.CharTrimmedRunWidth <= 0)
+							{
+								break;
+							}
+						}
+						contentHeight = num2;
+						num = flowContext2.Height;
+						num4 = width;
+					}
+					else
+					{
+						num5 = num - flowContext2.Height;
+						if (!(num5 > 0.1f))
+						{
+							break;
+						}
+						nextWidth = flowContext2.Height + (num - flowContext2.Height) / 2f;
+						contentHeight = num2;
+						width = num4;
+					}
+					flag = (flowContext2.CharTrimmedRunWidth > 0);
+				}
+			}
+			else
+			{
+				LineBreaker.Flow(textBox, Win32DCSafeHandle.Zero, dpiX, fontCache, flowContext2, keepLines: false, out contentHeight);
+				num = contentHeight;
+			}
+			return num;
+		}
+
 		internal static void Render(TextBox textBox, List<Paragraph> paragraphs, Graphics g, FontCache fontCache, PointF offset, RectangleF layoutRectangle)
 		{
 			float dpiX = g.DpiX;

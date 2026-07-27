@@ -133,85 +133,11 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 
 		internal static float FlowVertical(TextBox textBox, Graphics g, FontCache fontCache, FlowContext flowContext, out float width, out float nextWidth)
 		{
-			width = (nextWidth = 0f);
-			List<Paragraph> list = null;
-			int num = 0;
-			int val = int.MaxValue;
-			int num2 = 0;
-			float height = 0f;
-			int num3 = 0;
-			List<TextLine> list2 = null;
 			float dpiX = g.DpiX;
 			Win32DCSafeHandle win32DCSafeHandle = new Win32DCSafeHandle(g.GetHdc(), ownsHandle: false);
-			if (textBox.VerticalText)
-			{
-				flowContext.VerticalCanGrow = textBox.TextBoxProps.CanGrow;
-				num3 = TextBox.ConvertToPixels(flowContext.Height, dpiX);
-			}
-			else
-			{
-				num3 = TextBox.ConvertToPixels(flowContext.Width, dpiX);
-			}
 			try
 			{
-				list = Flow(textBox, win32DCSafeHandle, dpiX, fontCache, flowContext, keepLines: true, out height);
-				if (list != null)
-				{
-					for (int i = 0; i < list.Count; i++)
-					{
-						list2 = list[i].TextLines;
-						if (list2 != null)
-						{
-							float leftIndent = 0f;
-							float rightIndent = 0f;
-							float hangingIndent = 0f;
-							float num4 = 0f;
-							RPLFormat.Directions direction = textBox.TextBoxProps.Direction;
-							list[i].GetParagraphIndents(direction, dpiX, out leftIndent, out rightIndent, out hangingIndent);
-							num4 = leftIndent + rightIndent;
-							if (list2[0].FirstLine)
-							{
-								num4 += hangingIndent;
-							}
-							num2 = Math.Max(num2, (int)num4);
-							for (int j = 0; j < list2.Count; j++)
-							{
-								num = Math.Max(num, list2[j].GetWidth(win32DCSafeHandle, fontCache, useVisualRunsIfAvailable: false) + (int)num4);
-								val = Math.Min(val, list2[j].GetWidth(win32DCSafeHandle, fontCache, useVisualRunsIfAvailable: false) + (int)num4);
-							}
-							list[i].TextLines = null;
-						}
-					}
-				}
-				val = Math.Max(val, num2);
-				if (num > 0)
-				{
-					int num5 = 0;
-					if (flowContext.VerticalCanGrow && flowContext.ForcedCharTrim)
-					{
-						num5 = flowContext.CharTrimmedRunWidth;
-					}
-					else
-					{
-						num5 = (num - val) / 2;
-						if (num5 == 0)
-						{
-							num5 = num / 2;
-						}
-						else
-						{
-							num5 += val;
-							if (num5 >= num3)
-							{
-								num5 /= 2;
-							}
-						}
-					}
-					width = TextBox.ConvertToMillimeters(num, dpiX);
-					nextWidth = TextBox.ConvertToMillimeters(num5, dpiX);
-					return height;
-				}
-				return height;
+				return FlowVerticalCore(textBox, win32DCSafeHandle, dpiX, fontCache, flowContext, out width, out nextWidth);
 			}
 			finally
 			{
@@ -221,6 +147,107 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 					g.ReleaseHdc();
 				}
 			}
+		}
+
+		/// <summary>
+		/// HDC-free counterpart to <see cref="FlowVertical(TextBox, Graphics, FontCache, FlowContext, out float, out float)"/>
+		/// for pagination-phase text-box height measurement on non-Windows, where no real
+		/// GDI+ <see cref="Graphics"/> can be constructed to source a DPI/HDC from at all
+		/// (see docs/platform-support.md). <paramref name="dpiX"/> must come from a
+		/// GDI+-free source (e.g. a configured pagination DPI), and the underlying
+		/// shaping/measurement it drives (<see cref="TextRun.ShapeAndPlace"/>,
+		/// <see cref="TextLine.ScriptLayout"/>) already has its own cross-platform branch,
+		/// so <see cref="Win32DCSafeHandle.Zero"/> is safe to pass through here.
+		/// </summary>
+		internal static float FlowVerticalCrossPlatform(TextBox textBox, float dpiX, FontCache fontCache, FlowContext flowContext, out float width, out float nextWidth)
+		{
+			try
+			{
+				return FlowVerticalCore(textBox, Win32DCSafeHandle.Zero, dpiX, fontCache, flowContext, out width, out nextWidth);
+			}
+			finally
+			{
+				fontCache.ResetGraphics();
+			}
+		}
+
+		private static float FlowVerticalCore(TextBox textBox, Win32DCSafeHandle hdc, float dpiX, FontCache fontCache, FlowContext flowContext, out float width, out float nextWidth)
+		{
+			width = (nextWidth = 0f);
+			List<Paragraph> list = null;
+			int num = 0;
+			int val = int.MaxValue;
+			int num2 = 0;
+			float height = 0f;
+			int num3 = 0;
+			List<TextLine> list2 = null;
+			if (textBox.VerticalText)
+			{
+				flowContext.VerticalCanGrow = textBox.TextBoxProps.CanGrow;
+				num3 = TextBox.ConvertToPixels(flowContext.Height, dpiX);
+			}
+			else
+			{
+				num3 = TextBox.ConvertToPixels(flowContext.Width, dpiX);
+			}
+			list = Flow(textBox, hdc, dpiX, fontCache, flowContext, keepLines: true, out height);
+			if (list != null)
+			{
+				for (int i = 0; i < list.Count; i++)
+				{
+					list2 = list[i].TextLines;
+					if (list2 != null)
+					{
+						float leftIndent = 0f;
+						float rightIndent = 0f;
+						float hangingIndent = 0f;
+						float num4 = 0f;
+						RPLFormat.Directions direction = textBox.TextBoxProps.Direction;
+						list[i].GetParagraphIndents(direction, dpiX, out leftIndent, out rightIndent, out hangingIndent);
+						num4 = leftIndent + rightIndent;
+						if (list2[0].FirstLine)
+						{
+							num4 += hangingIndent;
+						}
+						num2 = Math.Max(num2, (int)num4);
+						for (int j = 0; j < list2.Count; j++)
+						{
+							num = Math.Max(num, list2[j].GetWidth(hdc, fontCache, useVisualRunsIfAvailable: false) + (int)num4);
+							val = Math.Min(val, list2[j].GetWidth(hdc, fontCache, useVisualRunsIfAvailable: false) + (int)num4);
+						}
+						list[i].TextLines = null;
+					}
+				}
+			}
+			val = Math.Max(val, num2);
+			if (num > 0)
+			{
+				int num5 = 0;
+				if (flowContext.VerticalCanGrow && flowContext.ForcedCharTrim)
+				{
+					num5 = flowContext.CharTrimmedRunWidth;
+				}
+				else
+				{
+					num5 = (num - val) / 2;
+					if (num5 == 0)
+					{
+						num5 = num / 2;
+					}
+					else
+					{
+						num5 += val;
+						if (num5 >= num3)
+						{
+							num5 /= 2;
+						}
+					}
+				}
+				width = TextBox.ConvertToMillimeters(num, dpiX);
+				nextWidth = TextBox.ConvertToMillimeters(num5, dpiX);
+				return height;
+			}
+			return height;
 		}
 
 		private static bool FlowParagraph(Paragraph paragraph, RPLFormat.Directions direction, Win32DCSafeHandle hdc, float dpiX, FontCache fontCache, FlowContext flowContext, bool keepLines, SizeF flowContextSize, ref int contentOffset)
