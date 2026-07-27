@@ -58,7 +58,7 @@ Verified via `ShapedTextLayoutTests.cs` (13 tests: per-character width/break-opp
 
 **Known gaps, honestly scoped:**
 - **No glyph subsetting on this path** - the whole font file is embedded (unlike the Win32 composite path's real `FontPackage.Generate`-based subsetting), so cross-platform PDFs with embedded fonts are larger than they need to be. A real subset would need to parse/rewrite sfnt tables (`glyf`/`loca`/`hmtx`/etc.) - not attempted here.
-- **No embedding-rights check** - the Win32 path reads a font's OS/2 `fsType` bits via `FontPackage.CheckEmbeddingRights(hdc)`, which needs a real HFONT/HDC. This path skips that check entirely and always embeds. Revisit if it turns out to matter (reading `fsType` straight from `SKTypeface`'s own OS/2 table doesn't need an HDC, so it's possible later).
+- ~~No embedding-rights check~~ **Resolved (2026-07-26):** see "Embedding-rights check for the cross-platform composite path" below.
 - ~~No bidi/RTL reordering~~ **Resolved (2026-07-26):** see "Bidi/RTL run reordering for the cross-platform composite path" below - `UnicodeParagraphShaper.Shape` now returns runs in visual order via `BidiRunReorderer`, and `WriteCompositeText` draws them as received.
 - **Approximate FontDescriptor metrics** - ascent/descent/bbox/italic angle come from `SKFontMetrics`/`SKTypeface.FontStyle`, not real font-table parsing (no OS/2 table read for `fsType`/weight class, no post-table italic angle) - the same class of approximation the Win32 composite path's own `OUTLINETEXTMETRIC`-derived values already are.
 - **The real RichText/Uniscribe production pipeline is still completely untouched** - this is still PDFWriter's own parallel path, not `FontCache`/`TextRun`/`LineBreaker`/`Paragraph`.
@@ -80,6 +80,18 @@ Verified: `EmbeddedFontPdfTextTests.cs` (5 tests: composite hex Tj vs. base-14 l
 - **Digits/numbers within an RTL run** are not given special "European/Arabic number" contextual handling (UAX #9's N-rules) - they stay in the RTL run's reading-order position, which is usually but not always what a mixed Hebrew/Arabic-plus-numbers line should visually show.
 
 Verified: `BidiRunReordererTests.cs` (7 tests exercising the algorithm directly via plain `(label, isRtl)` tuples - single-run no-ops, an all-LTR paragraph, a lone RTL island keeping its position, two adjacent RTL runs reversing relative to each other, and an RTL-base paragraph with a trailing LTR word reversing the whole sequence) plus three new cases added to `UnicodeParagraphShaperTests.cs` (pure-Hebrew text marked RTL, a lone embedded Hebrew word keeping its logical slot, and an RTL-base "שלום world" string where the returned list's Latin run now precedes the Hebrew run). Full suite: 68 tests in this test project, 0 failures.
+
+## Embedding-rights check for the cross-platform composite path (done 2026-07-26)
+
+**Why now:** with bidi/RTL reordering done, the remaining PDF gaps were glyph subsetting (efficiency) and this embedding-rights check (compliance) - the user picked the smaller, bounded one first.
+
+**What was built:** `SkiaFontEmbeddingRights` (`Microsoft.ReportingServices.Rendering.ImageRenderer/SkiaFontEmbeddingRights.cs`) reads the OS/2 table's `fsType` field directly off an `SKTypeface` via `SKTypeface.GetTableData(uint tag)` - confirmed against a real Arial font (`fsType` at byte offset 8-9 of the OS/2 table, big-endian, matching `FontPackage`'s existing Win32 OS/2-table-offset constants) that this needs no HFONT/HDC at all, closing the exact gap the prior entry above described as "possible later." `ProcessFontForFontEmbedding` (`PDFWriter.cs`) now has a `pdfFont.SkiaTypeface != null` branch mirroring the existing Win32 `FontPackage.CheckEmbeddingRights` branch - when a font's `fsType` sets the "Restricted License embedding" bit (`0x0002`, the only bit that forbids embedding outright per the OpenType spec - Preview&Print/Editable/no-subsetting/bitmap-only are usage restrictions for the consuming viewer, not embedding prohibitions), `pdfFont.EmbeddedFont` is left `null` the same way the Win32 path already leaves it null for a non-embeddable font - every call site already checks `EmbeddedFont != null` before referencing it, so no other code needed to change.
+
+**Known gaps, honestly scoped:**
+- **A missing/malformed OS/2 table is treated as unrestricted** (some non-TrueType/OpenType fonts have none) - matches the common case (virtually all real fonts on Windows/Linux ship one) but isn't a byte-for-byte port of `TTGetEmbeddingType`'s own fallback behavior for that edge case.
+- **No end-to-end "unembeddable font" integration test** - there's no restricted-license font file vendored in this repo to exercise the negative path through a real `PDFWriter` render (same "no font file vendored, no reproducible fixture" constraint noted elsewhere in this doc). Covered instead by direct unit tests of the bit-check logic (`SkiaFontEmbeddingRightsTests.cs`) plus an integration test that reads a real resolved `SKTypeface`'s actual `fsType` and asserts `CanEmbed` agrees with it.
+
+Verified: `SkiaFontEmbeddingRightsTests.cs` (7 tests: the fsType bit-check in isolation for Installable/Restricted/Preview&Print/Editable/combined-bits, a null-typeface case, and a real-typeface integration case). Full suite: 75 tests in this test project (68 + 7), `ReportViewerCore.LinuxRenderers.Tests` unaffected (15/15), 0 regressions.
 
 ## Original phased plan (superseded for the simple-textbox case by the MVP above; still the path for rich text / full fidelity)
 

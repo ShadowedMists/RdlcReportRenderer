@@ -2885,13 +2885,6 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			if (flag)
 			{
 				flag = (pdfFont.UniqueGlyphs.Count > 0);
-				// The Win32 embedding-rights check (OS/2 fsType bits, read via
-				// FontPackage.CheckEmbeddingRights) needs a real HFONT selected into an
-				// HDC - unavailable for the SkiaSharp-backed cross-platform path (no
-				// CachedFont/Hfont at all). Honest gap: embedding rights are not checked
-				// on this path yet: every resolvable font is embedded regardless of its
-				// OS/2 fsType restrictions. Revisit if that turns out to matter (reading
-				// fsType from SKTypeface's own OS/2 table is possible without an HDC).
 				if (flag && pdfFont.SkiaTypeface == null)
 				{
 					Win32DCSafeHandle hdc = m_commonGraphics.GetHdc();
@@ -2909,6 +2902,17 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 						}
 						m_commonGraphics.ReleaseHdc();
 					}
+					if (!flag && RSTrace.ImageRendererTracer.TraceVerbose)
+					{
+						RSTrace.ImageRendererTracer.Trace(TraceLevel.Verbose, "The font {0} cannot be embedded due to privileges", pdfFont.FontFamily);
+					}
+				}
+				else if (flag && pdfFont.SkiaTypeface != null)
+				{
+					// Cross-platform counterpart to the Win32 branch above: reads the same
+					// OS/2 fsType embedding-permission bits, but directly off the SKTypeface
+					// (no HFONT/HDC needed) via SkiaFontEmbeddingRights.
+					flag = SkiaFontEmbeddingRights.CanEmbed(pdfFont.SkiaTypeface);
 					if (!flag && RSTrace.ImageRendererTracer.TraceVerbose)
 					{
 						RSTrace.ImageRendererTracer.Trace(TraceLevel.Verbose, "The font {0} cannot be embedded due to privileges", pdfFont.FontFamily);
