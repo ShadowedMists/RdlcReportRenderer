@@ -86,6 +86,20 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 			}
 		}
 
+		/// <summary>
+		/// Decode an arbitrary image and re-encode it as PNG via SixLabors.ImageSharp.
+		/// </summary>
+		public byte[] EncodeToPng(Stream imageStream)
+		{
+			imageStream.Position = 0;
+			using (Image image = Image.Load(imageStream))
+			using (MemoryStream memoryStream = new MemoryStream())
+			{
+				image.SaveAsPng(memoryStream);
+				return memoryStream.ToArray();
+			}
+		}
+
 		private static ImageFormatType DetermineFormat(SixLabors.ImageSharp.Formats.IImageFormat format)
 		{
 			if (format == null)

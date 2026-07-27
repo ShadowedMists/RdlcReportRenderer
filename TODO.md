@@ -17,7 +17,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | ✅ DONE (2026-07-27); see `tasks/xmlvalidatingreader-migration.md` | LOW |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred; see `docs/decisions.md`'s Map engine entry | HIGH |
 | 🔵 **LOW** | Remaining CS0649 dead-field warnings (~54) | 📋 Each needs its own judgment call; see `tasks/remaining-warning-cleanup.md` | LOW |
-| 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 📋 NOT STARTED; see `tasks/word-renderer-cross-platform.md` | LOW |
+| 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 🔄 Image-decode gap fixed (2026-07-27) — WORDOPENXML fully cross-platform; WORD (binary) blocked on a separate COM/OLE Structured Storage gap; see `tasks/word-renderer-cross-platform.md` | LOW |
 | 🔵 **LOW** | IMAGE (TIFF/EMF) renderer: cross-platform support | 📋 NOT STARTED, not scheduled; see `tasks/image-renderer-cross-platform.md` | MEDIUM |
 | 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | 📋 NOT STARTED; see `tasks/expression-compiler-modernization.md` | MEDIUM |
 | 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 📋 NOT STARTED; see `tasks/test-coverage-gaps.md` | LOW |

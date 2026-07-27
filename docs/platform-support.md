@@ -13,6 +13,8 @@ The new rendering abstractions are intended to support a gradual migration away 
 | PDF rendering (real RDL engine: `PDFRenderer`→`Renderer`→`PDFWriter`) | Yes | Yes (verified under WSL, 2026-07-27) | Not yet tested | See "PDF (RDL engine)" section below — the real RichText/Uniscribe pipeline is wired cross-platform end to end ("Option B"). Actually running `LocalReport.Render("PDF")` end to end under WSL (rather than only the unit-level cross-platform API tests) surfaced one real gap in the itemized-run-reuse path, now fixed — see that section |
 | Embedded resource adaptation | Yes | Yes | Planned | First seam implemented in the HTML path |
 | Factory-based renderer selection | Yes | Yes | Planned | Centralizes platform selection |
+| WORDOPENXML rendering | Yes | Yes (verified 2026-07-27) | Not yet tested | Image-decode coupling (the only `System.Drawing` dependency) fixed via `IImageProvider`; container is a plain zip/OPC package, no COM involved |
+| WORD (binary Word 97) rendering | Yes | No | Not yet tested | Image-decode coupling fixed the same way as WORDOPENXML, but the `.doc` container itself (`StructuredStorage.cs`) is built via real Windows COM interop (OLE Structured Storage/`StgCreateDocfile`) with no cross-platform equivalent — see `tasks/word-renderer-cross-platform.md`. Use WORDOPENXML instead on non-Windows until this is addressed |
 
 ## Known gaps
 

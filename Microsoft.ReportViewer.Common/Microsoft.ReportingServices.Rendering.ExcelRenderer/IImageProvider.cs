@@ -28,5 +28,12 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 		/// decoded Image/Bitmap object.
 		/// </summary>
 		byte[] DecodeToBgra32(Stream imageStream, int width, int height);
+
+		/// <summary>
+		/// Decode an arbitrary image and re-encode it as PNG. Used by renderers (e.g. Word)
+		/// that only support a narrow embedded-image format set and need to transcode
+		/// anything else (e.g. TIFF, BMP variants GDI+ would otherwise round-trip) to PNG.
+		/// </summary>
+		byte[] EncodeToPng(Stream imageStream);
 	}
 }

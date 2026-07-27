@@ -1,9 +1,9 @@
 using Microsoft.ReportingServices.OnDemandReportRendering;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
 using System;
 using System.Collections;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Resources;
@@ -291,29 +291,27 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 			bool flag = false;
 			try
 			{
-				using (System.Drawing.Image image = System.Drawing.Image.FromStream(new MemoryStream(m_imgData)))
+				ImageMetadata metadata = ImageProviderFactory.CreateProvider().LoadImage(new MemoryStream(m_imgData));
+				if (metadata == null)
 				{
-					m_dxaGoal = (short)((float)image.Width / image.HorizontalResolution * 1440f);
-					m_dyaGoal = (short)((float)image.Height / image.VerticalResolution * 1440f);
-					m_xDensity = image.HorizontalResolution;
-					m_yDensity = image.VerticalResolution;
-					if (image.RawFormat == ImageFormat.Jpeg)
-					{
-						m_blipType = 5;
-					}
-					else if (image.RawFormat == ImageFormat.Png)
-					{
-						m_blipType = 6;
-					}
-					else
-					{
-						using (MemoryStream memoryStream = new MemoryStream())
-						{
-							image.Save(memoryStream, ImageFormat.Png);
-							m_imgData = memoryStream.ToArray();
-						}
-						m_blipType = 6;
-					}
+					throw new ArgumentException("Unrecognized image format");
+				}
+				m_dxaGoal = (short)((float)metadata.Width / metadata.HorizontalResolution * 1440f);
+				m_dyaGoal = (short)((float)metadata.Height / metadata.VerticalResolution * 1440f);
+				m_xDensity = metadata.HorizontalResolution;
+				m_yDensity = metadata.VerticalResolution;
+				if (metadata.Format == ImageFormatType.Jpeg)
+				{
+					m_blipType = 5;
+				}
+				else if (metadata.Format == ImageFormatType.Png)
+				{
+					m_blipType = 6;
+				}
+				else
+				{
+					m_imgData = ImageProviderFactory.CreateProvider().EncodeToPng(new MemoryStream(m_imgData));
+					m_blipType = 6;
 				}
 			}
 			catch (ArgumentException)

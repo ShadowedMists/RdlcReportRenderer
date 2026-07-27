@@ -83,6 +83,20 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Windows
 			return buffer;
 		}
 
+		/// <summary>
+		/// Decode an arbitrary image and re-encode it as PNG via System.Drawing/GDI+.
+		/// </summary>
+		public byte[] EncodeToPng(Stream imageStream)
+		{
+			imageStream.Position = 0;
+			using (Image gdiImage = Image.FromStream(imageStream))
+			using (MemoryStream memoryStream = new MemoryStream())
+			{
+				gdiImage.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+				return memoryStream.ToArray();
+			}
+		}
+
 		private static ImageFormatType DetermineFormat(System.Drawing.Imaging.ImageFormat rawFormat)
 		{
 			if (rawFormat == null)

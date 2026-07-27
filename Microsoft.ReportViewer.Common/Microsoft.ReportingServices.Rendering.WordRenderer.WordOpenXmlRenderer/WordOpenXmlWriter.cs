@@ -1,12 +1,13 @@
 using Microsoft.ReportingServices.Interfaces;
 using Microsoft.ReportingServices.OnDemandProcessing.Scalability;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer;
+using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
 using Microsoft.ReportingServices.Rendering.Utilities;
 using Microsoft.ReportingServices.Rendering.WordRenderer.WordOpenXmlRenderer.Models;
 using Microsoft.ReportingServices.Rendering.WordRenderer.WordOpenXmlRenderer.Models.Relationships;
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 
 namespace Microsoft.ReportingServices.Rendering.WordRenderer.WordOpenXmlRenderer
@@ -338,12 +339,14 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer.WordOpenXmlRenderer
 			{
 				try
 				{
-					using (Image image2 = Image.FromStream(new MemoryStream(imgBuf)))
+					ImageMetadata metadata = ImageProviderFactory.CreateProvider().LoadImage(new MemoryStream(imgBuf));
+					if (metadata == null)
 					{
-						image.Height = WordOpenXmlUtils.PixelsToEmus(image2.Height, image2.VerticalResolution, 0, 20116800);
-						image.Width = WordOpenXmlUtils.PixelsToEmus(image2.Width, image2.HorizontalResolution, 0, 20116800);
-						extension = ((image2.RawFormat.Guid == ImageFormat.Png.Guid) ? "png" : ((image2.RawFormat.Guid == ImageFormat.Jpeg.Guid) ? "jpg" : ((!(image2.RawFormat.Guid == ImageFormat.Gif.Guid)) ? "bmp" : "gif")));
+						throw new ArgumentException("Unrecognized image format");
 					}
+					image.Height = WordOpenXmlUtils.PixelsToEmus(metadata.Height, metadata.VerticalResolution, 0, 20116800);
+					image.Width = WordOpenXmlUtils.PixelsToEmus(metadata.Width, metadata.HorizontalResolution, 0, 20116800);
+					extension = ((metadata.Format == ImageFormatType.Png) ? "png" : ((metadata.Format == ImageFormatType.Jpeg) ? "jpg" : ((metadata.Format != ImageFormatType.Gif) ? "bmp" : "gif")));
 				}
 				catch (ArgumentException)
 				{

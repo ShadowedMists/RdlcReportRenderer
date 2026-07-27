@@ -40,6 +40,8 @@ Building the whole solution (`ReportViewerCore.sln`) fails under WSL with `NETSD
 
 A handful of test failures under WSL are environment artifacts, not product bugs — they hardcode paths to Windows-only fonts (`simsun.ttc`, `cambria.ttc`, `msyh.ttc`) that don't exist on a Linux box: `IsTtc_RealTtcFont_ReturnsTrue`, `TryExtractTtcFace_*`, `DrawWrappedText_WithTtcBackedFont_EmbedsExtractedSingleFaceNotWholeContainer`, `GetFallbackFontCrossPlatform_MissingCjkGlyph_ResolvesAFontThatCoversIt`. `SunburstChartWithCategoryHierarchy_MatchesBaseline` also fails — it exercises the legacy GDI+/EMF `ImageRenderer` baseline path, which was never in scope for the cross-platform work.
 
+Two more are a genuine, known product gap rather than an environment artifact: `SimpleTextbox_RendersToWord` and `ImageReport_RendersToWord` (in `WordRendererRdlTests.cs`) fail under WSL with `MarshalDirectiveException` from `StructuredStorage.OLEStructuredStorage.StgCreateDocfile` — the binary Word 97 (`WORD` format) renderer builds its `.doc` container via real Windows COM interop (OLE Structured Storage), which has no cross-platform equivalent. `WORDOPENXML` (a plain zip/OPC package, no COM involved) is unaffected and passes — see `tasks/word-renderer-cross-platform.md` for the fuller writeup. Recommend `WORDOPENXML` over `WORD` for any cross-platform deployment until that's addressed.
+
 ## Recommended validation workflow
 
 1. Restore dependencies.

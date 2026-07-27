@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <EmbeddedImages>
+    <EmbeddedImage Name="TinyPng">
+      <MIMEType>image/png</MIMEType>
+      <ImageData>iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=</ImageData>
+    </EmbeddedImage>
+  </EmbeddedImages>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="TextboxCaption">
+            <Top>0.1in</Top>
+            <Left>0.1in</Left>
+            <Height>0.3in</Height>
+            <Width>3in</Width>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Word image caption</Value>
+                    <Style>
+                      <FontFamily>Arial</FontFamily>
+                      <FontSize>10pt</FontSize>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+              </Paragraph>
+            </Paragraphs>
+          </Textbox>
+          <Image Name="Image1">
+            <Top>0.5in</Top>
+            <Left>0.1in</Left>
+            <Height>1in</Height>
+            <Width>1in</Width>
+            <Source>Embedded</Source>
+            <Value>TinyPng</Value>
+            <Sizing>Fit</Sizing>
+          </Image>
+        </ReportItems>
+        <Height>2in</Height>
+      </Body>
+      <Width>4in</Width>
+      <Page>
+        <PageWidth>4in</PageWidth>
+        <PageHeight>3in</PageHeight>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>

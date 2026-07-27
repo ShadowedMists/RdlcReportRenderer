@@ -1,30 +1,41 @@
 # Word (WORD/WORDOPENXML) renderer: cross-platform support
 
-**Status: NOT STARTED.** Not previously tracked anywhere — found 2026-07-27 while auditing README's "What works"/rendering-format claims against actual code state, after the Chart/Excel/PDF cross-platform work. No existing task file or docs/decisions.md entry covered this renderer at all before now.
+**Status: image-decode gap FIXED and verified (2026-07-27); WORDOPENXML is fully cross-platform now. WORD (binary Word 97) has a separate, deeper, newly-discovered blocker — see "New gap found" below.**
 
-## Why this is a smaller lift than Chart/Gauge/PDF were
+## Original gap (now fixed) — image-decode coupling
 
-`Microsoft.ReportViewer.Common/Microsoft.ReportingServices.Rendering.WordRenderer/` (Word 97 binary) and `...WordRenderer.WordOpenXmlRenderer/` (WordOpenXml) do **not** share code with `ImageWriter`'s Metafile/EMF stack or the `RichText`/`LineBreaker`/`FontCache` pipeline PDF just got fixed (see `tasks/image-renderer-cross-platform.md` and `docs/platform-support.md`'s PDF section for how deep those two are). Both Word renderers write their own document markup directly, much like `PDFWriter` writes PDF content-stream operators directly — they don't route through GDI+ drawing primitives.
+`Microsoft.ReportViewer.Common/Microsoft.ReportingServices.Rendering.WordRenderer/` (Word 97 binary) and `...WordRenderer.WordOpenXmlRenderer/` (WordOpenXml) don't share code with `ImageWriter`'s Metafile/EMF stack or the `RichText`/`LineBreaker`/`FontCache` pipeline PDF's own fix touched — both write their own document markup directly rather than routing through GDI+ drawing primitives. The only `System.Drawing` coupling was two `Image.FromStream(...)` calls used purely to read an embedded picture's dimensions/format:
 
-The only `System.Drawing` coupling found (2026-07-27 audit) is narrow:
-- `PictureDescriptor.cs` and `WordOpenXmlWriter.cs` call `System.Drawing.Image.FromStream(...)` purely to read an embedded picture's dimensions/format before writing it into the document.
-- `WordColor.cs`/`BorderCode.cs` use basic `System.Drawing.Color` structs, not drawing operations.
+- `PictureDescriptor.cs`'s `ParseImageData()` — also re-encoded non-JPEG/PNG images to PNG via `image.Save(memoryStream, ImageFormat.Png)`, not just read metadata.
+- `WordOpenXmlWriter.cs`'s `AddImage(...)` — metadata only (height/width/format), no re-encoding.
 
-This means the fix shape likely mirrors Excel's already-completed `IImageProvider` abstraction (see `docs/rendering-abstractions.md`) rather than a from-scratch engine port: replace the `Image.FromStream` dimension/format read with the same cross-platform image-decode seam Excel and PDF already use, and the rest of both renderers should need no changes.
+**Fix:** added `IImageProvider.EncodeToPng(Stream)` (implemented in both `WindowsImageProvider` via GDI+ and `CrossPlatformImageProvider` via SixLabors.ImageSharp) alongside the existing `LoadImage(Stream)`/`DecodeToBgra32(...)` members, then routed both call sites through `ImageProviderFactory.CreateProvider()` — the same abstraction Excel and PDF already use (`docs/rendering-abstractions.md`). No other changes were needed to either renderer.
 
-## Current gap
+New tests: `tests/Microsoft.ReportViewer.Chart.Rdl.Tests/WordRendererRdlTests.cs` (4 tests: plain-textbox and embedded-picture reports, each rendered to both WORD and WORDOPENXML) plus a new fixture `Reports/WordImageReport.rdlc` (a tiny embedded 1x1 PNG) to actually exercise the image-decode path — there was previously zero test coverage of any kind for either Word renderer.
 
-- No cross-platform image-decode path wired in for either Word renderer — will throw on Linux/macOS wherever `System.Drawing.Image.FromStream` is hit (i.e., any report with a picture item rendered to WORD/WORDOPENXML).
-- **Zero automated test coverage of any kind** — confirmed 2026-07-27, no Word-renderer test files/classes exist in `tests/` at all (not even Windows-only baseline tests). Any fix here should add both an end-to-end RDL render test (mirroring `tests/Microsoft.ReportViewer.Chart.Rdl.Tests`'s PDF textbox tests) and, once the image-decode seam lands, a WSL-verified cross-platform test — see `docs/build-and-test.md`'s WSL section for why unit tests alone aren't sufficient evidence for this kind of fix.
+Verified on Windows: all 4 pass, `dotnet build --no-incremental` 0 errors. Verified under WSL — see "New gap found" below for the result.
+
+## New gap found (2026-07-27, via the WSL run) — WORD (binary) needs a portable OLE compound-file writer
+
+Both `SimpleTextbox_RendersToWord` and `ImageReport_RendersToWord` **fail under WSL** with:
+
+```
+System.Runtime.InteropServices.MarshalDirectiveException: Cannot marshal 'parameter #4': Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported).
+  at Microsoft.ReportingServices.Rendering.WordRenderer.StructuredStorage.OLEStructuredStorage.StgCreateDocfile(...)
+  at Microsoft.ReportingServices.Rendering.WordRenderer.StructuredStorage.CreateMultiStreamFile(...)
+```
+
+This is **unrelated to the image-decode fix above and pre-existing** — `StructuredStorage.cs` builds the actual `.doc` file container via real Windows COM interop (`ole32.dll`'s `StgCreateDocfile`/`IStorage`/`IStream`, OLE Compound File Binary Format), not a P/Invoke that could be swapped for a portable equivalent call-by-call. `WORDOPENXML`'s own container is an ordinary zip/OPC package (no COM involved), which is exactly why `SimpleTextbox_RendersToWordOpenXml`/`ImageReport_RendersToWordOpenXml` both pass under WSL with no changes — this confirms the image-decode fix itself has no platform gap; the WORD-binary failure is a completely separate, deeper architectural wall specific to that one format's container.
+
+**This is now the real remaining scope for Word cross-platform support** — not image handling. Fixing it means replacing `StructuredStorage.cs`'s COM-based CFBF writer with a portable managed one (either a library like `OpenMcdf` or a hand-rolled writer against the documented CFBF spec), which is a meaningfully sized, separate effort — not a drive-by fix alongside the image-decode work. Until then, WORD (binary) rendering remains Windows-only; WORDOPENXML should be recommended as the cross-platform-safe alternative for anyone needing Word output on Linux/macOS.
+
+`docs/build-and-test.md`'s known-WSL-failures list has been updated with these two test names.
 
 ## Related upstream signal
 
-Upstream `lkosson/reportviewercore` PR #146 ("fix drawing image in rendering excel/word report in linux", opened 2023-07-09, still unmerged as of 2025-03-06) targets the same class of problem for both Excel and Word. Excel's own image-drawing gap is already resolved in this fork via `IImageProvider` (see `docs/rendering-abstractions.md`); worth skimming that PR's diff for the Word half specifically before starting from scratch, since it may already identify every call site.
+Upstream `lkosson/reportviewercore` PR #146 ("fix drawing image in rendering excel/word report in linux") targeted the same image-decode class of problem fixed above, for both Excel and Word.
 
-## Proposed tasks
+## Remaining proposed tasks
 
-1. Confirm exact call sites needing conversion (`PictureDescriptor.cs`, `WordOpenXmlWriter.cs`, and any others turned up by a fresh grep at implementation time).
-2. Route them through the existing `IImageProvider`/`DecodeToBgra32`-style abstraction already used by Excel and PDF, rather than inventing a new one.
-3. Add end-to-end RDL render tests for both WORD and WORDOPENXML (plain textbox + a picture-containing report, matching the shape of the PDF textbox tests).
-4. Verify under WSL per `docs/build-and-test.md`'s recommended workflow before declaring this done — this is exactly the kind of fix where a fresh-construction unit test can pass while real end-to-end rendering doesn't.
-5. Update `docs/platform-support.md`'s support matrix once verified.
+1. Scope and implement a portable OLE Structured Storage / CFBF writer to replace `StructuredStorage.cs`'s COM-based one, so WORD (binary) can render on non-Windows.
+2. Until then, update `docs/platform-support.md`'s support matrix to show WORDOPENXML as cross-platform and WORD (binary) as Windows-only with this specific blocker named, rather than leaving Word unlisted entirely.

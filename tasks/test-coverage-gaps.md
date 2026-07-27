@@ -12,7 +12,7 @@ Only three test projects exist: `Microsoft.ReportViewer.Chart.Rdl.Tests`, `Micro
 | PDF | Yes — real RDL-engine end-to-end tests, WSL-verified cross-platform (2026-07-27) |
 | EXCEL/EXCELOPENXML | Basic — `TestExcelGeneration` in `ReportViewerCore.LinuxRenderers.Tests` |
 | HTML/HTML4.0/MHTML | None found |
-| WORD/WORDOPENXML | None — see `tasks/word-renderer-cross-platform.md` |
+| WORD/WORDOPENXML | Yes (2026-07-27) — `WordRendererRdlTests.cs`, see `tasks/word-renderer-cross-platform.md` |
 | IMAGE (TIFF/EMF) | None — see `tasks/image-renderer-cross-platform.md` |
 | CSV | None found |
 | XML | None found |
