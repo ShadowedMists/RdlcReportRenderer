@@ -21,6 +21,9 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		Hangul,
 		Syriac,
 		Thaana,
+		NKo,
+		Samaritan,
+		Mandaic,
 		Other
 	}
 
@@ -68,11 +71,19 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// to itemization. <see cref="UnicodeScriptKind.Syriac"/> and
 	/// <see cref="UnicodeScriptKind.Thaana"/> are itemized and correctly marked RTL,
 	/// alongside <see cref="UnicodeScriptKind.Hebrew"/>/<see cref="UnicodeScriptKind.Arabic"/>.
-	/// <see cref="UnicodeScriptKind.Other"/> is everything still not explicitly bucketed
-	/// (N'Ko, Samaritan, Mandaic, Adlam, etc.) - it gets its own item, treated as LTR, which
-	/// is wrong for the RTL scripts among those; this is the same "not every script is
-	/// modeled - a known, explicit gap" boundary the rest of this doc already draws, just
-	/// narrower than before.
+	/// <see cref="UnicodeScriptKind.NKo"/>, <see cref="UnicodeScriptKind.Samaritan"/>, and
+	/// <see cref="UnicodeScriptKind.Mandaic"/> (all BMP-resident, one UTF-16 char per
+	/// codepoint) are itemized and correctly marked RTL the same way.
+	/// <see cref="UnicodeScriptKind.Other"/> is everything still not explicitly bucketed -
+	/// it gets its own item, treated as LTR. Adlam remains a known gap, but a different kind
+	/// than the others: it lives entirely outside the Basic Multilingual Plane
+	/// (U+1E900-U+1E95F), so each of its characters is a UTF-16 surrogate pair, not a single
+	/// char - this itemizer classifies one char at a time and has no surrogate-pair handling
+	/// at all, so an Adlam surrogate pair is classified one code unit at a time (both halves
+	/// fall through to <see cref="UnicodeScriptKind.Other"/>/LTR) rather than mis-itemized as
+	/// some other script. Fixing this would need codepoint-aware (not char-aware) iteration
+	/// throughout - a bigger, structural change affecting every supplementary-plane script,
+	/// not an Adlam-specific range fix like the three added here.
 	/// </summary>
 	internal static class UnicodeTextItemizer
 	{
@@ -128,7 +139,9 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		private static bool IsRtlScript(UnicodeScriptKind script)
 		{
 			return script == UnicodeScriptKind.Hebrew || script == UnicodeScriptKind.Arabic
-				|| script == UnicodeScriptKind.Syriac || script == UnicodeScriptKind.Thaana;
+				|| script == UnicodeScriptKind.Syriac || script == UnicodeScriptKind.Thaana
+				|| script == UnicodeScriptKind.NKo || script == UnicodeScriptKind.Samaritan
+				|| script == UnicodeScriptKind.Mandaic;
 		}
 
 		private static UnicodeScriptKind ClassifyChar(char c)
@@ -164,6 +177,18 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			if (c is >= 'ހ' and <= '޿')
 			{
 				return UnicodeScriptKind.Thaana;
+			}
+			if (c is >= '߀' and <= '߿')
+			{
+				return UnicodeScriptKind.NKo;
+			}
+			if (c is >= 'ࠀ' and <= '࠿')
+			{
+				return UnicodeScriptKind.Samaritan;
+			}
+			if (c is >= 'ࡀ' and <= '࡟')
+			{
+				return UnicodeScriptKind.Mandaic;
 			}
 			if (c is (>= '一' and <= '鿿') or (>= '぀' and <= 'ヿ'))
 			{

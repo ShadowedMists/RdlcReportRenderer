@@ -135,6 +135,48 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void NKoText_IsItemizedAsRtl()
+        {
+            // U+07C0-U+07C9 are NKo digits (Unicode category Nd), which classify as
+            // Common, not NKo - use letters (U+07CA onward) so the run actually gets its
+            // own NKo-bucketed item instead of falling back to the Common/Latin default.
+            string nkoText = "ߊߋߌߍ";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(nkoText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.NKo, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "N'Ko is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
+        public void SamaritanText_IsItemizedAsRtl()
+        {
+            string samaritanText = "ࠀࠁࠂࠃ";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(samaritanText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Samaritan, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "Samaritan is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
+        public void MandaicText_IsItemizedAsRtl()
+        {
+            string mandaicText = "ࡀࡁࡂࡃ";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(mandaicText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Mandaic, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "Mandaic is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
         public void EmptyText_ProducesNoItems()
         {
             List<TextItem> items = UnicodeTextItemizer.Itemize(string.Empty);
