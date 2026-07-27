@@ -20,7 +20,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 🔄 Image-decode gap fixed (2026-07-27) — WORDOPENXML fully cross-platform; WORD (binary) blocked on a separate COM/OLE Structured Storage gap; see `tasks/word-renderer-cross-platform.md` | LOW |
 | 🔵 **LOW** | IMAGE (TIFF/EMF) renderer: cross-platform support | 📋 NOT STARTED, not scheduled; see `tasks/image-renderer-cross-platform.md` | MEDIUM |
 | 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | 📋 NOT STARTED; see `tasks/expression-compiler-modernization.md` | MEDIUM |
-| 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 📋 NOT STARTED; see `tasks/test-coverage-gaps.md` | LOW |
+| 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 🔄 HTML/CSV/XML/WORD done (2026-07-27); Gauge/Map/IMAGE still open; see `tasks/test-coverage-gaps.md` | LOW |
 
 ### Long-Term Vision
 
