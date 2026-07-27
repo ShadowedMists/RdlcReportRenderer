@@ -185,6 +185,41 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void QuestionMark_IsNeverABreakOpportunityEvenAfterASpace()
+        {
+            // '?' was previously not classified at all (fell through to AL/"ordinary
+            // alphabetic"), unlike '!' which already got this same EX treatment - an
+            // oversight independent of the fullwidth-punctuation gap below.
+            const string text = "stop ?";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[5].IsSoftBreak, "'?' should never be a break opportunity, even immediately after a space");
+        }
+
+        [TestMethod]
+        public void FullwidthExclamationAndQuestionMarks_BehaveLikeTheirHalfwidthCounterparts()
+        {
+            // Fullwidth '！'/'？' (U+FF01/FF1F) are as common in Chinese/Japanese text as
+            // their halfwidth ASCII counterparts, but previously fell through to
+            // AL/"ordinary alphabetic" instead of EX.
+            string text = "stop " + '！';
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[5].IsSoftBreak, "'！' should never be a break opportunity, even immediately after a space");
+        }
+
+        [TestMethod]
+        public void FullwidthComma_SticksToWhatPrecedesItEvenAfterAHyphen()
+        {
+            // Fullwidth '，' (U+FF0C) - previously misclassified as AL, same gap as the
+            // fullwidth exclamation/question marks above.
+            string text = "end-" + '，' + "more";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[4].IsSoftBreak, "'，' should never be a break opportunity, even immediately after a hyphen");
+        }
+
+        [TestMethod]
         public void CurrencyPrefixAndPercentSuffix_StickToTheAdjacentNumber()
         {
             const string text = "$100 and 50%";

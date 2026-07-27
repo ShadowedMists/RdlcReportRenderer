@@ -212,46 +212,71 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             Assert.IsNull(subsetted);
         }
 
-        [TestMethod]
-        public void TrySubset_CidKeyedCff_ReturnsFalse()
+        /// <summary>
+        /// Builds a minimal, spec-valid CID-keyed CFF: a Top DICT with ROS (marking it
+        /// CID-keyed) plus CharStrings/FDArray/FDSelect operators, one Font DICT in FDArray
+        /// (containing just a Private operator), an FDSelect format-0 table (all 3 glyphs
+        /// mapped to that one Font DICT), and the Private DICT itself placed after
+        /// CharStrings/FDArray/FDSelect - so subsetting must patch FDArray's offset, the
+        /// Font DICT's own Private offset, and FDSelect's offset, all by the same delta.
+        /// </summary>
+        private static byte[] BuildSyntheticCidKeyedOttoFont(out int charStringsStart, out int charStringsIndexLength)
         {
-            // Same synthetic font shape, but with a ROS (12 30) operator appended to the Top
-            // DICT - marks it CID-keyed, which this class deliberately does not attempt to
-            // subset. Built inline rather than via BuildSyntheticOttoFont since the ROS
-            // operator changes the Top DICT content this needs.
-
-            // Construct a fresh Top DICT content with
-            // ROS operands (three SIDs, encoded as 1-byte small integers) followed by operator 12,30.
             byte[] nameIndex = BuildIndex(new byte[] { (byte)'T', (byte)'e', (byte)'s', (byte)'t' });
             byte[] stringIndex = BuildIndex();
             byte[] globalSubrIndex = BuildIndex();
-            byte[] charStringsIndex = BuildIndex(new byte[] { 14 }, new byte[] { 14 }, new byte[] { 14 });
-            byte[] privateDict = new byte[] { 0x8F, 0x14 };
+            byte[] charStringsIndex = BuildIndex(new byte[] { 14 }, new byte[] { 14 }, new byte[] { 14 }); // 3 glyphs, each just "endchar"
+            byte[] fdPrivateDict = new byte[] { 0x8F, 0x14 }; // operand 4, operator 20 (defaultWidthX)
+            byte[] fdSelectTable = new byte[] { 0, 0, 0, 0 }; // format 0: all 3 glyphs map to Font DICT 0
 
             const int hdrSize = 4;
             int nameIndexStart = hdrSize;
             int topDictIndexStart = nameIndexStart + nameIndex.Length;
 
-            // ROS operands: 3 standard-encoded small SIDs (139 offset form) + operator 12,30 (2 bytes)
-            byte[] rosOperators = { 139, 139, 139, 12, 30 };
-            byte[] topDictContent = new byte[6 + 11 + rosOperators.Length];
-            topDictContent[0] = 29;
-            topDictContent[5] = 17;
-            topDictContent[6] = 29;
-            topDictContent[11] = 29;
-            topDictContent[16] = 18;
-            rosOperators.CopyTo(topDictContent, 17);
+            // Top DICT: CharStrings (17, 6 bytes), FDArray (12 36, 7 bytes), FDSelect (12 37,
+            // 7 bytes), ROS (12 30, 5 bytes: 3 one-byte SID/number operands + 2-byte operator) -
+            // all offset operands use the fixed 5-byte (b0=29) integer form, same "reserve
+            // fixed width, patch later" trick BuildSyntheticOttoFont above uses.
+            byte[] topDictContent = new byte[6 + 7 + 7 + 5];
+            topDictContent[0] = 29; // CharStrings offset placeholder
+            topDictContent[5] = 17; // operator: CharStrings
+            topDictContent[6] = 29; // FDArray offset placeholder
+            topDictContent[11] = 12;
+            topDictContent[12] = 36; // operator: FDArray
+            topDictContent[13] = 29; // FDSelect offset placeholder
+            topDictContent[18] = 12;
+            topDictContent[19] = 37; // operator: FDSelect
+            topDictContent[20] = 139; // ROS operand 1 (registry SID = 0)
+            topDictContent[21] = 139; // ROS operand 2 (ordering SID = 0)
+            topDictContent[22] = 139; // ROS operand 3 (supplement = 0)
+            topDictContent[23] = 12;
+            topDictContent[24] = 30; // operator: ROS
 
             byte[] topDictIndex = BuildIndex(topDictContent);
             int stringIndexStart = topDictIndexStart + topDictIndex.Length;
             int globalSubrIndexStart = stringIndexStart + stringIndex.Length;
-            int charStringsStart = globalSubrIndexStart + globalSubrIndex.Length;
-            int privateDictStart = charStringsStart + charStringsIndex.Length;
+            int csStart = globalSubrIndexStart + globalSubrIndex.Length;
 
-            Int32BE(charStringsStart).CopyTo(topDictContent, 1);
-            Int32BE(privateDict.Length).CopyTo(topDictContent, 7);
-            Int32BE(privateDictStart).CopyTo(topDictContent, 12);
-            topDictIndex = BuildIndex(topDictContent);
+            // Font DICT (inside FDArray): just a Private operator (size + offset), same
+            // 11-byte shape BuildSyntheticOttoFont's own top-level Private block uses.
+            byte[] fontDictContent = new byte[11];
+            fontDictContent[0] = 29;
+            fontDictContent[5] = 29;
+            fontDictContent[10] = 18; // operator: Private
+            byte[] fdArrayIndex = BuildIndex(fontDictContent);
+
+            int fdArrayStart = csStart + charStringsIndex.Length;
+            int fdSelectStart = fdArrayStart + fdArrayIndex.Length;
+            int fdPrivateDictStart = fdSelectStart + fdSelectTable.Length;
+
+            Int32BE(csStart).CopyTo(topDictContent, 1);
+            Int32BE(fdArrayStart).CopyTo(topDictContent, 7);
+            Int32BE(fdSelectStart).CopyTo(topDictContent, 14);
+            topDictIndex = BuildIndex(topDictContent); // rebuild with real Top DICT offsets patched in
+
+            Int32BE(fdPrivateDict.Length).CopyTo(fontDictContent, 1);
+            Int32BE(fdPrivateDictStart).CopyTo(fontDictContent, 6);
+            fdArrayIndex = BuildIndex(fontDictContent); // rebuild with the real Font DICT Private offset patched in
 
             var cffTable = new List<byte>();
             cffTable.AddRange(new byte[] { 1, 0, (byte)hdrSize, 4 });
@@ -260,7 +285,9 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             cffTable.AddRange(stringIndex);
             cffTable.AddRange(globalSubrIndex);
             cffTable.AddRange(charStringsIndex);
-            cffTable.AddRange(privateDict);
+            cffTable.AddRange(fdArrayIndex);
+            cffTable.AddRange(fdSelectTable);
+            cffTable.AddRange(fdPrivateDict);
             byte[] cffBytes = cffTable.ToArray();
 
             const int sfntHeaderLen = 12;
@@ -275,11 +302,185 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             sfnt.AddRange(Int32BE(cffTableOffset));
             sfnt.AddRange(Int32BE(cffBytes.Length));
             sfnt.AddRange(cffBytes);
-            byte[] cidKeyedFont = sfnt.ToArray();
+            int padding = (4 - cffBytes.Length % 4) % 4;
+            for (int i = 0; i < padding; i++)
+            {
+                sfnt.Add(0);
+            }
 
-            bool result = CffGlyphSubsetter.TrySubset(cidKeyedFont, new ushort[] { 1 }, out byte[] subsetted);
+            charStringsStart = csStart;
+            charStringsIndexLength = charStringsIndex.Length;
+            return sfnt.ToArray();
+        }
 
-            Assert.IsFalse(result, "CID-keyed CFF (ROS present) is out of scope and should fall back to whole-file embedding");
+        [TestMethod]
+        public void TrySubset_CidKeyedCff_DroppingOneGlyph_ShrinksCharStringsAndReloadsAsValidFont()
+        {
+            byte[] original = BuildSyntheticCidKeyedOttoFont(out int charStringsStart, out int originalCharStringsIndexLength);
+
+            bool result = CffGlyphSubsetter.TrySubset(original, new ushort[] { 1 }, out byte[] subsetted);
+
+            Assert.IsTrue(result, "CID-keyed CFF (ROS/FDArray/FDSelect present) should now be subsettable");
+            Assert.IsNotNull(subsetted);
+            int newCharStringsIndexLength = ReadCharStringsIndexLength(subsetted, charStringsStart);
+            Assert.IsTrue(newCharStringsIndexLength < originalCharStringsIndexLength, "Dropping glyph 2's charstring data should shrink the CharStrings INDEX even for a CID-keyed font");
+
+            Assert.IsTrue(SfntBinaryUtils.TryReadTableDirectory(subsetted, out ushort numTables, out Dictionary<uint, SfntTableEntry> tables));
+            Assert.AreEqual(1, numTables);
+            Assert.AreEqual(SfntOutlineFormat.Cff, SfntBinaryUtils.DetectOutlineFormat(subsetted));
+
+            // Re-read the moved-and-patched FDArray/FDSelect/Font-DICT-Private offsets
+            // directly (rather than via a real font parser - this synthetic fixture, like
+            // BuildSyntheticOttoFont's, deliberately has only a 'CFF ' table and so isn't a
+            // spec-complete sfnt a real font-loading API would accept) to prove
+            // PatchCidKeyedStructures's three patches actually landed at the right bytes.
+            AssertCidKeyedOffsetsAreConsistent(subsetted);
+        }
+
+        /// <summary>Re-parses a subsetted CID-keyed CFF's Top DICT well enough to confirm FDArray/FDSelect still point at in-bounds, parseable structures, and that FDArray's one Font DICT's own Private offset does too - the concrete proof PatchCidKeyedStructures's three offset patches are self-consistent, not just "didn't throw".</summary>
+        private static void AssertCidKeyedOffsetsAreConsistent(byte[] sfntData)
+        {
+            Assert.IsTrue(SfntBinaryUtils.TryReadTableDirectory(sfntData, out _, out Dictionary<uint, SfntTableEntry> tables));
+            SfntTableEntry cffEntry = tables[0x43464620u];
+            int cffStart = cffEntry.Offset;
+            int fileEnd = cffStart + cffEntry.Length;
+            byte hdrSize = sfntData[cffStart + 2];
+
+            Assert.IsTrue(TryReadIndexTotalLength(sfntData, cffStart + hdrSize, fileEnd, out int nameIndexLength));
+            int topDictIndexStart = cffStart + hdrSize + nameIndexLength;
+            Assert.IsTrue(TryReadIndexEntryRange(sfntData, topDictIndexStart, fileEnd, 0, out int topDictStart, out int topDictLen));
+
+            // FDArray offset (12 36) is at byte 6 of this fixture's Top DICT content, FDSelect
+            // (12 37) at byte 13 - both fixed 5-byte (b0=29) encoded, so their operand value is
+            // simply the 4 bytes right after the marker.
+            int fdArrayOffset = ReadInt32BE(sfntData, topDictStart + 6 + 1);
+            int fdSelectOffset = ReadInt32BE(sfntData, topDictStart + 13 + 1);
+            int fdArrayAbs = cffStart + fdArrayOffset;
+            int fdSelectAbs = cffStart + fdSelectOffset;
+            Assert.IsTrue(fdArrayAbs >= 0 && fdArrayAbs < fileEnd, "FDArray offset should point inside the CFF table after patching");
+            Assert.IsTrue(fdSelectAbs >= 0 && fdSelectAbs < fileEnd, "FDSelect offset should point inside the CFF table after patching");
+
+            Assert.IsTrue(TryReadIndexEntryRange(sfntData, fdArrayAbs, fileEnd, 0, out int fontDictStart, out _));
+            // The Font DICT's own Private offset (operator 18) is at byte 5 of its 11-byte content.
+            int privateOffset = ReadInt32BE(sfntData, fontDictStart + 5 + 1);
+            int privateAbs = cffStart + privateOffset;
+            Assert.IsTrue(privateAbs >= 0 && privateAbs < fileEnd, "The Font DICT's own Private offset should point inside the CFF table after patching");
+        }
+
+        private static int ReadInt32BE(byte[] data, int offset)
+        {
+            return (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+        }
+
+        private static bool TryReadIndexTotalLength(byte[] data, int start, int fileEnd, out int totalLength)
+        {
+            ushort count = SfntBinaryUtils.ReadUInt16BE(data, start);
+            if (count == 0)
+            {
+                totalLength = 2;
+                return true;
+            }
+            byte offSize = data[start + 2];
+            int offsetArrayStart = start + 3;
+            int lastOffset = 0;
+            int lastOffsetPos = offsetArrayStart + count * offSize;
+            for (int b = 0; b < offSize; b++)
+            {
+                lastOffset = (lastOffset << 8) | data[lastOffsetPos + b];
+            }
+            totalLength = 3 + (count + 1) * offSize + (lastOffset - 1);
+            return totalLength > 0 && start + totalLength <= fileEnd;
+        }
+
+        private static bool TryReadIndexEntryRange(byte[] data, int start, int fileEnd, int entryIndex, out int entryStart, out int entryLen)
+        {
+            entryStart = 0;
+            entryLen = 0;
+            ushort count = SfntBinaryUtils.ReadUInt16BE(data, start);
+            if (count == 0 || entryIndex >= count)
+            {
+                return false;
+            }
+            byte offSize = data[start + 2];
+            int offsetArrayStart = start + 3;
+            int dataStart = offsetArrayStart + (count + 1) * offSize;
+            int ReadOffset(int index)
+            {
+                int value = 0;
+                int p = offsetArrayStart + index * offSize;
+                for (int b = 0; b < offSize; b++)
+                {
+                    value = (value << 8) | data[p + b];
+                }
+                return value;
+            }
+            int startOffset = ReadOffset(entryIndex);
+            int endOffset = ReadOffset(entryIndex + 1);
+            entryStart = dataStart + startOffset - 1;
+            entryLen = endOffset - startOffset;
+            return entryStart >= 0 && entryStart + entryLen <= fileEnd;
+        }
+
+        [TestMethod]
+        public void TrySubset_CidKeyedCff_KeepingAllGlyphs_ProducesSameSizeCharStringsData()
+        {
+            byte[] original = BuildSyntheticCidKeyedOttoFont(out int charStringsStart, out int originalCharStringsIndexLength);
+
+            Assert.IsTrue(CffGlyphSubsetter.TrySubset(original, new ushort[] { 0, 1, 2 }, out byte[] subsetted));
+
+            Assert.AreEqual(originalCharStringsIndexLength, ReadCharStringsIndexLength(subsetted, charStringsStart));
+        }
+
+        [TestMethod]
+        public void TrySubset_CidKeyedCff_MissingFdArray_ReturnsFalseWithoutThrowing()
+        {
+            // A ROS operator with no FDArray at all is a malformed CID-keyed CFF (FDArray is
+            // mandatory whenever ROS is present) - must decline rather than guess.
+            byte[] nameIndex = BuildIndex(new byte[] { (byte)'T', (byte)'e', (byte)'s', (byte)'t' });
+            byte[] stringIndex = BuildIndex();
+            byte[] globalSubrIndex = BuildIndex();
+            byte[] charStringsIndex = BuildIndex(new byte[] { 14 }, new byte[] { 14 }, new byte[] { 14 });
+
+            const int hdrSize = 4;
+            byte[] rosOperators = { 139, 139, 139, 12, 30 };
+            byte[] topDictContent = new byte[6 + rosOperators.Length];
+            topDictContent[0] = 29;
+            topDictContent[5] = 17;
+            rosOperators.CopyTo(topDictContent, 6);
+
+            int nameIndexStart = hdrSize;
+            int topDictIndexStart = nameIndexStart + nameIndex.Length;
+            byte[] topDictIndex = BuildIndex(topDictContent);
+            int stringIndexStart = topDictIndexStart + topDictIndex.Length;
+            int globalSubrIndexStart = stringIndexStart + stringIndex.Length;
+            int charStringsStart = globalSubrIndexStart + globalSubrIndex.Length;
+            Int32BE(charStringsStart).CopyTo(topDictContent, 1);
+            topDictIndex = BuildIndex(topDictContent);
+
+            var cffTable = new List<byte>();
+            cffTable.AddRange(new byte[] { 1, 0, (byte)hdrSize, 4 });
+            cffTable.AddRange(nameIndex);
+            cffTable.AddRange(topDictIndex);
+            cffTable.AddRange(stringIndex);
+            cffTable.AddRange(globalSubrIndex);
+            cffTable.AddRange(charStringsIndex);
+            byte[] cffBytes = cffTable.ToArray();
+
+            const int sfntHeaderLen = 12;
+            const int tableRecordLen = 16;
+            const int cffTableOffset = sfntHeaderLen + tableRecordLen;
+            var sfnt = new List<byte>();
+            sfnt.AddRange(new byte[] { (byte)'O', (byte)'T', (byte)'T', (byte)'O' });
+            sfnt.AddRange(new byte[] { 0, 1, 0, 16, 0, 0, 0, 0 });
+            sfnt.AddRange(new byte[] { (byte)'C', (byte)'F', (byte)'F', (byte)' ' });
+            sfnt.AddRange(new byte[] { 0, 0, 0, 0 });
+            sfnt.AddRange(Int32BE(cffTableOffset));
+            sfnt.AddRange(Int32BE(cffBytes.Length));
+            sfnt.AddRange(cffBytes);
+
+            bool result = CffGlyphSubsetter.TrySubset(sfnt.ToArray(), new ushort[] { 1 }, out byte[] subsetted);
+
+            Assert.IsFalse(result, "A ROS operator with no FDArray is malformed and should decline rather than guess");
             Assert.IsNull(subsetted);
         }
     }

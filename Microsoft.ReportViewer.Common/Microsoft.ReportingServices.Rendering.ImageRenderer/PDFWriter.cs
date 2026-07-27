@@ -103,6 +103,12 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private static readonly Dictionary<string, string> m_internalFonts;
 
+		/// <summary>Family-name substrings (checked case-insensitively) that classify an unknown font family as serif for <see cref="ClassifyFallbackBase14Family"/> - common serif families that aren't already in <see cref="m_internalFonts"/> as "Times New Roman" itself.</summary>
+		private static readonly string[] m_serifFallbackKeywords = { "times", "georgia", "garamond", "cambria", "palatino", "minion", "constantia", "cochin", "book antiqua", "bookman", "goudy", "serif" };
+
+		/// <summary>Family-name substrings that classify an unknown font family as monospace for <see cref="ClassifyFallbackBase14Family"/> - common monospace families that aren't already in <see cref="m_internalFonts"/> as "Courier New" itself.</summary>
+		private static readonly string[] m_monospaceFallbackKeywords = { "courier", "consolas", "menlo", "monaco", "lucida console", "terminal", "source code pro", "anonymous pro", "monospace" };
+
 		private static readonly Dictionary<char, char> m_unicodeToWinAnsi;
 
 		private int m_imageDpiX;
@@ -1247,11 +1253,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		/// <summary>
 		/// Resolves (family, bold, italic) to one of the PDF standard 14 fonts, reusing
 		/// the exact m_internalFonts mapping ProcessDrawStringFont already uses for its
-		/// own "InternalFont" fast path. Unknown family names fall back to the Helvetica
-		/// family. The returned PDFFont has CachedFont = null and InternalFont = true,
-		/// which is safe: WriteFont and ProcessFontForFontEmbedding both short-circuit
-		/// before touching CachedFont whenever InternalFont is true and IsComposite is
-		/// false (verified: PDFWriter.cs's WriteFont/ProcessFontForFontEmbedding).
+		/// own "InternalFont" fast path. Unknown family names fall back to whichever base-14
+		/// family (Times/Helvetica/Courier) <see cref="ClassifyFallbackBase14Family"/> judges
+		/// closest by name (e.g. "Georgia"/"Cambria" fall back to Times, "Consolas"/"Menlo"
+		/// to Courier), rather than always Helvetica - still an approximation (no real font
+		/// metrics are consulted), but a visibly closer one for serif/monospace requests than
+		/// a blanket sans-serif substitution. The returned PDFFont has CachedFont = null and
+		/// InternalFont = true, which is safe: WriteFont and ProcessFontForFontEmbedding both
+		/// short-circuit before touching CachedFont whenever InternalFont is true and
+		/// IsComposite is false (verified: PDFWriter.cs's WriteFont/ProcessFontForFontEmbedding).
 		/// </summary>
 		private PDFFont GetOrCreateBase14Font(string fontFamily, bool bold, bool italic)
 		{
@@ -1259,7 +1269,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			string requestedKey = fontFamily + styleSuffix;
 			if (!m_internalFonts.TryGetValue(requestedKey, out string basePdfFontName))
 			{
-				basePdfFontName = "Helvetica" + styleSuffix.Replace("Italic", "Oblique");
+				basePdfFontName = BuildBase14Name(ClassifyFallbackBase14Family(fontFamily), bold, italic);
 				requestedKey = "__base14__" + basePdfFontName;
 			}
 
@@ -1283,6 +1293,50 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				m_fontsUsedInCurrentPage.Add(pdfFont.FontId);
 			}
 			return pdfFont;
+		}
+
+		/// <summary>Classifies a font family name not already in <see cref="m_internalFonts"/> as "Times", "Courier", or "Helvetica" (the default) by checking for common serif/monospace family-name substrings - a name-only heuristic, not a real font-metrics/style lookup, but closer than always assuming sans-serif. Internal (not private) so tests can assert on the classification directly, since the emitted PDF font dictionary lives in an object stream this test project's harness can't easily inspect without a full EndReport().</summary>
+		internal static string ClassifyFallbackBase14Family(string fontFamily)
+		{
+			string lower = fontFamily?.ToLowerInvariant() ?? string.Empty;
+			foreach (string keyword in m_monospaceFallbackKeywords)
+			{
+				if (lower.Contains(keyword))
+				{
+					return "Courier";
+				}
+			}
+			foreach (string keyword in m_serifFallbackKeywords)
+			{
+				if (lower.Contains(keyword))
+				{
+					return "Times";
+				}
+			}
+			return "Helvetica";
+		}
+
+		/// <summary>Builds the standard-14 PDF font name for (family, bold, italic) - each of the three families spells its style variants differently ("Times-BoldItalic" vs. "Helvetica-BoldOblique"/"Courier-BoldOblique").</summary>
+		internal static string BuildBase14Name(string base14Family, bool bold, bool italic)
+		{
+			if (base14Family == "Times")
+			{
+				if (bold && italic)
+				{
+					return "Times-BoldItalic";
+				}
+				if (bold)
+				{
+					return "Times-Bold";
+				}
+				if (italic)
+				{
+					return "Times-Italic";
+				}
+				return "Times-Roman";
+			}
+			string obliqueSuffix = (bold && italic) ? "-BoldOblique" : (bold ? "-Bold" : (italic ? "-Oblique" : ""));
+			return base14Family + obliqueSuffix;
 		}
 
 		/// <summary>
@@ -1587,25 +1641,34 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		}
 
 		/// <summary>
-		/// Draws underline/strikethrough for the cross-platform text paths as a filled
-		/// rectangle appended after the enclosing BT/ET text object - PDF text objects may
-		/// only contain text-showing/text-state operators, so path-painting operators like
-		/// "re f" must live outside BT/ET (see tasks/pdf-text-shaping-abstraction.md).
-		/// Overline is not handled: RPLFormat.TextDecorations is a single value (not flags)
-		/// per run, and only underline/strikethrough were requested; adding overline later
-		/// is a one-line addition to the switch below.
+		/// Draws underline/strikethrough/overline for the cross-platform text paths as a
+		/// filled rectangle appended after the enclosing BT/ET text object - PDF text
+		/// objects may only contain text-showing/text-state operators, so path-painting
+		/// operators like "re f" must live outside BT/ET (see
+		/// tasks/pdf-text-shaping-abstraction.md).
 		/// </summary>
 		private static void AppendDecorationRectangle(StringBuilder decorationsBuilder, Color color, float leftPoints, float baselineYPoints, float widthPoints, float fontSizePoints, RPLFormat.TextDecorations decoration)
 		{
-			if (decoration != RPLFormat.TextDecorations.Underline && decoration != RPLFormat.TextDecorations.LineThrough)
+			if (decoration != RPLFormat.TextDecorations.Underline && decoration != RPLFormat.TextDecorations.LineThrough && decoration != RPLFormat.TextDecorations.Overline)
 			{
 				return;
 			}
 
 			float thicknessPoints = Math.Max(0.5f, fontSizePoints * 0.06f);
-			float bottomPoints = (decoration == RPLFormat.TextDecorations.Underline)
-				? baselineYPoints - fontSizePoints * 0.15f - thicknessPoints / 2f
-				: baselineYPoints + fontSizePoints * 0.3f - thicknessPoints / 2f;
+			float bottomPoints;
+			switch (decoration)
+			{
+				case RPLFormat.TextDecorations.Underline:
+					bottomPoints = baselineYPoints - fontSizePoints * 0.15f - thicknessPoints / 2f;
+					break;
+				case RPLFormat.TextDecorations.Overline:
+					// Sits at ~0.9em above the baseline, just above the base-14 fonts' typical cap height, mirroring where GDI+'s own overline decoration is drawn relative to the font's ascent.
+					bottomPoints = baselineYPoints + fontSizePoints * 0.9f - thicknessPoints / 2f;
+					break;
+				default:
+					bottomPoints = baselineYPoints + fontSizePoints * 0.3f - thicknessPoints / 2f;
+					break;
+			}
 
 			decorationsBuilder.Append("\r\n");
 			WriteColor(decorationsBuilder, color, isStroke: false);

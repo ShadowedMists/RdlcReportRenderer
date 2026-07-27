@@ -30,6 +30,19 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// has two bits (fSoftBreak/fWhiteSpace), so UAX #14's distinction between "mandatory"
 	/// and "optional" breaks can't be surfaced separately here either - both still map to
 	/// fSoftBreak, same as before this widening.
+	///
+	/// Narrowed further (2026-07-27, next day): fullwidth '！'/'？'/'，'/'：'/'；' (U+FF01/FF1F/FF0C/FF1A/FF1B) -
+	/// as common in Chinese/Japanese text as their halfwidth ASCII counterparts - now classify the same
+	/// way those do, instead of falling through to AL. A bare '?' (previously missing from the EX case
+	/// despite '!' already being there) was fixed alongside it. Two other named gaps above (locale-specific
+	/// kinsoku-shori tailoring, and giving Hangul conjoining jamo their own JL/JV/JT classes instead of
+	/// folding them into AL) were investigated and intentionally left alone: decomposed Hangul jamo
+	/// sequences already don't get spurious internal breaks today (they fall to AL, which - like any other
+	/// ordinary-alphabetic run - never breaks mid-run under this analyzer's default-deny model), so adding
+	/// dedicated JL/JV/JT classes would add real complexity for no verifiable behavior change; and kinsoku
+	/// shori's core mechanics (don't break before closing punctuation/quotes, don't break after opening
+	/// punctuation) are already covered by the existing CL/OP/QU/NS rules above - full locale tailoring
+	/// beyond that would need the actual Unicode LineBreak.txt table this class deliberately doesn't embed.
 	/// </summary>
 	internal static class UnicodeLineBreakAnalyzer
 	{
@@ -217,10 +230,12 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 				case '〉': case '》': case '」': case '』': case '】':
 				case '）': case '］': case '｝':
 					return LineBreakClass.CL;
-				case '!':
+				case '!': case '?': // A bare '?' was previously missing here (fell through to AL) despite '!' already being classified - both are ordinary EX-class punctuation per UAX #14.
 				case '‼': case '⁉':
+				case '！': case '？': // Fullwidth forms (U+FF01/FF1F) - as common in Chinese/Japanese text as their halfwidth ASCII counterparts, and should classify the same way.
 					return LineBreakClass.EX;
 				case ',': case ':': case ';':
+				case '，': case '：': case '；': // Fullwidth forms (U+FF0C/FF1A/FF1B).
 					return LineBreakClass.IS;
 				case '/':
 					return LineBreakClass.SY;

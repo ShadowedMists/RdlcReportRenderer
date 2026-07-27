@@ -21,11 +21,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 	/// (2/3/5-byte forms), so nothing else in the Top DICT INDEX (or anything before it)
 	/// needs to move.
 	///
+	/// CID-keyed CFF (ROS/FDArray/FDSelect operators present) is also supported (2026-07-27,
+	/// next day): unlike non-CID CFF, a CID-keyed font has no single top-level Private
+	/// DICT - each Font DICT inside the FDArray INDEX has its own, and FDSelect maps each
+	/// glyph id to which Font DICT (and therefore which Private DICT/Local Subrs) governs
+	/// it. Since glyph ids are never renumbered, FDSelect's own contents never need to
+	/// change - only its and FDArray's absolute position (if either moved past the shrunk
+	/// CharStrings) needs the same delta-patch already used for charset/Encoding/Private
+	/// above; each Font DICT inside FDArray is itself parsed with the same DICT parser used
+	/// for the Top DICT (it only ever contains a Private operator, everything else this
+	/// class reads being Top-DICT-only) so its own Private offset gets the identical patch.
+	/// See <see cref="PatchCidKeyedStructures"/>.
+	///
 	/// Honest scope, all documented rather than silently dropped:
-	/// - Only non-CID-keyed CFF is supported - a CID-keyed CFF (ROS/FDArray/FDSelect
-	///   operators present) has a materially different structure (per-glyph FDSelect,
-	///   multiple Private DICTs via FDArray) this class does not attempt; falls back to
-	///   whole-file embedding.
 	/// - Only a single-font Top DICT INDEX (count == 1) is supported - a bare CFF
 	///   "FontSet" with multiple Top DICTs never occurs inside an 'OTTO'-wrapped OpenType
 	///   file in practice, but if seen this bails rather than guess which entry applies.
@@ -87,6 +95,18 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			internal int PrivateOffsetOperandLen;
 
 			internal bool IsCidKeyed;
+
+			internal long? FdArrayOffset;
+
+			internal int FdArrayOperandStart;
+
+			internal int FdArrayOperandLen;
+
+			internal long? FdSelectOffset;
+
+			internal int FdSelectOperandStart;
+
+			internal int FdSelectOperandLen;
 		}
 
 		internal static bool TrySubset(byte[] fontData, IEnumerable<ushort> usedGlyphIds, out byte[] subsetted)
@@ -143,9 +163,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			}
 
 			TopDictInfo topDict = ParseTopDict(fontData, topDictEntries[0].Start, topDictEntries[0].Len);
-			if (topDict == null || topDict.IsCidKeyed || topDict.CharStringsOffset < 0)
+			if (topDict == null || topDict.CharStringsOffset < 0)
 			{
 				return false;
+			}
+			if (topDict.IsCidKeyed && !topDict.FdArrayOffset.HasValue)
+			{
+				return false; // malformed CID-keyed CFF - FDArray is mandatory whenever ROS/FDSelect is present
 			}
 
 			long charStringsAbsOffset = cffStart + topDict.CharStringsOffset;
@@ -201,6 +225,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					return false;
 				}
 			}
+			if (topDict.IsCidKeyed && !PatchCidKeyedStructures(fontData, cffStart, fileEnd, charStringsEndAbs, delta, topDict, cffBytes))
+			{
+				return false;
+			}
 
 			int csStartRel = (int)(charStringsAbsOffset - cffStart);
 			int csEndRel = (int)(charStringsEndAbs - cffStart);
@@ -214,6 +242,56 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				[TagCff] = newCffBytes
 			});
+			return true;
+		}
+
+		/// <summary>
+		/// Patches every CID-keyed-specific offset that could be affected by the CharStrings
+		/// shrink: the Top DICT's own FDArray/FDSelect offsets, plus each Font DICT inside
+		/// FDArray's own Private DICT offset (a CID-keyed CFF has no single top-level Private
+		/// DICT - each Font DICT in the FDArray has its own). FDSelect's own internal
+		/// contents (format 0 glyph-to-FD array, or format 3 ranges) never need to change,
+		/// since glyph ids are never renumbered - only the block's absolute position, if it
+		/// moved past the shrunk CharStrings, needs patching.
+		/// </summary>
+		private static bool PatchCidKeyedStructures(byte[] fontData, int cffStart, int fileEnd, long charStringsEndAbs, int delta, TopDictInfo topDict, byte[] cffBytes)
+		{
+			long absFdArray = cffStart + topDict.FdArrayOffset.Value;
+			if (absFdArray >= charStringsEndAbs && !TryPatchOperand(cffBytes, topDict.FdArrayOperandStart - cffStart, topDict.FdArrayOperandLen, topDict.FdArrayOffset.Value + delta))
+			{
+				return false;
+			}
+
+			if (!TryReadIndexEntries(fontData, (int)absFdArray, fileEnd, out List<(int Start, int Len)> fontDictEntries))
+			{
+				return false;
+			}
+			foreach ((int Start, int Len) fontDict in fontDictEntries)
+			{
+				TopDictInfo fdInfo = ParseTopDict(fontData, fontDict.Start, fontDict.Len);
+				if (fdInfo == null)
+				{
+					return false;
+				}
+				if (fdInfo.PrivateOffset.HasValue)
+				{
+					long absFdPrivate = cffStart + fdInfo.PrivateOffset.Value;
+					if (absFdPrivate >= charStringsEndAbs && !TryPatchOperand(cffBytes, fdInfo.PrivateOffsetOperandStart - cffStart, fdInfo.PrivateOffsetOperandLen, fdInfo.PrivateOffset.Value + delta))
+					{
+						return false;
+					}
+				}
+			}
+
+			if (topDict.FdSelectOffset.HasValue)
+			{
+				long absFdSelect = cffStart + topDict.FdSelectOffset.Value;
+				if (absFdSelect >= charStringsEndAbs && !TryPatchOperand(cffBytes, topDict.FdSelectOperandStart - cffStart, topDict.FdSelectOperandLen, topDict.FdSelectOffset.Value + delta))
+				{
+					return false;
+				}
+			}
+
 			return true;
 		}
 
@@ -444,8 +522,24 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					info.IsCidKeyed = true;
 					break;
 				case OperatorFdArray:
-				case OperatorFdSelect:
 					info.IsCidKeyed = true; // FDArray/FDSelect only ever accompany CID-keyed CFF; treat the same as ROS
+					if (operands.Count >= 1)
+					{
+						var last = operands[operands.Count - 1];
+						info.FdArrayOffset = last.Value;
+						info.FdArrayOperandStart = last.Start;
+						info.FdArrayOperandLen = last.Len;
+					}
+					break;
+				case OperatorFdSelect:
+					info.IsCidKeyed = true;
+					if (operands.Count >= 1)
+					{
+						var last = operands[operands.Count - 1];
+						info.FdSelectOffset = last.Value;
+						info.FdSelectOperandStart = last.Start;
+						info.FdSelectOperandLen = last.Len;
+					}
 					break;
 			}
 		}

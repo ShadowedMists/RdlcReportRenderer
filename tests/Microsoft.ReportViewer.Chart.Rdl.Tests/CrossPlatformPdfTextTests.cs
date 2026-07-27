@@ -111,6 +111,21 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void DrawWrappedText_WithOverline_EmitsFillRectangleAfterTextBlock()
+        {
+            string pdf = RenderContentStream(writer =>
+            {
+                var style = new TestTextRunProps { TextDecoration = RPLFormat.TextDecorations.Overline };
+                writer.DrawWrappedText(new RectangleF(0f, 0f, 100f, 20f), PointF.Empty, "Overlined", style, RPLFormat.TextAlignments.Left);
+            });
+
+            int etIndex = pdf.IndexOf("ET");
+            int reFIndex = pdf.IndexOf("re f", etIndex);
+            Assert.IsTrue(etIndex >= 0, "Expected an ET (end text object) operator");
+            Assert.IsTrue(reFIndex > etIndex, "Expected a filled rectangle (re f) after the text block for the overline");
+        }
+
+        [TestMethod]
         public void DrawWrappedText_WithoutDecoration_EmitsNoFillRectangle()
         {
             string pdf = RenderContentStream(writer =>
