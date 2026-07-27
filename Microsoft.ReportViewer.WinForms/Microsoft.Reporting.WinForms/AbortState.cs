@@ -1,4 +1,4 @@
-using System.Net;
+using System.Threading;
 
 namespace Microsoft.Reporting.WinForms
 {
@@ -8,7 +8,7 @@ namespace Microsoft.Reporting.WinForms
 
 		private bool m_pendingAbort;
 
-		private HttpWebRequest m_abortableRequest;
+		private CancellationTokenSource m_abortableRequest;
 
 		public void AbortRequest()
 		{
@@ -16,13 +16,13 @@ namespace Microsoft.Reporting.WinForms
 			{
 				if (m_abortableRequest != null)
 				{
-					m_abortableRequest.Abort();
+					m_abortableRequest.Cancel();
 				}
 				m_pendingAbort = true;
 			}
 		}
 
-		public bool RegisterAbortableRequest(HttpWebRequest request)
+		public bool RegisterAbortableRequest(CancellationTokenSource cancellationTokenSource)
 		{
 			lock (m_abortLock)
 			{
@@ -30,7 +30,7 @@ namespace Microsoft.Reporting.WinForms
 				{
 					return false;
 				}
-				m_abortableRequest = request;
+				m_abortableRequest = cancellationTokenSource;
 				return true;
 			}
 		}

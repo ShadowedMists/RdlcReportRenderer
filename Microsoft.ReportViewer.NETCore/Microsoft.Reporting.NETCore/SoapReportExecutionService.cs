@@ -6,11 +6,14 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Permissions;
 using System.Security.Principal;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Xml;
 
 namespace Microsoft.Reporting.NETCore
@@ -483,24 +486,28 @@ namespace Microsoft.Reporting.NETCore
 				userName = m_trustedUserHeader.UserName;
 				userToken = m_trustedUserHeader.UserToken;
 			}
-			HttpWebRequest serverUrlAccessObject = WebRequestHelper.GetServerUrlAccessObject(url, m_timeout, ServerNetworkCredentials, Service.FormsAuthCookie, m_headers, m_cookies, userName, BearerToken, userToken);
-			if (abortState != null && !abortState.RegisterAbortableRequest(serverUrlAccessObject))
+			// HttpWebRequest.Abort() had no direct HttpClient equivalent; cancelling the
+			// CancellationTokenSource that bounds the send achieves the same effect (fail the
+			// in-flight or not-yet-started request) - same pattern as ExternalResourceLoader.cs.
+			TimeSpan timeout = (m_timeout > 0) ? TimeSpan.FromMilliseconds(m_timeout) : System.Threading.Timeout.InfiniteTimeSpan;
+			using CancellationTokenSource cts = new CancellationTokenSource(timeout);
+			if (abortState != null && !abortState.RegisterAbortableRequest(cts))
 			{
 				throw new OperationCanceledException();
 			}
+			HttpResponseMessage response = null;
 			try
 			{
 				using (new ServerImpersonationContext(m_impersonationUser))
 				{
-					WebResponse response = serverUrlAccessObject.GetResponse();
-					mimeType = response.Headers["Content-Type"];
-					fileNameExtension = response.Headers["FileExtension"];
-					Stream responseStream = response.GetResponseStream();
-					if (responseStream == null)
+					response = WebRequestHelper.ExecuteServerUrlRequest(url, ServerNetworkCredentials, Service.FormsAuthCookie, m_headers, m_cookies, userName, BearerToken, userToken, cts.Token);
+					if (!response.IsSuccessStatusCode)
 					{
-						return;
+						throw WebRequestHelper.ExceptionFromWebResponse(response, null);
 					}
-					using (responseStream)
+					mimeType = response.Content.Headers.ContentType?.ToString();
+					fileNameExtension = response.Headers.TryGetValues("FileExtension", out IEnumerable<string> values) ? values.FirstOrDefault() : null;
+					using (Stream responseStream = response.Content.ReadAsStream(cts.Token))
 					{
 						byte[] array = new byte[81920];
 						int count;
@@ -511,9 +518,17 @@ namespace Microsoft.Reporting.NETCore
 					}
 				}
 			}
+			catch (ReportServerException)
+			{
+				throw;
+			}
 			catch (Exception e)
 			{
-				throw WebRequestHelper.ExceptionFromWebResponse(e);
+				throw WebRequestHelper.ExceptionFromWebResponse(response, e);
+			}
+			finally
+			{
+				response?.Dispose();
 			}
 		}
 	}

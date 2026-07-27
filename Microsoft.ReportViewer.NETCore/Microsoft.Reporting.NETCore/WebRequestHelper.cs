@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -19,115 +20,134 @@ namespace Microsoft.Reporting.NETCore
 
 		private const string SPUserNameParam = "rs:TrustedUserName";
 
-		public static HttpWebRequest GetServerUrlAccessObject(string url, int timeout, ICredentials credentials, Cookie formsAuthCookie, IEnumerable<string> headers, IEnumerable<Cookie> cookies, string userName, string bearerToken, byte[] userToken)
+		// Replaces the old GetServerUrlAccessObject(...):HttpWebRequest + caller-side GetResponse().
+		// HttpWebRequest's per-request Credentials/CookieContainer have no HttpClient equivalent -
+		// those move to a per-call HttpClientHandler (matching the pattern already used by
+		// ExternalResourceLoader.cs's own WebRequest->HttpClient migration), since credentials here
+		// are genuinely per-call (impersonated/forms/bearer), not a fixed shared identity.
+		public static HttpResponseMessage ExecuteServerUrlRequest(string url, ICredentials credentials, Cookie formsAuthCookie, IEnumerable<string> headers, IEnumerable<Cookie> cookies, string userName, string bearerToken, byte[] userToken, CancellationToken cancellationToken)
 		{
-			HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-			httpWebRequest.Credentials = credentials;
-			httpWebRequest.Timeout = timeout;
-			if (!string.IsNullOrEmpty(bearerToken))
+			using HttpClientHandler handler = new HttpClientHandler
 			{
-				httpWebRequest.Credentials = null;
-				httpWebRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
-			}
-			SetRequestHeaders(httpWebRequest, formsAuthCookie, headers, cookies);
-			if (userToken != null && !string.IsNullOrEmpty(userName))
-			{
-				string input = Convert.ToBase64String(userToken);
-				string s = string.Format(CultureInfo.InvariantCulture, "{0}={1}&{2}={3}", "rs:TrustedUserName", UrlUtil.UrlEncode(userName), "rs:TrustedUserToken", UrlUtil.UrlEncode(input));
-				httpWebRequest.Method = "POST";
-				httpWebRequest.ContentType = "application/x-www-form-urlencoded";
-				byte[] bytes = Encoding.UTF8.GetBytes(s);
-				using (Stream stream = httpWebRequest.GetRequestStream())
-				{
-					stream.Write(bytes, 0, bytes.Length);
-					return httpWebRequest;
-				}
-			}
-			return httpWebRequest;
-		}
-
-		public static void SetRequestHeaders(HttpWebRequest request, Cookie formsAuthCookie, IEnumerable<string> headers, IEnumerable<Cookie> cookies)
-		{
-			request.Headers.Add("Accept-Language", Thread.CurrentThread.CurrentCulture.Name);
-			request.CookieContainer = new CookieContainer();
+				Credentials = credentials,
+				CookieContainer = new CookieContainer()
+			};
 			if (formsAuthCookie != null)
 			{
-				request.CookieContainer.Add(formsAuthCookie);
+				handler.CookieContainer.Add(formsAuthCookie);
 			}
 			if (cookies != null)
 			{
 				foreach (Cookie cooky in cookies)
 				{
-					request.CookieContainer.Add(cooky);
+					handler.CookieContainer.Add(cooky);
 				}
 			}
+			using HttpClient httpClient = new HttpClient(handler);
+			using HttpRequestMessage request = CreateRequest(url, headers, bearerToken, userName, userToken);
+			return httpClient.Send(request, cancellationToken);
+		}
+
+		private static HttpRequestMessage CreateRequest(string url, IEnumerable<string> headers, string bearerToken, string userName, byte[] userToken)
+		{
+			HttpRequestMessage request;
+			if (userToken != null && !string.IsNullOrEmpty(userName))
+			{
+				string input = Convert.ToBase64String(userToken);
+				string content = string.Format(CultureInfo.InvariantCulture, "{0}={1}&{2}={3}", SPUserNameParam, UrlUtil.UrlEncode(userName), SPUserTokenParam, UrlUtil.UrlEncode(input));
+				request = new HttpRequestMessage(HttpMethod.Post, url)
+				{
+					Content = new StringContent(content, Encoding.UTF8, "application/x-www-form-urlencoded")
+				};
+			}
+			else
+			{
+				request = new HttpRequestMessage(HttpMethod.Get, url);
+			}
+			request.Headers.TryAddWithoutValidation("Accept-Language", Thread.CurrentThread.CurrentCulture.Name);
+			if (!string.IsNullOrEmpty(bearerToken))
+			{
+				request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {bearerToken}");
+			}
+			AddRawHeaders(request, headers);
+			return request;
+		}
+
+		// `headers` is a flat "Name: Value" string list (see ReportViewerHeaderCollection) - the
+		// same format WebHeaderCollection.Add(string) used to parse for the old HttpWebRequest path.
+		private static void AddRawHeaders(HttpRequestMessage request, IEnumerable<string> headers)
+		{
 			if (headers == null)
 			{
 				return;
 			}
 			foreach (string header in headers)
 			{
-				request.Headers.Add(header);
+				int separatorIndex = header.IndexOf(':');
+				if (separatorIndex <= 0)
+				{
+					continue;
+				}
+				string name = header.Substring(0, separatorIndex).Trim();
+				string value = header.Substring(separatorIndex + 1).Trim();
+				request.Headers.TryAddWithoutValidation(name, value);
 			}
 		}
 
-		public static ReportServerException ExceptionFromWebResponse(Exception e)
+		// Replaces the old ExceptionFromWebResponse(Exception):ReportServerException, which relied on
+		// HttpWebRequest.GetResponse() throwing WebException with a readable .Response on non-2xx
+		// status. HttpClient doesn't throw on non-2xx by default, so the caller now passes the
+		// HttpResponseMessage explicitly once it has decided the response is an error (non-success
+		// status), alongside any transport-level exception actually thrown (cancellation, socket
+		// errors). transportException is null when called purely because of a non-success status.
+		public static ReportServerException ExceptionFromWebResponse(HttpResponseMessage response, Exception transportException)
 		{
-			return ReportServerException.FromException(ExceptionFromWebResponseUnwrapped(e));
+			return ReportServerException.FromException(ExceptionFromWebResponseUnwrapped(response, transportException));
 		}
 
-		private static Exception ExceptionFromWebResponseUnwrapped(Exception e)
+		private static Exception ExceptionFromWebResponseUnwrapped(HttpResponseMessage response, Exception transportException)
 		{
-			IOException ex = e as IOException;
-			WebException ex2 = e as WebException;
-			if (ex != null)
+			if (transportException is OperationCanceledException)
 			{
-				SocketException ex3 = ex.InnerException as SocketException;
-				if (ex3 != null && ex3.SocketErrorCode == SocketError.Interrupted)
+				return new OperationCanceledException();
+			}
+			if (transportException is IOException ioException && ioException.InnerException is SocketException socketException && socketException.SocketErrorCode == SocketError.Interrupted)
+			{
+				return new OperationCanceledException();
+			}
+			if (response != null && !response.IsSuccessStatusCode)
+			{
+				Exception moreInformationException = TryParseMoreInformationFault(response);
+				if (moreInformationException != null)
 				{
-					return new OperationCanceledException();
+					return moreInformationException;
 				}
 			}
-			else if (ex2 != null)
+			return transportException ?? new HttpRequestException($"Server URL request failed with status {response?.StatusCode}.");
+		}
+
+		private static Exception TryParseMoreInformationFault(HttpResponseMessage response)
+		{
+			try
 			{
-				if (ex2.Status == WebExceptionStatus.RequestCanceled)
+				using Stream responseStream = response.Content.ReadAsStream();
+				XmlDocument xmlDocument = new XmlDocument();
+				XmlReaderSettings xmlReaderSettings = new XmlReaderSettings();
+				xmlReaderSettings.CheckCharacters = false;
+				using XmlReader reader = XmlReader.Create(responseStream, xmlReaderSettings);
+				xmlDocument.Load(reader);
+				XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(xmlDocument.NameTable);
+				xmlNamespaceManager.AddNamespace("rs", "http://www.microsoft.com/sql/reportingservices");
+				if (xmlDocument.DocumentElement != null)
 				{
-					return new OperationCanceledException();
+					return ReportServerException.FromMoreInformationNode(xmlDocument.DocumentElement.SelectSingleNode(InfoQuery, xmlNamespaceManager));
 				}
-				if (ex2.Response != null)
-				{
-					Stream responseStream = ex2.Response.GetResponseStream();
-					try
-					{
-						XmlDocument xmlDocument = new XmlDocument();
-						XmlReaderSettings xmlReaderSettings = new XmlReaderSettings();
-						xmlReaderSettings.CheckCharacters = false;
-						XmlReader reader = XmlReader.Create(responseStream, xmlReaderSettings);
-						xmlDocument.Load(reader);
-						XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(xmlDocument.NameTable);
-						xmlNamespaceManager.AddNamespace("rs", "http://www.microsoft.com/sql/reportingservices");
-						if (xmlDocument.DocumentElement != null)
-						{
-							Exception ex4 = ReportServerException.FromMoreInformationNode(xmlDocument.DocumentElement.SelectSingleNode("rs:MoreInformation", xmlNamespaceManager));
-							if (ex4 != null)
-							{
-								return ex4;
-							}
-							return e;
-						}
-						return e;
-					}
-					catch (Exception)
-					{
-						return e;
-					}
-					finally
-					{
-						responseStream.Close();
-					}
-				}
+				return null;
 			}
-			return e;
+			catch (Exception)
+			{
+				return null;
+			}
 		}
 	}
 }
