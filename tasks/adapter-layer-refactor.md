@@ -23,15 +23,16 @@ Replace the current ad-hoc rendering and resource adaptation seams with a broade
 
 ## Related README compatibility gaps
 
-The current rendering work only covers part of the compatibility story described in [README.md](../README.md). The refactor should also include follow-up work for the broader gaps listed there:
+The current rendering work only covers part of the compatibility story described in [README.md](../README.md). Re-audited 2026-07-27 against actual current progress (Chart/Excel/PDF cross-platform work, plus a review of upstream `lkosson/reportviewercore`'s open issues — see `tasks/upstream-issue-triage.md`); several of the original bullets below are now resolved or have their own dedicated task file, so this list only carries the ones still open here:
 
-- Investigate support options for spatial SQL types such as SqlGeography and document the current limitation.
-- Review expression sandboxing and code-security expectations for untrusted report definitions.
-- Assess whether interactive web preview can be supported on ASP.NET Core without a major rewrite, or document it as out of scope.
-- Document the recommended WinForms designer workflow for programmatic control.
-- Investigate single-file deployment compatibility for Roslyn and runtime assembly loading.
-- Validate the current status of the map control and capture any known limitations.
-- Continue replacing System.Drawing-dependent image handling on non-Windows platforms with cross-platform abstractions.
+- Investigate support options for spatial SQL types such as SqlGeography and document the current limitation. *(still open, not started)*
+- Review expression sandboxing and code-security expectations for untrusted report definitions. *(still open — see `tasks/expression-compiler-modernization.md` for concrete detail, including that no sandboxing exists today)*
+- Assess whether interactive web preview can be supported on ASP.NET Core without a major rewrite, or document it as out of scope. *(still open, not started)*
+- Investigate single-file deployment compatibility for Roslyn and runtime assembly loading. *(still open — see `tasks/expression-compiler-modernization.md`; confirmed still real 2026-07-27, `Assembly.Location`-based reference loading breaks under single-file publish)*
+- Validate the current status of the map control and capture any known limitations. *(still open — Map migration itself is deferred per `docs/decisions.md`, but even its existing Windows-only behavior is unverified by any test; see `tasks/test-coverage-gaps.md`)*
+- Continue replacing System.Drawing-dependent image handling on non-Windows platforms with cross-platform abstractions. *(narrowed 2026-07-27 — Chart, Excel, and PDF's real RDL engine are now done; remaining scope is specifically the Word renderer (`tasks/word-renderer-cross-platform.md`), the IMAGE/TIFF/EMF renderer (`tasks/image-renderer-cross-platform.md`), and Gauge's Skia backend (`docs/platform-support.md`) — track further work in those files, not as a vague bullet here)*
+
+Resolved, removed from this list: "Document the recommended WinForms designer workflow for programmatic control" — done in `docs/usage-guide.md#6`, already linked from README's "What doesn't work" section.
 
 ## Acceptance criteria
 

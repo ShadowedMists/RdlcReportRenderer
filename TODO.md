@@ -17,6 +17,10 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | 📋 Not started; see `tasks/xmlvalidatingreader-migration.md` | MEDIUM |
 | 🔵 **LOW** | Map engine: GDI+ → interface abstraction | 📋 NOT STARTED — deferred; see `docs/decisions.md`'s Map engine entry | HIGH |
 | 🔵 **LOW** | Remaining CS0649 dead-field warnings (~54) | 📋 Each needs its own judgment call; see `tasks/remaining-warning-cleanup.md` | LOW |
+| 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 📋 NOT STARTED; see `tasks/word-renderer-cross-platform.md` | LOW |
+| 🔵 **LOW** | IMAGE (TIFF/EMF) renderer: cross-platform support | 📋 NOT STARTED, not scheduled; see `tasks/image-renderer-cross-platform.md` | MEDIUM |
+| 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | 📋 NOT STARTED; see `tasks/expression-compiler-modernization.md` | MEDIUM |
+| 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 📋 NOT STARTED; see `tasks/test-coverage-gaps.md` | LOW |
 
 ### Long-Term Vision
 
@@ -36,6 +40,11 @@ The architecture should support Windows, Linux, and macOS rendering, third-party
 - `tasks/webrequest-httpclient-migration.md` — SYSLIB0014 migration scope (partially done, 5 sites remain)
 - `tasks/xmlvalidatingreader-migration.md` — CS0618 migration scope for the RDL/RML schema validator (not started)
 - `tasks/remaining-warning-cleanup.md` — remaining CS0649 dead-field warnings, each needing its own judgment call
+- `tasks/word-renderer-cross-platform.md` — Word 97/WordOpenXml renderer cross-platform gap (narrow — image-decode only; not started)
+- `tasks/image-renderer-cross-platform.md` — IMAGE (TIFF/EMF) renderer cross-platform gap (deep GDI+/Metafile coupling; not started)
+- `tasks/expression-compiler-modernization.md` — RDL expression compiler sandboxing + single-file-deployment gaps (not started)
+- `tasks/test-coverage-gaps.md` — rendering formats with zero automated test coverage (HTML/CSV/XML/WORD/IMAGE/Gauge/Map)
+- `tasks/upstream-issue-triage.md` — review of upstream `lkosson/reportviewercore` open issues against this fork's own tracking
 
 ## Notes
 
