@@ -190,16 +190,13 @@ Before starting work, review these files in order:
 2. **docs/coding-standards.md** - Coding guidelines, design conventions, and migration lessons learned
 3. **docs/rendering-abstractions.md** - Rendering architecture (Excel/PDF renderer factory + Chart/Gauge Ports & Adapters)
 4. **docs/decisions.md** / **docs/platform-support.md** - Why things are built this way, and current known gaps
-5. **tasks/chart-gdi-type-abstraction.md** / **tasks/gauge-gdi-type-abstraction.md** - active Chart/Gauge migration progress
-6. **tasks/pdf-text-shaping-abstraction.md** - active PDF text-shaping work and remaining gaps (`tasks/pdf-render-callstack-analysis.md` is the historical call-chain trace that preceded it)
+5. **tasks/** - active, not-yet-completed migration work only (e.g. `tasks/webrequest-httpclient-migration.md`, `tasks/xmlvalidatingreader-migration.md`, `tasks/remaining-warning-cleanup.md`, `tasks/adapter-layer-refactor.md`); completed migrations are folded into `docs/` and removed from here, not left behind as a duplicate record
 
-These contain:
-- Complete call stack analysis
-- Windows dependency inventory
-- Implementation roadmaps with effort estimates
-- Risk assessments
+`tasks/` files contain, for whatever's still open:
+- Concrete scope and file references
+- Implementation approach
+- Risk assessment
 - Success criteria
-- Specific file references and line numbers
 
 ---
 

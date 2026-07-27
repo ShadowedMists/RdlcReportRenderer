@@ -1,6 +1,6 @@
 # WebRequest → HttpClient migration (SYSLIB0014)
 
-**Status: PARTIALLY DONE.** Documented 2026-07-26 during an obsolete-warning cleanup pass; the 3 simple GET-and-decode sites were fixed the same day once reviewed individually (see "Sites fixed" below). `ExternalResourceLoader.cs` was fixed 2026-07-26 (same effort, picked up after PDF Option B) — see "Sites fixed" below. Priority for the remainder: LOW — the 2 `WebRequestHelper.cs` copies (WinForms/NETCore) and the 3 Map-engine sites, scheduled after the PDF cross-platform work (`tasks/pdf-render-callstack-analysis.md`) but before the Map engine GDI+ abstraction (`tasks/gauge-gdi-type-abstraction.md`-style effort for Map).
+**Status: PARTIALLY DONE.** Documented 2026-07-26 during an obsolete-warning cleanup pass; the 3 simple GET-and-decode sites were fixed the same day once reviewed individually (see "Sites fixed" below). `ExternalResourceLoader.cs` was fixed 2026-07-26 (same effort, picked up after PDF Option B) — see "Sites fixed" below. Priority for the remainder: LOW — the 2 `WebRequestHelper.cs` copies (WinForms/NETCore) and the 3 Map-engine sites. PDF's cross-platform work is now complete (see `docs/platform-support.md`); this is scheduled before the still-deferred Map engine GDI+ abstraction (see `docs/decisions.md`'s Map engine deferral entry).
 
 ## Why the remaining sites weren't fixed inline
 

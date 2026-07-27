@@ -129,7 +129,7 @@ Alongside it, `Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.ImageFo
 
 ## Chart and Gauge rendering: Ports & Adapters over GDI+
 
-The Chart engine (`Microsoft.Reporting.Chart.WebForms`) and Gauge engine (`Microsoft.Reporting.Gauge.WebForms`) are vendored, first-party rendering engines (not external libraries) that historically drew directly with GDI+ (`System.Drawing`). Both are being migrated to a Ports & Adapters design so a non-GDI+ backend (SkiaSharp) can eventually be plugged in for Linux/macOS. Full progress/open items: `tasks/chart-gdi-type-abstraction.md` and `tasks/gauge-gdi-type-abstraction.md`. See also `docs/platform-support.md` for cross-platform gaps and `docs/decisions.md` for why this design was chosen.
+The Chart engine (`Microsoft.Reporting.Chart.WebForms`) and Gauge engine (`Microsoft.Reporting.Gauge.WebForms`) are vendored, first-party rendering engines (not external libraries) that historically drew directly with GDI+ (`System.Drawing`). Both were migrated to this Ports & Adapters design so a non-GDI+ backend (SkiaSharp) could be plugged in for Linux/macOS. Chart's migration (GDI+→interface abstraction, Skia backend, production platform selection) is complete short of one permanently-blocked item (D3, removing temporary concrete overloads — see `docs/decisions.md`); Gauge's GDI+→interface abstraction is complete, but it has no Skia backend yet (never started, low priority — see `docs/platform-support.md`'s Gauge gap entry for the expected shape). See `docs/platform-support.md` for the current cross-platform support matrix and gaps, and `docs/decisions.md` for why this design was chosen.
 
 ### Shape
 
