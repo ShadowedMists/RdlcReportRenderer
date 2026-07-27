@@ -177,6 +177,40 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         }
 
         [TestMethod]
+        public void AdlamText_IsItemizedAsRtl()
+        {
+            // Adlam (U+1E900-U+1E95F) lives outside the Basic Multilingual Plane, so each
+            // letter here is a UTF-16 surrogate pair, not a single char - four Adlam
+            // letters is 8 chars long.
+            string adlamText = "\U0001E900\U0001E901\U0001E902\U0001E903";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(adlamText);
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(0, items[0].CharPos);
+            Assert.AreEqual(8, items[0].Length, "Four Adlam codepoints should span 8 UTF-16 chars (surrogate pairs)");
+            Assert.AreEqual(UnicodeScriptKind.Adlam, items[0].Script);
+            var analysis = new ScriptAnalysis(items[0].Analysis.word1);
+            Assert.AreEqual(1, analysis.fRTL, "Adlam is a right-to-left script - previously mis-itemized as Other/LTR");
+        }
+
+        [TestMethod]
+        public void MixedLatinAndAdlamText_ProducesTwoItemsAtTheCorrectSurrogatePairBoundary()
+        {
+            const string latinPrefix = "Hi ";
+            string text = latinPrefix + "\U0001E900\U0001E901";
+
+            List<TextItem> items = UnicodeTextItemizer.Itemize(text);
+
+            Assert.AreEqual(2, items.Count);
+            Assert.AreEqual(UnicodeScriptKind.Latin, items[0].Script);
+            Assert.AreEqual(latinPrefix.Length, items[0].Length);
+            Assert.AreEqual(UnicodeScriptKind.Adlam, items[1].Script);
+            Assert.AreEqual(4, items[1].Length, "Two Adlam codepoints should span 4 UTF-16 chars (surrogate pairs)");
+            Assert.AreEqual(text.Length, items[0].Length + items[1].Length, "Items should cover the whole string with no gaps, even across a surrogate-pair boundary");
+        }
+
+        [TestMethod]
         public void EmptyText_ProducesNoItems()
         {
             List<TextItem> items = UnicodeTextItemizer.Itemize(string.Empty);

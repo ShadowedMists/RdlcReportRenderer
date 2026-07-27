@@ -24,6 +24,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		NKo,
 		Samaritan,
 		Mandaic,
+		Adlam,
 		Other
 	}
 
@@ -74,16 +75,17 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 	/// <see cref="UnicodeScriptKind.NKo"/>, <see cref="UnicodeScriptKind.Samaritan"/>, and
 	/// <see cref="UnicodeScriptKind.Mandaic"/> (all BMP-resident, one UTF-16 char per
 	/// codepoint) are itemized and correctly marked RTL the same way.
+	/// <see cref="UnicodeScriptKind.Adlam"/> (U+1E900-U+1E95F) lives entirely outside the
+	/// Basic Multilingual Plane, so each of its characters is a UTF-16 surrogate pair, not a
+	/// single char. <see cref="ClassifyAt"/> is codepoint-aware for exactly this case - it
+	/// detects a high/low surrogate pair, decodes the full codepoint, and classifies that
+	/// pair as one two-char-wide unit - so Adlam is itemized and correctly marked RTL like
+	/// the other RTL scripts above, rather than falling through to
+	/// <see cref="UnicodeScriptKind.Other"/>/LTR. Any other supplementary-plane codepoint
+	/// (e.g. emoji) still falls through to <see cref="UnicodeScriptKind.Other"/>, unchanged
+	/// from before - only Adlam's range is recognized.
 	/// <see cref="UnicodeScriptKind.Other"/> is everything still not explicitly bucketed -
-	/// it gets its own item, treated as LTR. Adlam remains a known gap, but a different kind
-	/// than the others: it lives entirely outside the Basic Multilingual Plane
-	/// (U+1E900-U+1E95F), so each of its characters is a UTF-16 surrogate pair, not a single
-	/// char - this itemizer classifies one char at a time and has no surrogate-pair handling
-	/// at all, so an Adlam surrogate pair is classified one code unit at a time (both halves
-	/// fall through to <see cref="UnicodeScriptKind.Other"/>/LTR) rather than mis-itemized as
-	/// some other script. Fixing this would need codepoint-aware (not char-aware) iteration
-	/// throughout - a bigger, structural change affecting every supplementary-plane script,
-	/// not an Adlam-specific range fix like the three added here.
+	/// it gets its own item, treated as LTR.
 	/// </summary>
 	internal static class UnicodeTextItemizer
 	{
@@ -96,32 +98,54 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			}
 
 			int runStart = 0;
-			UnicodeScriptKind runScript = ClassifyChar(text[0]);
+			UnicodeScriptKind runScript = ClassifyAt(text, 0, out int firstUnitLength);
 			UnicodeScriptKind lastNonCommonScript = (runScript == UnicodeScriptKind.Common) ? UnicodeScriptKind.Latin : runScript;
 
-			for (int i = 1; i < text.Length; i++)
+			int i = firstUnitLength;
+			while (i < text.Length)
 			{
-				UnicodeScriptKind charScript = ClassifyChar(text[i]);
+				UnicodeScriptKind charScript = ClassifyAt(text, i, out int unitLength);
 				if (charScript == UnicodeScriptKind.Common)
 				{
 					// Common characters (spaces, digits, punctuation) never force a new
 					// item - they merge into the run currently in progress, same as
 					// Uniscribe treating "Common" script as compatible with any
 					// neighboring script.
+					i += unitLength;
 					continue;
 				}
 				if (charScript == lastNonCommonScript)
 				{
+					i += unitLength;
 					continue;
 				}
 
 				items.Add(BuildItem(runStart, i - runStart, lastNonCommonScript));
 				runStart = i;
 				lastNonCommonScript = charScript;
+				i += unitLength;
 			}
 
 			items.Add(BuildItem(runStart, text.Length - runStart, lastNonCommonScript));
 			return items;
+		}
+
+		/// <summary>Classifies the codepoint starting at <paramref name="index"/>, decoding a surrogate pair (needed for Adlam) rather than classifying each UTF-16 code unit independently. <paramref name="unitLength"/> is 2 for a decoded surrogate pair, 1 otherwise (including an unpaired/lone surrogate, classified defensively as a single code unit).</summary>
+		private static UnicodeScriptKind ClassifyAt(string text, int index, out int unitLength)
+		{
+			char c = text[index];
+			if (char.IsHighSurrogate(c) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
+			{
+				unitLength = 2;
+				int codePoint = char.ConvertToUtf32(c, text[index + 1]);
+				if (codePoint is >= 0x1E900 and <= 0x1E95F)
+				{
+					return UnicodeScriptKind.Adlam;
+				}
+				return UnicodeScriptKind.Other;
+			}
+			unitLength = 1;
+			return ClassifyChar(c);
 		}
 
 		private static TextItem BuildItem(int charPos, int length, UnicodeScriptKind script)
@@ -141,7 +165,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 			return script == UnicodeScriptKind.Hebrew || script == UnicodeScriptKind.Arabic
 				|| script == UnicodeScriptKind.Syriac || script == UnicodeScriptKind.Thaana
 				|| script == UnicodeScriptKind.NKo || script == UnicodeScriptKind.Samaritan
-				|| script == UnicodeScriptKind.Mandaic;
+				|| script == UnicodeScriptKind.Mandaic || script == UnicodeScriptKind.Adlam;
 		}
 
 		private static UnicodeScriptKind ClassifyChar(char c)
