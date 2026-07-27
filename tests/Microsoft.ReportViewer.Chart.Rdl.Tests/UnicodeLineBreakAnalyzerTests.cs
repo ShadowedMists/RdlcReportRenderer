@@ -129,5 +129,69 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             Assert.IsTrue(attrs[4].IsSoftBreak, "The character immediately after an en dash should be a break opportunity");
             Assert.IsTrue(attrs[14].IsSoftBreak, "The character immediately after an em dash should be a break opportunity");
         }
+
+        [TestMethod]
+        public void ClosingParenthesis_IsNeverABreakOpportunityEvenAfterASpace()
+        {
+            // A plain whitespace-based heuristic would allow a break right after the
+            // space; UAX #14's LB13 forbids breaking before closing punctuation even
+            // then, so the paren must stay glued to whatever comes before the space.
+            const string text = "wait )";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[5].IsSoftBreak, "')' should never be a break opportunity, even immediately after a space");
+        }
+
+        [TestMethod]
+        public void ExclamationMark_IsNeverABreakOpportunityEvenAfterASpace()
+        {
+            const string text = "stop !";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[5].IsSoftBreak, "'!' should never be a break opportunity, even immediately after a space");
+        }
+
+        [TestMethod]
+        public void Comma_IsNeverABreakOpportunityEvenAfterAHyphen()
+        {
+            // A plain hyphen-based heuristic would allow a break right after the
+            // hyphen; the comma that follows should still refuse the break.
+            const string text = "end-,more";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[4].IsSoftBreak, "',' should never be a break opportunity, even immediately after a hyphen");
+        }
+
+        [TestMethod]
+        public void OpeningQuote_IsNeverABreakOpportunityEvenAfterASpace()
+        {
+            string text = "say " + '“' + "hi" + '”';
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[4].IsSoftBreak, "An opening quote should never be a break opportunity, even immediately after a space");
+        }
+
+        [TestMethod]
+        public void CarriageReturnLineFeed_StaysTogetherAsOneMandatoryBreakUnit()
+        {
+            // A plain whitespace-based heuristic would allow (incorrectly) splitting a
+            // CRLF pair, since both characters are whitespace on their own; UAX #14's
+            // LB5 treats CRLF as a single, indivisible mandatory-break unit.
+            string text = "a\r\nb";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[2].IsSoftBreak, "The line feed immediately after a carriage return must not be its own break point");
+            Assert.IsTrue(attrs[3].IsSoftBreak, "The character after a CRLF mandatory break must be a break opportunity");
+        }
+
+        [TestMethod]
+        public void CurrencyPrefixAndPercentSuffix_StickToTheAdjacentNumber()
+        {
+            const string text = "$100 and 50%";
+            SCRIPT_LOGATTR[] attrs = UnicodeLineBreakAnalyzer.Analyze(text);
+
+            Assert.IsFalse(attrs[1].IsSoftBreak, "The digit right after a currency symbol should not be a break opportunity");
+            Assert.IsFalse(attrs[11].IsSoftBreak, "'%' right after a digit should not be a break opportunity");
+        }
     }
 }

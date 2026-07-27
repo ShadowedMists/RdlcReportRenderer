@@ -1,61 +1,270 @@
+using System.Globalization;
+
 namespace Microsoft.ReportingServices.Rendering.RichText
 {
 	/// <summary>
 	/// Prototype line-break-attribute producer for tasks/pdf-text-shaping-abstraction.md's
 	/// P4 step 3: produces a <see cref="SCRIPT_LOGATTR"/> per character the way
 	/// <see cref="Paragraph.AnalyzeForBreakPositions"/> does via Win32.ScriptBreak, but
-	/// using a hand-rolled heuristic instead of Uniscribe (this doc's phased plan
-	/// explicitly names "ICU4N or a hand-rolled Unicode line-break implementation" as the
-	/// two options; this is the latter, chosen to avoid a new external dependency for a
-	/// first cut).
+	/// using a hand-rolled break-class table instead of Uniscribe/ICU4N (this doc's
+	/// phased plan explicitly names "ICU4N or a hand-rolled Unicode line-break
+	/// implementation" as the two options; this is the latter).
 	///
-	/// Honest scope: this implements the same two flags <see cref="LineBreaker"/> already
-	/// reads from SCRIPT_LOGATTR-shaped data - a break opportunity before this character
-	/// (fSoftBreak) and whether the character is itself whitespace (fWhiteSpace) - using
-	/// rules a step closer to UAX #14 than a plain "break after any whitespace" heuristic:
-	/// a break is allowed before any character that follows whitespace (excluding
-	/// no-break/glue spaces - <see cref="IsNoBreakSpace"/>), follows a hyphen or dash
-	/// (mid-word hyphenation break, e.g. "well-known" can wrap after "well-"), or is
-	/// itself part of a run of CJK ideographs/kana/Hangul syllables following another one
-	/// (<see cref="IsWrappableIdeograph"/>) - those scripts permit a break between almost
-	/// every adjacent character pair under UAX #14's ID/H2/H3 classes, unlike Latin-style
-	/// scripts which only break at whitespace/hyphen boundaries. This is still NOT a full
-	/// UAX #14 implementation: no full break-class table (AI/CJ/NS/etc. tailoring), no
-	/// locale-specific rules, no context-sensitive numeric/quote handling. Good enough to
-	/// let CJK text actually wrap without whitespace and to stop breaking after
-	/// non-breaking spaces, which the prior heuristic got wrong.
+	/// Widened (2026-07-27) from a whitespace/hyphen/ideograph heuristic to a real
+	/// approximation of the UAX #14 pair-based algorithm: every character is classified
+	/// into a <see cref="LineBreakClass"/> (mirroring UAX #14's line-break property
+	/// values, via <see cref="Classify"/>), and break opportunities are decided by
+	/// applying a subset of UAX #14's rules (LB4-LB18 roughly) to each adjacent class
+	/// pair - do not break before closing punctuation/quotes/percent even after a space
+	/// or hyphen, do not break around glue characters (word joiner/NBSP, with the
+	/// LB12a space/hyphen exception), keep CR+LF together as one mandatory break unit,
+	/// keep digits/decimal separators together, etc.
+	///
+	/// Honest scope: this is NOT a certified-conformant UAX #14 implementation. It does
+	/// not embed the full Unicode LineBreak.txt property table (thousands of codepoint
+	/// ranges with many classes this doesn't model - AI/SG/XX/SA/CB/RI/EB/EM/ZWJ/JL/JV/
+	/// JT tailoring, etc.) - unclassified characters fall back to <see cref="LineBreakClass.AL"/>
+	/// (ordinary alphabetic), and Hangul syllables are folded into <see cref="LineBreakClass.ID"/>
+	/// rather than given their own JL/JV/JT/H2/H3 treatment. There is no locale-specific
+	/// tailoring (e.g. Japanese kinsoku shori). <see cref="SCRIPT_LOGATTR"/> itself only
+	/// has two bits (fSoftBreak/fWhiteSpace), so UAX #14's distinction between "mandatory"
+	/// and "optional" breaks can't be surfaced separately here either - both still map to
+	/// fSoftBreak, same as before this widening.
 	/// </summary>
 	internal static class UnicodeLineBreakAnalyzer
 	{
 		internal static SCRIPT_LOGATTR[] Analyze(string text)
 		{
+			LineBreakClass[] classes = new LineBreakClass[text.Length];
+			for (int i = 0; i < text.Length; i++)
+			{
+				classes[i] = Classify(text[i]);
+			}
+
 			SCRIPT_LOGATTR[] result = new SCRIPT_LOGATTR[text.Length];
 			for (int i = 0; i < text.Length; i++)
 			{
-				char c = text[i];
-				bool isWhiteSpace = char.IsWhiteSpace(c) && !IsNoBreakSpace(c);
-				bool isSoftBreak = i == 0
-					|| IsBreakingCharacter(text[i - 1])
-					|| (IsWrappableIdeograph(c) && IsWrappableIdeograph(text[i - 1]));
+				bool isWhiteSpace = classes[i] == LineBreakClass.SP;
+				bool isSoftBreak = i == 0 || CanBreakBefore(classes[i - 1], classes[i]);
 				result[i] = SCRIPT_LOGATTR.FromFlags(isSoftBreak, isWhiteSpace);
 			}
 			return result;
 		}
 
-		private static bool IsBreakingCharacter(char c)
+		private static bool CanBreakBefore(LineBreakClass prev, LineBreakClass cur)
 		{
-			// U+002D hyphen-minus, U+2010 hyphen, U+2013 en dash, U+2014 em dash.
-			return (char.IsWhiteSpace(c) && !IsNoBreakSpace(c)) || c == '-' || c == '‐' || c == '–' || c == '—';
+			// LB5: CR+LF is a single mandatory-break unit - never split it.
+			if (prev == LineBreakClass.CR && cur == LineBreakClass.LF)
+			{
+				return false;
+			}
+
+			// LB4/LB5: always break after a mandatory-break character.
+			if (IsMandatoryBreak(prev))
+			{
+				return true;
+			}
+
+			// LB6: never break immediately before a mandatory-break character - the
+			// break happens after it instead, not before.
+			if (IsMandatoryBreak(cur))
+			{
+				return false;
+			}
+
+			// LB12/LB12a: glue characters (word joiner, NBSP) never allow a break after
+			// them; before them, only when preceded by whitespace or a hyphen-like break.
+			if (prev == LineBreakClass.GL || prev == LineBreakClass.WJ)
+			{
+				return false;
+			}
+			if (cur == LineBreakClass.GL || cur == LineBreakClass.WJ)
+			{
+				return prev == LineBreakClass.SP || prev == LineBreakClass.BA || prev == LineBreakClass.HY;
+			}
+
+			// LB13/LB9: never break before closing punctuation, quotes, non-starters,
+			// combining marks, or numeric separators/suffixes - even after a space or a
+			// hyphen, unlike ordinary letters.
+			if (cur == LineBreakClass.CL || cur == LineBreakClass.EX || cur == LineBreakClass.IS
+				|| cur == LineBreakClass.SY || cur == LineBreakClass.NS || cur == LineBreakClass.CM
+				|| cur == LineBreakClass.QU)
+			{
+				return false;
+			}
+
+			// Quotes/opening brackets never allow a break right after them either - they
+			// stick to whatever they introduce.
+			if (prev == LineBreakClass.QU || prev == LineBreakClass.OP)
+			{
+				return false;
+			}
+
+			// LB25 (numeric context): keep a run of digits, and digits separated by
+			// '.'/',' or '/', together; currency prefixes stick to the number that
+			// follows, and a postfix like '%' sticks to the number before it.
+			if (prev == LineBreakClass.NU && (cur == LineBreakClass.NU || cur == LineBreakClass.IS || cur == LineBreakClass.SY))
+			{
+				return false;
+			}
+			if (prev == LineBreakClass.PR && cur == LineBreakClass.NU)
+			{
+				return false;
+			}
+			if (prev == LineBreakClass.NU && cur == LineBreakClass.PO)
+			{
+				return false;
+			}
+
+			// LB17: never break between two consecutive B2 (e.g. em dash em dash).
+			if (prev == LineBreakClass.B2)
+			{
+				return cur != LineBreakClass.B2;
+			}
+
+			// LB18: break after any run of whitespace.
+			if (prev == LineBreakClass.SP)
+			{
+				return true;
+			}
+
+			// Hyphen-like characters (HY/BA) allow a break right after them (mid-word
+			// hyphenation, e.g. "well-known" can wrap after "well-").
+			if (prev == LineBreakClass.HY || prev == LineBreakClass.BA)
+			{
+				return true;
+			}
+
+			// CJK ideographs/kana/Hangul syllables permit a break between almost every
+			// adjacent pair under UAX #14's ID/H2/H3 classes, unlike space-delimited
+			// scripts which only break at whitespace/hyphen boundaries.
+			if (prev == LineBreakClass.ID && cur == LineBreakClass.ID)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		private static bool IsMandatoryBreak(LineBreakClass c)
+		{
+			return c == LineBreakClass.BK || c == LineBreakClass.CR || c == LineBreakClass.LF || c == LineBreakClass.NL;
 		}
 
 		/// <summary>
-		/// No-break/glue spaces (UAX #14's GL class) - Unicode whitespace that must NOT
-		/// allow a line break on either side, unlike ordinary spaces: U+00A0 no-break
-		/// space, U+202F narrow no-break space, U+2007 figure space.
+		/// A coarse approximation of UAX #14's line-break property values - not the full
+		/// Unicode LineBreak.txt table, just the classes this analyzer's rules act on.
 		/// </summary>
-		private static bool IsNoBreakSpace(char c)
+		private enum LineBreakClass
 		{
-			return c == ' ' || c == ' ' || c == ' ';
+			AL,  // Ordinary alphabetic/default.
+			BK,  // Mandatory break (form feed, line/paragraph separator).
+			CR,  // Carriage return.
+			LF,  // Line feed.
+			NL,  // Next line.
+			SP,  // Space.
+			GL,  // Non-breaking glue (NBSP, narrow NBSP, figure space).
+			WJ,  // Word joiner / zero-width no-break space.
+			QU,  // Quotation mark.
+			OP,  // Opening punctuation.
+			CL,  // Closing punctuation.
+			EX,  // Exclamation/question mark.
+			IS,  // Infix numeric/general separator (',', ':', ';').
+			SY,  // Symbol allowing a break after ('/').
+			HY,  // Hyphen ('-').
+			BA,  // Break-after (soft hyphen, hyphen-2010).
+			B2,  // Break on either side, but not between two of its own kind (dashes).
+			PR,  // Numeric prefix (currency symbols).
+			PO,  // Numeric postfix ('%').
+			NU,  // Digit.
+			CM,  // Combining mark.
+			NS,  // Non-starter (can't begin a line - CJK small kana, ideographic punctuation).
+			ID,  // Ideograph (CJK/kana/Hangul) - breakable between adjacent instances.
+		}
+
+		private static LineBreakClass Classify(char c)
+		{
+			switch (c)
+			{
+				case '\r': return LineBreakClass.CR;
+				case '\n': return LineBreakClass.LF;
+				case '\u0085': return LineBreakClass.NL;
+				case '\u000B':
+				case '\u000C':
+				case '\u2028':
+				case '\u2029':
+					return LineBreakClass.BK;
+				case '\u200B': // Zero-width space behaves like a break-after point.
+					return LineBreakClass.BA;
+				case '⁠': // Word joiner.
+				case '﻿': // Zero-width no-break space.
+					return LineBreakClass.WJ;
+				case ' ': // No-break space.
+				case ' ': // Narrow no-break space.
+				case ' ': // Figure space.
+					return LineBreakClass.GL;
+				case '"': case '\'':
+				case '«': case '»':
+				case '‘': case '’': case '‚': case '„':
+				case '“': case '”':
+				case '‹': case '›':
+					return LineBreakClass.QU;
+				case '(': case '[': case '{':
+				case '〈': case '《': case '「': case '『': case '【':
+				case '（': case '［': case '｛':
+					return LineBreakClass.OP;
+				case ')': case ']': case '}':
+				case '〉': case '》': case '」': case '』': case '】':
+				case '）': case '］': case '｝':
+					return LineBreakClass.CL;
+				case '!':
+				case '‼': case '⁉':
+					return LineBreakClass.EX;
+				case ',': case ':': case ';':
+					return LineBreakClass.IS;
+				case '/':
+					return LineBreakClass.SY;
+				case '-':
+					return LineBreakClass.HY;
+				case '­': // Soft hyphen.
+				case '‐': // Hyphen.
+					return LineBreakClass.BA;
+				case '–': // En dash.
+				case '—': // Em dash.
+					return LineBreakClass.B2;
+				case '$': case '#':
+				case '£': case '¥': case '€':
+					return LineBreakClass.PR;
+				case '%': case '‰':
+					return LineBreakClass.PO;
+				case '、': case '。': // Ideographic comma/full stop.
+				case '・': case 'ー': // Katakana middle dot/prolonged sound mark.
+				case '々': // Ideographic iteration mark.
+				case '…': // Horizontal ellipsis.
+					return LineBreakClass.NS;
+			}
+
+			if (char.IsWhiteSpace(c))
+			{
+				return LineBreakClass.SP;
+			}
+			if (char.IsDigit(c))
+			{
+				return LineBreakClass.NU;
+			}
+			if (IsWrappableIdeograph(c))
+			{
+				return LineBreakClass.ID;
+			}
+
+			UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+			if (category == UnicodeCategory.NonSpacingMark || category == UnicodeCategory.SpacingCombiningMark
+				|| category == UnicodeCategory.EnclosingMark)
+			{
+				return LineBreakClass.CM;
+			}
+
+			return LineBreakClass.AL;
 		}
 
 		/// <summary>
