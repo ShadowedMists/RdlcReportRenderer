@@ -63,10 +63,10 @@ Reference either package depending on your application type:
 
 | Scenario | Package | Namespace |
 | --- | --- | --- |
-| ASP.NET Core, console apps, services, headless rendering | `Microsoft.ReportViewer.NETCore` | `Microsoft.Reporting.NETCore` |
-| WinForms desktop app with interactive preview | `Microsoft.ReportViewer.WinForms` | `Microsoft.Reporting.WinForms` |
+| ASP.NET Core, console apps, services, headless rendering | `RdlCore.NETCore` | `Microsoft.Reporting.NETCore` |
+| WinForms desktop app with interactive preview | `RdlCore.WinForms` | `Microsoft.Reporting.WinForms` |
 
-Package and namespace names are unchanged from the upstream `ReportViewerCore` project on purpose, so existing applications can move to RdlCore as a drop-in replacement without code changes.
+Assembly and namespace names are unchanged from the upstream `ReportViewerCore` project on purpose, so existing applications can move to RdlCore as a drop-in replacement without code changes — only the NuGet package IDs and repository branding move to `RdlCore`.
 
 ### Designing reports
 

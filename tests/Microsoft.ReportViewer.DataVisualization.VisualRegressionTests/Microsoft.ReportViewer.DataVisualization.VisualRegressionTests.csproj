@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\..\RdlCore.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

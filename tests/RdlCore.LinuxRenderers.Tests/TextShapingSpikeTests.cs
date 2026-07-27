@@ -4,7 +4,7 @@ using HarfBuzzSharp;
 using NUnit.Framework;
 using SkiaSharp;
 
-namespace ReportViewerCore.LinuxRenderers.Tests
+namespace RdlCore.LinuxRenderers.Tests
 {
     /// <summary>
     /// Phase 1 spike for tasks/pdf-text-shaping-abstraction.md: validates that a plain-Latin

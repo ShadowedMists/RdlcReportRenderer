@@ -14,7 +14,7 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
     /// Win32 ScriptTextOut call.
     ///
     /// Uses behavioral (ink-presence) verification rather than a checked-in golden-image
-    /// PNG diff, for the same reasons ReportViewerCore.LinuxRenderers.Tests' own
+    /// PNG diff, for the same reasons RdlCore.LinuxRenderers.Tests' own
     /// TextRasterAssertions class already documented: AGENTS.md's Testing Philosophy
     /// prefers behavioral tests, and SKTypeface.Default/family resolution is not
     /// guaranteed identical between this Windows dev box and a fontconfig-less Linux CI

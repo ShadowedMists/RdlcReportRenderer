@@ -9,7 +9,7 @@
     <LangVersion>10.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\RdlCore.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="**\*.xaml" />

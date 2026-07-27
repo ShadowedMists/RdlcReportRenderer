@@ -43,7 +43,7 @@ namespace Microsoft.ReportingServices.Rendering.RichText
 		/// purpose) rather than constructed per shape call. Uses
 		/// <see cref="SkiaSharp.HarfBuzz.SKShaper"/> - the official HarfBuzzSharp+SkiaSharp
 		/// integration package already proven stable by this repo's visual-verification
-		/// harness (<c>ShapedTextRasterizer</c> in <c>ReportViewerCore.LinuxRenderers.Tests</c>)
+		/// harness (<c>ShapedTextRasterizer</c> in <c>RdlCore.LinuxRenderers.Tests</c>)
 		/// - rather than hand-building a <c>HarfBuzzSharp.Face</c>/<c>Font</c> from a raw
 		/// font blob: an earlier version of this class did exactly that, and hit an
 		/// intermittent native access violation (0xC0000005 in <c>hb_shape_full</c>) once

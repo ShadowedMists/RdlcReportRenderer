@@ -17,7 +17,7 @@ The PDF abstraction can be used to write a simple document stream:
 ```csharp
 var renderer = ReportRendererFactory.CreatePdfRenderer();
 using var stream = new MemoryStream();
-renderer.RenderToPdf("Hello from ReportViewerCore", stream);
+renderer.RenderToPdf("Hello from RdlCore", stream);
 ```
 
 ## Resource adapter example

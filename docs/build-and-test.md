@@ -14,7 +14,7 @@ dotnet restore
 ```
 
 ```powershell
-dotnet build ReportViewerCore.sln
+dotnet build RdlCore.sln
 ```
 
 ## Run the renderer-focused tests
@@ -22,7 +22,7 @@ dotnet build ReportViewerCore.sln
 The targeted tests for the new abstraction work can be run with:
 
 ```powershell
-dotnet test tests/ReportViewerCore.LinuxRenderers.Tests/ReportViewerCore.LinuxRenderers.Tests.csproj --filter "TestImageResourceAdapterCanWriteEmbeddedData|TestExcelGeneration|TestPdfGeneration|TestRendererFactoryUsesLinuxRenderers" -v minimal
+dotnet test tests/RdlCore.LinuxRenderers.Tests/RdlCore.LinuxRenderers.Tests.csproj --filter "TestImageResourceAdapterCanWriteEmbeddedData|TestExcelGeneration|TestPdfGeneration|TestRendererFactoryUsesLinuxRenderers" -v minimal
 ```
 
 ## Verifying cross-platform paths under WSL
@@ -33,10 +33,10 @@ Building/testing under WSL (Ubuntu) is a real, low-cost way to exercise the actu
 cd /mnt/c/Development/RdlcReportRenderer
 dotnet build tests/Microsoft.ReportViewer.Chart.Rdl.Tests/Microsoft.ReportViewer.Chart.Rdl.Tests.csproj -c Debug
 dotnet test tests/Microsoft.ReportViewer.Chart.Rdl.Tests/Microsoft.ReportViewer.Chart.Rdl.Tests.csproj -c Debug
-dotnet test tests/ReportViewerCore.LinuxRenderers.Tests/ReportViewerCore.LinuxRenderers.Tests.csproj -c Debug
+dotnet test tests/RdlCore.LinuxRenderers.Tests/RdlCore.LinuxRenderers.Tests.csproj -c Debug
 ```
 
-Building the whole solution (`ReportViewerCore.sln`) fails under WSL with `NETSDK1100` — expected, since `Microsoft.ReportViewer.WinForms` targets `net10.0-windows7` and is intentionally Windows-only; build the individual cross-platform projects/test projects above instead.
+Building the whole solution (`RdlCore.sln`) fails under WSL with `NETSDK1100` — expected, since `Microsoft.ReportViewer.WinForms` targets `net10.0-windows7` and is intentionally Windows-only; build the individual cross-platform projects/test projects above instead.
 
 A handful of test failures under WSL are environment artifacts, not product bugs — they hardcode paths to Windows-only fonts (`simsun.ttc`, `cambria.ttc`, `msyh.ttc`) that don't exist on a Linux box: `IsTtc_RealTtcFont_ReturnsTrue`, `TryExtractTtcFace_*`, `DrawWrappedText_WithTtcBackedFont_EmbedsExtractedSingleFaceNotWholeContainer`, `GetFallbackFontCrossPlatform_MissingCjkGlyph_ResolvesAFontThatCoversIt`. `SunburstChartWithCategoryHierarchy_MatchesBaseline` also fails — it exercises the legacy GDI+/EMF `ImageRenderer` baseline path, which was never in scope for the cross-platform work.
 

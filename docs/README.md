@@ -1,6 +1,6 @@
 # Developer documentation
 
-This folder contains documentation for ReportViewerCore. Most of it is internal — for maintainers and contributors who need to understand the current abstraction layer and the rationale behind the renderer implementations. [usage-guide.md](usage-guide.md) is the exception: it's written for integrators consuming the library, not contributors to it.
+This folder contains documentation for RdlCore. Most of it is internal — for maintainers and contributors who need to understand the current abstraction layer and the rationale behind the renderer implementations. [usage-guide.md](usage-guide.md) is the exception: it's written for integrators consuming the library, not contributors to it.
 
 ## Documents
 

@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <RootNamespace></RootNamespace>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\RdlCore.snk</AssemblyOriginatorKeyFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
   <ItemGroup>

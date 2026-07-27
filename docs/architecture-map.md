@@ -2,7 +2,7 @@
 
 ## Overview
 
-This note describes the current rendering flow that is relevant to the cross-platform work in ReportViewerCore. It is intentionally focused on the seam that was introduced for Excel, PDF, and resource handling rather than the entire legacy reporting pipeline.
+This note describes the current rendering flow that is relevant to the cross-platform work in RdlCore. It is intentionally focused on the seam that was introduced for Excel, PDF, and resource handling rather than the entire legacy reporting pipeline.
 
 ## High-level flow
 

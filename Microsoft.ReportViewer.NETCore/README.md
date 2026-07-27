@@ -1,6 +1,8 @@
 # This project is not supported/developed by Microsoft
 
-This project is aimed at porting Microsoft SQL Server Reporting Services (Report Viewer) to .NET 8. Sources and examples are available at https://github.com/lkosson/reportviewercore/
+This project is aimed at porting Microsoft SQL Server Reporting Services (Report Viewer) to .NET 8.
+
+This is RdlCore, a fork and continuation of [Łukasz Kosson](https://github.com/lkosson)'s [reportviewercore](https://github.com/lkosson/reportviewercore). Sources and examples are available at https://github.com/ShadowedMists/RdlCore
 
 # Basic usage
 

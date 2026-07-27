@@ -8,15 +8,15 @@
     <LangVersion>10.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <RootNamespace></RootNamespace>
-    <PackageId>ReportViewerCore.WinForms</PackageId>
-    <Authors>Microsoft, lkosson</Authors>
-    <PackageProjectUrl>https://github.com/lkosson/reportviewercore</PackageProjectUrl>
+    <PackageId>RdlCore.WinForms</PackageId>
+    <Authors>Microsoft, lkosson, ShadowedMists</Authors>
+    <PackageProjectUrl>https://github.com/ShadowedMists/RdlCore</PackageProjectUrl>
     <Version>15.1.33</Version>
     <Company>Microsoft</Company>
-    <Product>ReportViewer Core</Product>
+    <Product>RdlCore</Product>
     <Description>SQL Server Reporting Services WinForms ReportViewer decompiled and recompiled for .NET 10. Based on ReportViewer 15.0.1404.0</Description>
     <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\ReportViewerCore.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\RdlCore.snk</AssemblyOriginatorKeyFile>
     <!-- NU1510 flags System.Security.Cryptography.Xml below as an apparently-unused direct
          reference, but it's a deliberate pin (see commit af09b43): System.ServiceModel.Http
          transitively pulls in a vulnerable 10.0.0 release, and this direct reference forces

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the internal implementation that introduces cross-platform rendering abstractions for the ReportViewerCore common rendering layer. The goal is to provide a thin compatibility layer that allows the library to generate Excel and PDF content without depending directly on Windows-only rendering behavior.
+This document summarizes the internal implementation that introduces cross-platform rendering abstractions for the RdlCore common rendering layer. The goal is to provide a thin compatibility layer that allows the library to generate Excel and PDF content without depending directly on Windows-only rendering behavior.
 
 ## Key classes
 
@@ -96,7 +96,7 @@ The initial integration point for the abstraction layer is the HTML rendering pa
 
 ## Testing approach
 
-The implementation is covered by the Linux renderer test project in [tests/ReportViewerCore.LinuxRenderers.Tests/LinuxRenderersTests.cs](../tests/ReportViewerCore.LinuxRenderers.Tests/LinuxRenderersTests.cs). The tests validate the following behaviors:
+The implementation is covered by the Linux renderer test project in [tests/RdlCore.LinuxRenderers.Tests/LinuxRenderersTests.cs](../tests/RdlCore.LinuxRenderers.Tests/LinuxRenderersTests.cs). The tests validate the following behaviors:
 - Excel output generation from a DataTable
 - PDF output generation from a simple string input
 - Factory selection for Linux renderers

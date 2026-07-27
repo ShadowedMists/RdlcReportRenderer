@@ -2,7 +2,7 @@ using NUnit.Framework;
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 
-namespace ReportViewerCore.LinuxRenderers.Tests
+namespace RdlCore.LinuxRenderers.Tests
 {
     /// <summary>
     /// Visual-verification tooling for tasks/pdf-text-shaping-abstraction.md's Phase 1

@@ -2,7 +2,7 @@ using System;
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 
-namespace ReportViewerCore.LinuxRenderers.Tests
+namespace RdlCore.LinuxRenderers.Tests
 {
     /// <summary>
     /// Renders a HarfBuzzSharp-shaped string to an off-screen SkiaSharp bitmap.

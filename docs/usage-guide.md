@@ -1,6 +1,6 @@
 # Usage guide: rendering RDLC reports
 
-This guide is for developers integrating ReportViewerCore into their own application to render `.rdlc` report definitions to HTML, Excel, or PDF. It replaces the former `ReportViewerCore.Sample.*` sample projects, which have been removed from the solution — the code below is the same pattern those samples demonstrated, consolidated into one reference.
+This guide is for developers integrating RdlCore into their own application to render `.rdlc` report definitions to HTML, Excel, or PDF. It replaces the former `ReportViewerCore.Sample.*` sample projects, which have been removed from the solution — the code below is the same pattern those samples demonstrated, consolidated into one reference.
 
 For internal architecture and contributor documentation, see [README.md](README.md).
 

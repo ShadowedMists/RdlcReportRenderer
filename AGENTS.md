@@ -1,10 +1,10 @@
 # AGENTS.md
 
-# ReportViewerCore Architecture & Engineering Guidelines
+# RdlCore Architecture & Engineering Guidelines
 
 ## Mission
 
-Your primary objective is **to implement cross-platform Excel and PDF rendering for ReportViewerCore, enabling the reporting engine to run on both Windows and Linux platforms while preserving backwards compatibility**. The long-term vision is to transform ReportViewerCore from a Windows-centric rendering engine into a modular, extensible, cross-platform reporting platform that supports Windows, Linux, and macOS. Always refer to architectural documentation before proposing changes, and prioritize implementation efficiency while maintaining code quality.
+Your primary objective is **to implement cross-platform Excel and PDF rendering for RdlCore, enabling the reporting engine to run on both Windows and Linux platforms while preserving backwards compatibility**. The long-term vision is to transform RdlCore from a Windows-centric rendering engine into a modular, extensible, cross-platform reporting platform that supports Windows, Linux, and macOS. Always refer to architectural documentation before proposing changes, and prioritize implementation efficiency while maintaining code quality.
 
 ---
 

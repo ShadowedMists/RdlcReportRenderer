@@ -6,7 +6,7 @@ using System.Text;
 using Microsoft.ReportViewer.Common.Renderers;
 using NUnit.Framework;
 
-namespace ReportViewerCore.LinuxRenderers.Tests
+namespace RdlCore.LinuxRenderers.Tests
 {
     public class LinuxRenderersTests
     {
@@ -54,7 +54,7 @@ namespace ReportViewerCore.LinuxRenderers.Tests
         {
             using var stream = new MemoryStream();
             var adapter = new ImageResourceAdapter();
-            var resourceManager = new ResourceManager("ReportViewerCore.LinuxRenderers.Tests.Resources.TestResources", typeof(LinuxRenderersTests).Assembly);
+            var resourceManager = new ResourceManager("RdlCore.LinuxRenderers.Tests.Resources.TestResources", typeof(LinuxRenderersTests).Assembly);
 
             adapter.WriteEmbeddedImage(resourceManager, "TestResource", stream);
 

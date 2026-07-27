@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 
-namespace ReportViewerCore.LinuxRenderers.Tests
+namespace RdlCore.LinuxRenderers.Tests
 {
     internal sealed class TextRasterCheckResult
     {
