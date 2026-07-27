@@ -1126,7 +1126,8 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			{
 				XmlTextReader xmlTextReader = new XmlTextReader(new MemoryStream(definition, writable: false));
 				XmlUtil.ApplyDtdDosDefense(xmlTextReader);
-				m_reader = RmlValidatingReader.CreateReader(xmlTextReader, m_errorContext, "http://schemas.microsoft.com/sqlserver/reporting/2005/01/reportdefinition");
+				m_targetRDLNamespace = "http://schemas.microsoft.com/sqlserver/reporting/2005/01/reportdefinition";
+				m_reader = RmlValidatingReader.CreateReader(xmlTextReader, m_errorContext, m_targetRDLNamespace);
 				m_reportItemNames = new CLSUniqueNameValidator(ProcessingErrorCode.rsInvalidNameNotCLSCompliant, ProcessingErrorCode.rsDuplicateReportItemName);
 				m_scopeNames = new ScopeNameValidator();
 				m_imageStreamNames = new ImageStreamNames();

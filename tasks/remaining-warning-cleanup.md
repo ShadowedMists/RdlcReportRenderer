@@ -67,18 +67,16 @@
 
 ---
 
-## 8. CS0414 — field assigned but never read (12 warnings, 6 fields)
+## 8. CS0414 — field assigned but never read (12 warnings, 6 fields) — DONE (2026-07-26/27)
 
-Unlike CS0649 (never assigned, always default — already triaged this session), these fields ARE assigned somewhere but the assigned value is never read. Likely genuinely dead state, but check each:
+All 6 triaged and fixed:
+- `DataProtectionLocal.m_dwProtectionFlags` — dead: `LocalProtectData`/`LocalUnprotectData` are already deliberate no-ops ("no need to protect data for local reports"), so the flag has no consumer and never will. Deleted the field and simplified `GlobalProtectionMode`'s setter to an empty no-op (0 callers found in-repo, but kept the public setter itself since external code could still call it).
+- `RIFAppendOnlyStorage.m_writerSetup` — genuinely dead as a *read*, but its absence hid a real gap: `Allocate()` never checked whether the storage was opened read-only (`m_fromExistingStream && !stream.CanWrite` leaves `m_writer` null), so calling `Allocate()` on such an instance would `NullReferenceException` instead of a diagnosable error. Fixed by using the field in a `Global.Tracer.Assert(m_writerSetup, ...)` guard in `Allocate()`, matching this same class's existing `Free`/`Update` assert-on-unsupported-operation idiom.
+- `ThreadSet.m_waitCalled` — set but never read, and `WaitForCompletion()`'s own logic doesn't need it (calling it twice is already safe via `ManualResetEvent.Reset()`/`WaitOne()`). No bug found; deleted as genuinely dead.
+- `MapControl.doNotDispose` — never read; `Dispose()` doesn't consult it. Distinct from `HotRegion.doNotDispose` (same name, different class, that one backs a real public property). Deleted the field and its one assignment in the finalizer; did **not** attempt to fix the finalizer/`Dispose()` pattern more broadly (calling `Dispose()` unconditionally from a finalizer, no `GC.SuppressFinalize`) — that's a separate, riskier design question outside this warning-cleanup's scope.
+- `MapCore.CurrentLatitudeLimit`/`CurrentSrid` — both fully isolated (only reference anywhere in the repo is their own declaration), no property, no other SRID/latitude-limit handling nearby to suggest a missing consumer. Deleted both as dead Map-engine state (Map is already deferred/low-priority per `TODO.md`).
 
-- `DataProtectionLocal.cs:42` — `m_dwProtectionFlags`
-- `RIFAppendOnlyStorage.cs:19` — `m_writerSetup`
-- `ThreadSet.cs:16` — `m_waitCalled` (note: this file was touched this session for the `Thread.VolatileRead`→`Volatile.Read` obsolete fix — check whether `m_waitCalled` was meant to guard something in `WaitForCompletion()`)
-- `MapControl.cs:42` — `doNotDispose`
-- `MapCore.cs:319` — `CurrentLatitudeLimit`
-- `MapCore.cs:321` — `CurrentSrid`
-
-**Effort: small per field, but same caution as the CS0649 triage applies** — grep the whole repo for each field name (not just the declaring file) to rule out reflection/partial-class/designer-generated reads before deleting. If genuinely dead, delete the field and its assignment sites. `MapControl.doNotDispose` and `MapCore.CurrentLatitudeLimit`/`CurrentSrid` in particular sound like they could be intended for external/designer consumption (similar to the CS0649 `MapControl.isCallback` flagged this session as a public-API-surface case) — check accessibility modifiers before assuming they're safe to delete.
+Verified: full suite 106/106 + 15/15, 0 regressions.
 
 ---
 
@@ -86,10 +84,12 @@ Unlike CS0649 (never assigned, always default — already triaged this session),
 
 These were investigated in depth on 2026-07-26 (two parallel sub-agent investigations, cross-checked) and deliberately left untouched because each needs a judgment call, not a mechanical fix. Full detail is in this conversation's history; summarized here for follow-up:
 
-**Likely real, pre-existing bugs (a missing assignment, not dead-by-design):**
-- `RecordSetInfo.m_validCompareOptions` (`Microsoft.ReportingServices.ReportIntermediateFormat`) — its sibling class `Microsoft.ReportingServices.ReportProcessing.RecordSetInfo` (different namespace, same name) has an analogous reader that explicitly sets `recordSetInfo.ValidCompareOptions = true;` after reading `CompareOptions`; this one's `Deserialize()` reads `CompareOptions` but never sets the flag. Consumer: `ChunkManager.cs` → `ProcessingDataReader.OverrideDataCacheCompareOptions` — the guarded code never executes for RIF-format snapshots. Likely fix: add the missing `m_validCompareOptions = true;` line in `Deserialize()`.
-- `ReportPublishing.m_targetRDLNamespace` (outer class, not the nested `RmlValidatingReader` field of the same name which IS correctly assigned) — always null, gets passed into an error-message call (`m_errorContext.Register(..., "Namespace", m_targetRDLNamespace)`) instead of the intended namespace string. Likely fix: assign it (e.g. from the same literal namespace constant `RmlValidatingReader`'s constructor receives) during `ReportPublishing`'s own setup.
-- `ScalableHybridList<T>.m_version` — sibling classes (`ScalableList`, `ScalableDictionary`, `SegmentedDictionary`) all increment their own `m_version` field on every `Add`/`Remove`/`Clear`; `ScalableHybridList.Add`/`Remove`/`Clear` never touch it, silently disabling the enumerator's concurrent-modification-detection `Assert`. Likely fix: increment `m_version` in `Add`/`Remove`/`Clear`, matching the sibling classes' pattern.
+**Likely real, pre-existing bugs (a missing assignment, not dead-by-design) — all 3 fixed 2026-07-26/27:**
+- ~~`RecordSetInfo.m_validCompareOptions`~~ **Fixed:** added `m_validCompareOptions = true;` right after `m_compareOptions = (CompareOptions)reader.ReadEnum();` in `Deserialize()`, matching the sibling `ReportProcessing.RecordSetInfo`'s pattern exactly.
+- ~~`ReportPublishing.m_targetRDLNamespace`~~ **Fixed:** `Phase1` now captures the RDL namespace literal into `m_targetRDLNamespace` before passing it to `RmlValidatingReader.CreateReader(...)`, so the error-message call at the bottom of the method now reports the real namespace instead of always null.
+- ~~`ScalableHybridList<T>.m_version`~~ **Fixed:** `Add`/`Remove`/`Clear` now increment `m_version`, matching `ScalableList`/`ScalableDictionary`/`SegmentedDictionary`'s existing pattern — the enumerator's concurrent-modification `Assert` is live again.
+
+Verified: full suite 106/106 + 15/15, 0 regressions.
 
 **Complex/unfinished-feature candidates (needs deeper read before any fix, not a quick patch):**
 - `ReportWalker.m_atomHeaderInstanceWalk`/`m_atomRendererWalk` (`Microsoft.ReportingServices.Rendering.DataRenderer`) — 10+ read sites each, driving branching throughout pagination/atomization logic; always false, no write site found anywhere. High-value but needs someone who understands the atom/instance-walk state machine to confirm whether this is dead-by-design or an incomplete feature.

@@ -316,10 +316,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private int maxSpatialElementCount = int.MaxValue;
 
-		private double CurrentLatitudeLimit = 89.0;
-
-		private int CurrentSrid = int.MaxValue;
-
 		internal LoadTilesHandler LoadTilesHandler;
 
 		internal SaveTilesHandler SaveTilesHandler;

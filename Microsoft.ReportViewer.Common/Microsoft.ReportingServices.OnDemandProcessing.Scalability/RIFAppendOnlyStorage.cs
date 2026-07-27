@@ -138,6 +138,7 @@ namespace Microsoft.ReportingServices.OnDemandProcessing.Scalability
 		public long Allocate(IPersistable obj)
 		{
 			SetupStorage();
+			Global.Tracer.Assert(m_writerSetup, "RIFAppendOnlyStorage.Allocate(...) called on a storage opened for reading only");
 			if (!m_atEnd)
 			{
 				m_stream.Seek(0L, SeekOrigin.End);

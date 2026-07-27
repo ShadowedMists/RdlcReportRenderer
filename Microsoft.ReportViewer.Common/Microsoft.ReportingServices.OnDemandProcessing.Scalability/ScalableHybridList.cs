@@ -124,6 +124,7 @@ namespace Microsoft.ReportingServices.OnDemandProcessing.Scalability
 			}
 			m_last = num;
 			m_count++;
+			m_version++;
 			return num;
 		}
 
@@ -162,6 +163,7 @@ namespace Microsoft.ReportingServices.OnDemandProcessing.Scalability
 				item.Item = null;
 				item.Previous = -1;
 				m_count--;
+				m_version++;
 			}
 		}
 
@@ -187,6 +189,7 @@ namespace Microsoft.ReportingServices.OnDemandProcessing.Scalability
 			m_first = -1;
 			m_last = -1;
 			m_firstFree = -1;
+			m_version++;
 		}
 
 		public IEnumerator<T> GetEnumerator()

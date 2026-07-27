@@ -173,6 +173,7 @@ namespace Microsoft.ReportingServices.ReportIntermediateFormat
 					break;
 				case MemberName.CompareOptions:
 					m_compareOptions = (CompareOptions)reader.ReadEnum();
+					m_validCompareOptions = true;
 					break;
 				case MemberName.FieldNames:
 					m_fieldNames = reader.ReadStringArray();

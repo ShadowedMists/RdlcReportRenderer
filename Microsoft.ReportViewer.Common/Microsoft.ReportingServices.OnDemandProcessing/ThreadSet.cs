@@ -13,8 +13,6 @@ namespace Microsoft.ReportingServices.OnDemandProcessing
 
 		private bool m_disposed;
 
-		private bool m_waitCalled;
-
 		private object m_counterLock = new object();
 
 		internal ThreadSet(int expectedThreadCount)
@@ -73,7 +71,6 @@ namespace Microsoft.ReportingServices.OnDemandProcessing
 
 		internal void WaitForCompletion()
 		{
-			m_waitCalled = true;
 			lock (m_counterLock)
 			{
 				if (Volatile.Read(ref m_runningThreadCount) > 0)

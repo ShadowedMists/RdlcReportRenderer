@@ -39,23 +39,17 @@ namespace Microsoft.ReportingServices.Diagnostics
 			}
 		}
 
-		private static int m_dwProtectionFlags = 4;
-
 		private static IDataProtection m_dpInstance;
 
+		// Vestigial from a real DPAPI-backed implementation (this local-only port's
+		// LocalProtectData/LocalUnprotectData below are deliberate no-ops - "no need to
+		// protect data for local reports"), so the requested mode has nothing left to
+		// configure. No callers found in this repo; kept as a settable no-op rather than
+		// removed outright since it's a public setter that external code could still call.
 		public static ProtectionMode GlobalProtectionMode
 		{
 			set
 			{
-				switch (value)
-				{
-				case ProtectionMode.LocalSystemEncryption:
-					m_dwProtectionFlags = 4;
-					break;
-				case ProtectionMode.CurrentUserEncryption:
-					m_dwProtectionFlags = 0;
-					break;
-				}
 			}
 		}
 

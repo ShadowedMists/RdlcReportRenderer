@@ -39,8 +39,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal static string productID = "DG-WC";
 
-		private bool doNotDispose;
-
 		private bool isCallback;
 
 		private Color backColor = Color.White;
@@ -965,7 +963,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		~MapControl()
 		{
-			doNotDispose = false;
 			Dispose();
 		}
 
