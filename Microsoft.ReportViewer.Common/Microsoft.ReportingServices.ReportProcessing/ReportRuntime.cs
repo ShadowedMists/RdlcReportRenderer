@@ -281,8 +281,6 @@ namespace Microsoft.ReportingServices.ReportProcessing
 			}
 		}
 
-		private Assembly m_exprHostAssembly;
-
 		private ReportExprHost m_reportExprHost;
 
 		private ObjectType m_objectType;
@@ -3138,7 +3136,7 @@ namespace Microsoft.ReportingServices.ReportProcessing
 
 		internal void LoadCompiledCode(Report report, bool parametersOnly, ObjectModelImpl reportObjectModel, ReportRuntimeSetup runtimeSetup)
 		{
-			Global.Tracer.Assert(report.CompiledCode != null && m_exprHostAssembly == null && m_reportExprHost == null);
+			Global.Tracer.Assert(report.CompiledCode != null && m_reportExprHost == null);
 			if (report.CompiledCode.Length == 0)
 			{
 				return;

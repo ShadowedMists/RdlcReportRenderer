@@ -18,8 +18,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 
 		private CompiledParagraphInstance m_compiledSource;
 
-		private CompiledParagraphInstanceCollection m_compiledParagraphsCollection;
-
 		private int m_paragraphNumber;
 
 		public override long Offset
@@ -45,8 +43,6 @@ namespace Microsoft.ReportingServices.Rendering.SPBProcessing
 		internal RPLParagraph RPLElement => m_rplElement;
 
 		internal CompiledParagraphInstance CompiledInstance => m_compiledSource;
-
-		internal CompiledParagraphInstanceCollection CompiledParagraphsCollection => m_compiledParagraphsCollection;
 
 		public RPLFormat.TextAlignments Alignment => (RPLFormat.TextAlignments)StyleEnumConverter.Translate((TextAlignments)GetRichTextStyleValue(StyleAttributeNames.TextAlign, m_compiledSource));
 
