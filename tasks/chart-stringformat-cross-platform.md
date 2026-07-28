@@ -35,7 +35,7 @@ Every one of these files builds a local `StringFormat` (usually via `new StringF
 
 Files with `new StringFormat(` sites found via `grep -rn "new StringFormat(" Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Chart.WebForms*` (2026-07-28, excluding `Rendering/Gdi/GdiResourceFactory.cs`'s own legitimate backend implementation and now-fixed `Label.cs`) — re-grep before starting, this list may drift:
 
-- `Microsoft.Reporting.Chart.WebForms\Annotation.cs` (2 sites)
+- `Microsoft.Reporting.Chart.WebForms\Annotation.cs` (2 sites) — **not as simple as ChartPicture.cs**: both feed into `SmartLabels.AdjustSmartLabelPosition`/`AddSmartLabelPosition`/`AnnotationSmartLabelList.GetLabelPosition` (`SmartLabels.cs`), which take `ref StringFormat`/`StringFormat` parameters — this is a cross-file signature change, not a single-file mechanical swap like `ChartPicture.cs` was. Trace `SmartLabels.cs`'s full `StringFormat` usage before touching this one.
 - `Microsoft.Reporting.Chart.WebForms\Axis.cs` (3 sites — distinct from the already-fixed `autoLabelFont`/`autoLabelFont`-adjacent sites; these are separate `StringFormat` uses)
 - ~~`Microsoft.Reporting.Chart.WebForms\ChartPicture.cs` (1 site)~~ — done 2026-07-28 (`DrawTitle`: `StringFormat`→`ITextFormat`, `TitleFont`→`WrapFont(TitleFont)`, `new SolidBrush(...)`→`CreateSolidBrush(...)`, matching the portable `DrawStringRel` overload)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\BarChart.cs` (2 sites)
