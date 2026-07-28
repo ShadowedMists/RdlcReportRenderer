@@ -229,7 +229,10 @@ namespace Microsoft.ReportingServices.ReportProcessing
 				compilerParameters.GenerateInMemory = false;
 				compilerParameters.IncludeDebugInformation = false;
 				compilerParameters.ReferencedAssemblies.Add("System.dll");
-				compilerParameters.ReferencedAssemblies.Add(typeof(ReportObjectModelProxy).Assembly.Location);
+				// ReportObjectModelProxy's assembly is referenced directly by
+				// VBExpressionCodeProvider.CompileAssemblyFromDom instead of through this
+				// StringCollection - see its comment for why (a bare .Location-derived path can't
+				// survive single-file publish, where .Location is empty).
 				compilerParameters.CompilerOptions += m_langParser.GetCompilerArguments();
 				if (report.CodeModules != null)
 				{

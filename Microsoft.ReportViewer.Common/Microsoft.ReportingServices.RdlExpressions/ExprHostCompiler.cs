@@ -261,11 +261,10 @@ namespace Microsoft.ReportingServices.RdlExpressions
 				compilerParameters.IncludeDebugInformation = false;
 				compilerParameters.ReferencedAssemblies.Add("System.dll");
 
-				string pathForRV = typeof(ReportObjectModelProxy).Assembly.Location;
-				if (String.IsNullOrEmpty(pathForRV)) pathForRV = System.Reflection.Assembly.GetExecutingAssembly().Location;
-				if (String.IsNullOrEmpty(pathForRV)) pathForRV = Process.GetCurrentProcess().MainModule.FileName;
-				compilerParameters.ReferencedAssemblies.Add(pathForRV);
-
+				// ReportObjectModelProxy's assembly is referenced directly by
+				// VBExpressionCodeProvider.CompileAssemblyFromDom instead of through this
+				// StringCollection - see its comment for why (a bare .Location-derived path can't
+				// survive single-file publish, where .Location is empty).
 				compilerParameters.CompilerOptions += m_langParser.GetCompilerArguments();
 				if (m_expressionHostAssemblyHolder.CodeModules != null)
 				{

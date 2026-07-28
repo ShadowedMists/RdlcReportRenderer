@@ -19,7 +19,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | Remaining CS0649 dead-field warnings (~52) | 🔄 2 of 6 fixed (2026-07-27); remaining 4 need individual judgment calls; see `tasks/remaining-warning-cleanup.md` | LOW |
 | 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 🔄 Image-decode gap fixed (2026-07-27) — WORDOPENXML fully cross-platform; WORD (binary) blocked on a separate COM/OLE Structured Storage gap; see `tasks/word-renderer-cross-platform.md` | LOW |
 | 🔵 **LOW** | IMAGE (TIFF/EMF) renderer: cross-platform support | 🔄 Raw Win32 HBITMAP interop fixed (2026-07-27); deeper GDI+-on-Linux wall confirmed still blocking, needs Skia; see `tasks/image-renderer-cross-platform.md` | MEDIUM |
-| 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | 🔄 Sandboxing documented as permanent limitation; single-file deployment partially fixed (BCL references) — a second, deeper blocker (`ReportObjectModelProxy` reference) found and still open; see `tasks/expression-compiler-modernization.md` | MEDIUM |
+| 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | ✅ Sandboxing documented as permanent limitation; single-file deployment fixed and verified end-to-end (2026-07-27, published-single-file harness); see `tasks/expression-compiler-modernization.md` | LOW |
 | 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 🔄 HTML/CSV/XML/WORD/Gauge/IMAGE(TIFF/BMP) done (2026-07-27); Map still open; see `tasks/test-coverage-gaps.md` | LOW |
 
 ### Long-Term Vision
@@ -41,7 +41,7 @@ The architecture should support Windows, Linux, and macOS rendering, third-party
 - `tasks/remaining-warning-cleanup.md` — remaining CS0649 dead-field warnings, each needing its own judgment call
 - `tasks/word-renderer-cross-platform.md` — Word 97/WordOpenXml renderer cross-platform gap (narrow — image-decode only; not started)
 - `tasks/image-renderer-cross-platform.md` — IMAGE (TIFF/EMF) renderer cross-platform gap (deep GDI+/Metafile coupling; not started)
-- `tasks/expression-compiler-modernization.md` — RDL expression compiler sandboxing + single-file-deployment gaps (not started)
+- `tasks/expression-compiler-modernization.md` — RDL expression compiler sandboxing (permanent limitation) + single-file-deployment gaps (fixed 2026-07-27)
 - `tasks/test-coverage-gaps.md` — rendering formats with zero automated test coverage (HTML/CSV/XML/WORD/IMAGE/Gauge/Map)
 - `tasks/upstream-issue-triage.md` — review of upstream `lkosson/reportviewercore` open issues against this fork's own tracking
 

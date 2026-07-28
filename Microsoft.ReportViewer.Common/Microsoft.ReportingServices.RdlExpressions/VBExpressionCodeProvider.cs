@@ -75,6 +75,15 @@ namespace Microsoft.ReportingServices.RdlExpressions
 #if NETSTANDARD2_0_OR_GREATER
 			CheckAndAddReference(roslynReferences, Assembly.Load("netstandard"));
 #endif
+			// ReportObjectModelProxy (Fields!/ReportItems!/etc.) is the RDL expression host's core
+			// proxy type - every non-trivial expression needs it. Referenced directly here (rather
+			// than via options.ReferencedAssemblies, a plain path StringCollection its callers used
+			// to populate with typeof(ReportObjectModelProxy).Assembly.Location) so the
+			// Assembly-typed CheckAndAddReference overload's single-file-publish fallback applies:
+			// .Location is empty for an assembly bundled into a single-file publish, and by the time
+			// that had collapsed to an empty/unresolvable path string, the live Assembly needed to
+			// recover it was already gone.
+			CheckAndAddReference(roslynReferences, typeof(Microsoft.ReportingServices.RdlExpressions.ExpressionHostObjectModel.ReportObjectModelProxy).Assembly);
 			foreach (var assembly in options.ReferencedAssemblies)
 			{
 				if (assembly == "System.dll") continue;
