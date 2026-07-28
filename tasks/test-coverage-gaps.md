@@ -1,6 +1,6 @@
 # Rendering format test-coverage gaps
 
-**Status: Partially done.** HTML/HTML4.0/CSV/XML smoke tests added 2026-07-27; Gauge RDL-render-level smoke tests added 2026-07-27; Map RDL-render-level coverage still open. Compiled 2026-07-27 while auditing README's "Supported rendering formats" against actual test coverage, since the Chart/Excel/PDF work has been verified in real depth (including WSL cross-platform runs) while other formats had no attention at all.
+**Status: Partially done.** HTML/HTML4.0/CSV/XML smoke tests added 2026-07-27; Gauge RDL-render-level smoke tests added 2026-07-27; IMAGE TIFF/BMP smoke tests added 2026-07-27 (see `tasks/image-renderer-cross-platform.md`); Map RDL-render-level coverage still open. Compiled 2026-07-27 while auditing README's "Supported rendering formats" against actual test coverage, since the Chart/Excel/PDF work has been verified in real depth (including WSL cross-platform runs) while other formats had no attention at all.
 
 ## Current state (updated 2026-07-27)
 
@@ -13,7 +13,7 @@ Only three test projects exist: `Microsoft.ReportViewer.Chart.Rdl.Tests`, `Micro
 | EXCEL/EXCELOPENXML | Basic — `TestExcelGeneration` in `ReportViewerCore.LinuxRenderers.Tests` |
 | HTML5/HTML4.0 | Yes (2026-07-27) — `HtmlCsvXmlRdlTests.cs`, WSL-verified |
 | WORD/WORDOPENXML | Yes (2026-07-27) — `WordRendererRdlTests.cs`, see `tasks/word-renderer-cross-platform.md` |
-| IMAGE (TIFF/EMF) | None — see `tasks/image-renderer-cross-platform.md` |
+| IMAGE (TIFF/EMF) | Partial (2026-07-27) — `ImageWriterRdlTests.cs` adds TIFF/BMP smoke tests (well-formed magic bytes only, Windows-run); EMF and cross-platform behavior remain untested — see `tasks/image-renderer-cross-platform.md` |
 | CSV | Yes (2026-07-27) — `HtmlCsvXmlRdlTests.cs`; smoke-test only (asserts non-null, not content — `SimpleTextboxReport.rdlc` has no tablix/list/table data region, so CSV's real per-row output isn't exercised. A future pass should add a data-region-bearing fixture) |
 | XML | Yes (2026-07-27) — `HtmlCsvXmlRdlTests.cs`, WSL-verified |
 | Gauge | Yes (2026-07-27) — `GaugeRdlTests.cs`, a new `SimpleGaugeReport.rdlc` fixture (no pre-existing Gauge `.rdlc` existed; authored from `ReportDefinition.xsd`'s `GaugePanelType`/`RadialGaugeType` schema) with a data-bound radial-gauge needle pointer, rendered via `IMAGE`/`PDF` |

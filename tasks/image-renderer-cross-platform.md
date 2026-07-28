@@ -1,6 +1,6 @@
 # IMAGE (TIFF/EMF) renderer: cross-platform support
 
-**Status: NOT STARTED, not scheduled.** Identified as a genuine gap in `docs/decisions.md`'s "PDF path vs. Image-renderer path" clarification (2026-07-24) but never given its own tracked task until now (2026-07-27).
+**Status: partially fixed (2026-07-27).** Identified as a genuine gap in `docs/decisions.md`'s "PDF path vs. Image-renderer path" clarification (2026-07-24). The first of two blockers (raw Win32 HBITMAP interop in `Graphics.NewPage`) is fixed; the second, deeper blocker (GDI+ can't construct `System.Drawing` objects on Linux at all) is confirmed still standing and needs a Skia-backed surface — not started. See `docs/platform-support.md`'s "IMAGE renderer" section for the current-state summary; this file keeps the remaining open scope.
 
 ## What this covers
 
@@ -8,12 +8,13 @@
 
 ## Current gap
 
-- Entirely GDI+-coupled: `System.Drawing.Image`/`Bitmap`, `MetafileGraphics`, `GDIPen`/`GDIBrush`, `RectangleF`, `Metafile`. No cross-platform work has started.
-- TIFF output (a real bitmap format, not EMF's vector/metafile format) is in principle portable to a Skia-backed path the same way Chart's `ChartImage.SaveImage` now is — but this hasn't been scoped or attempted.
-- EMF output has no portable equivalent at all — same permanent architectural wall as Chart's Metafile export (`docs/platform-support.md`'s "Known permanent/architectural gaps" list). Any future work here should split TIFF (portable, worth doing) from EMF (permanent Windows-only, guard rather than port) rather than treating IMAGE as one indivisible format.
-- **No test coverage anywhere in `tests/`** — confirmed 2026-07-27. Whatever exists today only works on Windows and isn't verified even there by an automated test.
+- `MetafileGraphics`/EMF (vector) is entirely GDI+-coupled with no portable equivalent — needs a real Windows HDC/`Metafile`, same permanent wall as Chart's `SaveIntoMetafile`. Guard rather than port; not further scoped here.
+- TIFF/BMP/GIF/JPEG/PNG (raster) had two stacked blockers. **The first is fixed (2026-07-27):** `Graphics.NewPage` no longer builds its per-page surface via raw Win32 `GetDC`/`CreateCompatibleDC`/`CreateDIBSection`/`SelectObject` HBITMAP interop — it now uses a portable `new Bitmap(w, h, PixelFormat.Format32bppRgb)` + `Graphics.FromImage(...)`, the same construction `GraphicsBase.EnsureGraphics` already used for its own scratch HDC. **The second blocker remains open:** GDI+ itself cannot construct any `System.Drawing` object at all on Linux under .NET 10 (the Phase 0 spike finding in `docs/platform-support.md`) — so raster IMAGE output is still Windows-only today, just for a different, deeper reason than before. A real fix needs a Skia-backed raster surface, the same shape as Chart's `IRenderSurface`/`SkiaRenderSurface`/`GdiRenderSurface`, selected via a factory — this hasn't been scoped or attempted. Note `IRenderSurface` as it exists today isn't directly reusable as-is: it has no drawing API (`ImageWriter`'s `DrawLine`/`DrawRectangle`/`FillPolygon`/`DrawImage` calls have no Chart-side equivalent to borrow) and no TIFF case or multi-frame `SaveAdd` semantics in its `Encode` method — extending it, or building an `ImageWriter`-scoped sibling, are both open design questions.
+- **Test coverage: added 2026-07-27** (`ImageWriterRdlTests.cs` — TIFF and BMP smoke tests, asserting well-formed magic bytes; `GaugeRdlTests.cs`/`SunburstChartRdlTests.cs` already covered PNG via IMAGE). All are Windows-only smoke tests; none are cross-platform-verified since the underlying GDI+ construction gap blocks that entirely today.
 
-**Empirically confirmed under WSL (2026-07-27, via a throwaway scratch test against `LocalReport.Render("IMAGE", "<DeviceInfo><OutputFormat>TIFF</OutputFormat></DeviceInfo>")`, not committed):** the failure is even more immediate than "GDI+ can't construct a `Bitmap`" — it happens at the very first page, before any drawing or text: `ImageWriter.BeginPage` → `Graphics.NewPage` calls `Win32.GetDC(IntPtr hWnd)`, a raw Win32 P/Invoke (`user32.dll`) used to query device DPI, and throws `DllNotFoundException` immediately on Linux. This means any future TIFF-via-Skia port needs to replace `Graphics.NewPage`'s DPI-query mechanism specifically (not just the drawing/encode calls further down the pipeline) as its very first step — a Skia-backed `IRenderSurface` wouldn't need a real HDC for this at all, but whatever replaces `Graphics.cs` here has to stop calling `GetDC` unconditionally on every new page.
+**Empirically confirmed under WSL, twice, one day apart (2026-07-27):**
+- **Before the `Graphics.NewPage` fix** (via a throwaway scratch test against `LocalReport.Render("IMAGE", "<DeviceInfo><OutputFormat>TIFF</OutputFormat></DeviceInfo>")`, not committed): the failure happened at the very first page, before any drawing or text — `ImageWriter.BeginPage` → `Graphics.NewPage` called `Win32.GetDC(IntPtr hWnd)`, a raw Win32 P/Invoke (`user32.dll`), and threw `DllNotFoundException` immediately on Linux.
+- **After the fix** (via the committed `ImageWriterRdlTests.SimpleTextbox_RendersToTiff`/`_RendersToBmp`, run under WSL): the crash moved, it didn't disappear. `Graphics.NewPage`'s `new Bitmap(...)` call itself now throws `TypeInitializationException`→`DllNotFoundException` for `gdiplus.dll`/`libgdiplus`, landing on the same "GDI+ can't construct anything on Linux" wall `docs/platform-support.md` already documents for Gauge/Map. This confirms the fix was real (it moved the failure point past the Win32-specific call) but confirms a genuine cross-platform TIFF path needs Skia, not just removing raw P/Invokes.
 
 ## Related upstream signal
 
@@ -21,8 +22,8 @@ Upstream `lkosson/reportviewercore` issue #42 ("PDF & Image generation fails on 
 
 ## Proposed tasks
 
-1. Scope TIFF and EMF separately — do not assume one fix covers both.
-2. For TIFF: investigate whether `IRenderSurface`/Skia (already proven for Chart's `ChartImage.SaveImage`) can back `ImageWriter`'s bitmap output, or whether this needs its own abstraction given `ImageWriter`'s different call shape.
-3. For EMF: document as a permanent Windows-only limitation (mirroring Chart's `SaveIntoMetafile` wording in `docs/platform-support.md`) rather than scheduling porting work with no viable target.
-4. Add end-to-end RDL render tests once any part of this is fixed — none exist today even for the Windows-only baseline.
-5. Update `docs/platform-support.md`'s support matrix and `docs/decisions.md` once scoped/resolved.
+1. ~~Scope TIFF and EMF separately — do not assume one fix covers both.~~ — done; see "Current gap" above.
+2. For TIFF: investigate whether `IRenderSurface`/Skia (already proven for Chart's `ChartImage.SaveImage`) can back `ImageWriter`'s bitmap output, or whether this needs its own abstraction given `ImageWriter`'s different call shape. **Still open** — the raw-HBITMAP blocker that used to sit in front of this question is now fixed, but the design question itself (extend `IRenderSurface` vs. a new `ImageWriter`-scoped interface, plus a separate drawing-API abstraction for `DrawLine`/`DrawRectangle`/`FillPolygon`/`DrawImage`) hasn't been attempted.
+3. ~~For EMF: document as a permanent Windows-only limitation...~~ — done, see `docs/platform-support.md`'s "IMAGE renderer" section.
+4. ~~Add end-to-end RDL render tests once any part of this is fixed...~~ — done 2026-07-27 (`ImageWriterRdlTests.cs`, TIFF/BMP; Windows-only, matches the current Windows-only baseline).
+5. ~~Update `docs/platform-support.md`'s support matrix and `docs/decisions.md` once scoped/resolved.~~ — done for the `Graphics.NewPage` fix (both files updated 2026-07-27); a further `docs/decisions.md` entry is still worth adding once the Skia design question in item 2 is actually resolved.
