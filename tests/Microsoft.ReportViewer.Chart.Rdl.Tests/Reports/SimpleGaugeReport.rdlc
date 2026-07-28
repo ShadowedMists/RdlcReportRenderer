@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <DataSources>
+    <DataSource Name="LocalSource">
+      <ConnectionProperties>
+        <DataProvider>System.Data.DataSet</DataProvider>
+        <ConnectString>/* Local Connection */</ConnectString>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="Data">
+      <Query>
+        <DataSourceName>LocalSource</DataSourceName>
+        <CommandText>/* Local Query */</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Value">
+          <DataField>Value</DataField>
+          <rd:TypeName>System.Double</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <GaugePanel Name="SimpleGauge">
+            <DataSetName>Data</DataSetName>
+            <RadialGauges>
+              <RadialGauge Name="RadialGauge1">
+                <GaugeScales>
+                  <RadialScale Name="DefaultScale">
+                    <MinimumValue>
+                      <Value>0</Value>
+                    </MinimumValue>
+                    <MaximumValue>
+                      <Value>100</Value>
+                    </MaximumValue>
+                    <GaugePointers>
+                      <RadialPointer Name="Needle">
+                        <GaugeInputValue>
+                          <Value>=Sum(Fields!Value.Value)</Value>
+                        </GaugeInputValue>
+                        <Type>Needle</Type>
+                      </RadialPointer>
+                    </GaugePointers>
+                  </RadialScale>
+                </GaugeScales>
+              </RadialGauge>
+            </RadialGauges>
+            <Top>0in</Top>
+            <Left>0in</Left>
+            <Height>3in</Height>
+            <Width>3in</Width>
+          </GaugePanel>
+        </ReportItems>
+        <Height>3in</Height>
+      </Body>
+      <Width>3in</Width>
+      <Page>
+        <PageHeight>3.5in</PageHeight>
+        <PageWidth>3.5in</PageWidth>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>
