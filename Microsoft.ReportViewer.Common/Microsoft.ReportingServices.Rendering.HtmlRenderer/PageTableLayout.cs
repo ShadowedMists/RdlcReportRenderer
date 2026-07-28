@@ -18,12 +18,6 @@ namespace Microsoft.ReportingServices.Rendering.HtmlRenderer
 		private bool m_bandTable;
 
 		[NonSerialized]
-		private int m_firstVisibleRow;
-
-		[NonSerialized]
-		private int m_firstVisibleColumn;
-
-		[NonSerialized]
 		private bool m_needExtraRow;
 
 		public const double RoundDelta = 0.0001;
@@ -172,11 +166,10 @@ namespace Microsoft.ReportingServices.Rendering.HtmlRenderer
 
 		internal bool NeedExtraRow()
 		{
-			int num = m_firstVisibleRow * m_nrCols;
 			PageTableCell pageTableCell = null;
-			for (int i = m_firstVisibleColumn; i < m_nrCols; i += pageTableCell.ColSpan)
+			for (int i = 0; i < m_nrCols; i += pageTableCell.ColSpan)
 			{
-				pageTableCell = m_tableGrid[i + num];
+				pageTableCell = m_tableGrid[i];
 				if (pageTableCell.ColSpan != 1 && (pageTableCell.InUse || pageTableCell.RowSpan > 1 || pageTableCell.HasBorder))
 				{
 					m_needExtraRow = true;
@@ -909,7 +902,7 @@ namespace Microsoft.ReportingServices.Rendering.HtmlRenderer
 
 		internal bool EmptyRow(RPLMeasurement[] repItemColl, bool ignoreLines, int rowIndex, bool renderHeight, ref int skipHeight)
 		{
-			int i = m_firstVisibleColumn;
+			int i = 0;
 			bool result = true;
 			PageTableCell pageTableCell = null;
 			for (; i < NrCols; i++)

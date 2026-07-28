@@ -39,8 +39,6 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		internal static string productID = "DG-WC";
 
-		private bool isCallback;
-
 		private Color backColor = Color.White;
 
 		private bool enabled = true;
@@ -328,11 +326,6 @@ namespace Microsoft.Reporting.Map.WebForms
 				mapCore.RenderingImageUrl = value;
 			}
 		}
-
-		[Browsable(false)]
-		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-		[SerializationVisibility(SerializationVisibility.Hidden)]
-		public bool IsCallback => isCallback;
 
 		[SRCategory("CategoryAttribute_Image")]
 		[SRDescription("DescriptionAttributeMapControl_TagAttributes")]
