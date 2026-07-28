@@ -1,7 +1,7 @@
 using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
 using Microsoft.ReportingServices.Rendering.RPLProcessing;
-using SixLabors.ImageSharp;
+using SkiaSharp;
 using System.IO;
 
 namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
@@ -259,14 +259,17 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Layout
 			if (m_imageData != null && m_imageData.Length != 0L)
 			{
 				m_imageData.Position = 0L;
-				var imageInfo = SixLabors.ImageSharp.Image.Identify(m_imageData);
-				if (imageInfo != null)
+				using SKCodec codec = SKCodec.Create(m_imageData);
+				if (codec != null)
 				{
 					m_imageData.Position = 0L;
-					Width = imageInfo.Width;
-					Height = imageInfo.Height;
-					HorizontalResolution = (float)imageInfo.Metadata.HorizontalResolution;
-					VerticalResolution = (float)imageInfo.Metadata.VerticalResolution;
+					Width = codec.Info.Width;
+					Height = codec.Info.Height;
+					// SkiaSharp carries no embedded resolution metadata; assume the same
+					// fixed 96 DPI baseline used elsewhere in the cross-platform renderers
+					// (docs/decisions.md, "ImageLoader's DPI-mismatch rescaling was dropped").
+					HorizontalResolution = 96f;
+					VerticalResolution = 96f;
 					if (m_imageFormat == ImageFormatType.Unknown)
 					{
 						m_imageFormat = DetermineImageFormat();

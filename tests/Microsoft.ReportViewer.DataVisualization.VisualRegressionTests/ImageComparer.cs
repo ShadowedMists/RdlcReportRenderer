@@ -1,8 +1,6 @@
 using System;
 using System.IO;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
 {
@@ -53,8 +51,8 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
                 };
             }
 
-            using var baseline = Image.Load<Rgba32>(baselinePath);
-            using var actual = Image.Load<Rgba32>(actualPngBytes);
+            using var baseline = SKBitmap.Decode(baselinePath);
+            using var actual = SKBitmap.Decode(actualPngBytes);
 
             if (baseline.Width != actual.Width || baseline.Height != actual.Height)
             {
@@ -67,21 +65,21 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             }
 
             long diffPixels = 0;
-            using var diff = new Image<Rgba32>(baseline.Width, baseline.Height);
+            using var diff = new SKBitmap(baseline.Width, baseline.Height);
 
             for (var y = 0; y < baseline.Height; y++)
             {
                 for (var x = 0; x < baseline.Width; x++)
                 {
-                    var b = baseline[x, y];
-                    var a = actual[x, y];
+                    var b = baseline.GetPixel(x, y);
+                    var a = actual.GetPixel(x, y);
                     var different =
-                        Math.Abs(b.R - a.R) > ChannelTolerance ||
-                        Math.Abs(b.G - a.G) > ChannelTolerance ||
-                        Math.Abs(b.B - a.B) > ChannelTolerance ||
-                        Math.Abs(b.A - a.A) > ChannelTolerance;
+                        Math.Abs(b.Red - a.Red) > ChannelTolerance ||
+                        Math.Abs(b.Green - a.Green) > ChannelTolerance ||
+                        Math.Abs(b.Blue - a.Blue) > ChannelTolerance ||
+                        Math.Abs(b.Alpha - a.Alpha) > ChannelTolerance;
 
-                    diff[x, y] = different ? new Rgba32(255, 0, 0, 255) : new Rgba32(0, 0, 0, 0);
+                    diff.SetPixel(x, y, different ? new SKColor(255, 0, 0, 255) : SKColors.Transparent);
                     if (different)
                     {
                         diffPixels++;
@@ -95,8 +93,11 @@ namespace Microsoft.ReportViewer.DataVisualization.VisualRegressionTests
             }
 
             var diffPath = Path.Combine(resultsDir, Path.GetFileNameWithoutExtension(baselineName) + ".diff.png");
-            diff.Mutate(ctx => ctx.BackgroundColor(Color.Transparent));
-            diff.SaveAsPng(diffPath);
+            using (var diffData = diff.Encode(SKEncodedImageFormat.Png, 100))
+            using (var diffStream = File.Create(diffPath))
+            {
+                diffData.SaveTo(diffStream);
+            }
 
             var totalPixels = (long)baseline.Width * baseline.Height;
             var percent = 100.0 * diffPixels / totalPixels;

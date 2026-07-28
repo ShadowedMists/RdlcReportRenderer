@@ -118,10 +118,10 @@ Isolates the `System.Drawing`-dependent parts of Excel image handling (used by `
 
 - `IImageProvider.LoadImage(Stream) : ImageMetadata` and `GetImageForChart(Stream) : object`
 - `ImageMetadata`: `Width`, `Height`, `HorizontalResolution`, `VerticalResolution`, `Format`
-- `WindowsImageProvider` (`System.Drawing`-based, `[SupportedOSPlatform("windows")]`) vs. `CrossPlatformImageProvider` (SixLabors.ImageSharp-based; `GetImageForChart` returns `null` since chart/gauge rendering itself is still Windows-only)
+- `WindowsImageProvider` (`System.Drawing`-based, `[SupportedOSPlatform("windows")]`) vs. `CrossPlatformImageProvider` (SkiaSharp-based; `GetImageForChart` returns `null` since chart/gauge rendering itself is still Windows-only). SkiaSharp carries no embedded resolution metadata, so `ImageMetadata.HorizontalResolution`/`VerticalResolution` are a fixed 96 DPI on this path — the same accepted baseline used elsewhere (see `docs/decisions.md`, "ImageLoader's DPI-mismatch rescaling was dropped, not ported").
 - `ImageProviderFactory.CreateProvider()` selects an implementation via `RuntimeInformation.IsOSPlatform`
 
-Alongside it, `Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.ImageFormatType` (`Bmp`/`Gif`/`Jpeg`/`Png`/`Unknown`) plus `ImageFormatTypeHelper` (`ToFileExtension`, `ToMimeType`, `FromMimeType`, `DetectFromStream` via `SixLabors.ImageSharp.Image.Identify`) replaced `System.Drawing.Imaging.ImageFormat` in `IExcelGenerator`, `ImageInformation`, `OpenXmlGenerator`, and `BIFF8Generator`. Both changes are internal-only (no public API break).
+Alongside it, `Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel.ImageFormatType` (`Bmp`/`Gif`/`Jpeg`/`Png`/`Unknown`) plus `ImageFormatTypeHelper` (`ToFileExtension`, `ToMimeType`, `FromMimeType`, `DetectFromStream` via `SkiaSharp.SKCodec`) replaced `System.Drawing.Imaging.ImageFormat` in `IExcelGenerator`, `ImageInformation`, `OpenXmlGenerator`, and `BIFF8Generator`. Both changes are internal-only (no public API break).
 
 **Known limitation:** chart/gauge background images still cannot render on non-Windows — that depends on the much larger Chart/Gauge engine migration below.
 

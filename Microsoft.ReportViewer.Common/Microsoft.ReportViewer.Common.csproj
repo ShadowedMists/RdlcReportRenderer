@@ -26,6 +26,10 @@
     <PackageReference Include="System.IO.Packaging" Version="10.0.0" />
     <PackageReference Include="ClosedXML" Version="0.96.0" />
     <PackageReference Include="PdfSharpCore" Version="1.2.0" />
+    <!-- PdfSharpCore 1.2.0 transitively requires SixLabors.ImageSharp 1.0.0-rc0003, which has
+         known CVEs. No code in this project uses ImageSharp directly (replaced by SkiaSharp,
+         docs/decisions.md), but this pin overrides NuGet's nearest-wins resolution so the
+         vulnerable transitive version is never the one that ships. -->
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
     <!-- Cross-platform PDF text shaping (tasks/pdf-text-shaping-abstraction.md, P4
          font layer): version matches Microsoft.ReportViewer.DataVisualization's

@@ -1,4 +1,4 @@
-using SixLabors.ImageSharp;
+using SkiaSharp;
 using System;
 using System.Drawing.Imaging;
 using System.IO;
@@ -81,7 +81,7 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel
 		}
 
 		/// <summary>
-		/// Detect image format from image data stream using ImageSharp.
+		/// Detect image format from image data stream using SkiaSharp.
 		/// </summary>
 		public static ImageFormatType DetectFromStream(Stream imageStream)
 		{
@@ -91,19 +91,17 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel
 			try
 			{
 				imageStream.Position = 0;
-				var imageInfo = Image.Identify(imageStream);
-				if (imageInfo == null)
+				using SKCodec codec = SKCodec.Create(imageStream);
+				imageStream.Position = 0;
+				if (codec == null)
 					return ImageFormatType.Unknown;
 
-				imageStream.Position = 0;
-
-				string format = imageInfo.Metadata.DecodedImageFormat?.Name.ToLowerInvariant() ?? "png";
-				return format switch
+				return codec.EncodedFormat switch
 				{
-					"bmp" => ImageFormatType.Bmp,
-					"gif" => ImageFormatType.Gif,
-					"jpeg" => ImageFormatType.Jpeg,
-					"png" => ImageFormatType.Png,
+					SKEncodedImageFormat.Bmp => ImageFormatType.Bmp,
+					SKEncodedImageFormat.Gif => ImageFormatType.Gif,
+					SKEncodedImageFormat.Jpeg => ImageFormatType.Jpeg,
+					SKEncodedImageFormat.Png => ImageFormatType.Png,
 					_ => ImageFormatType.Unknown
 				};
 			}

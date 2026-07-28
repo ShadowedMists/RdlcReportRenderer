@@ -1,6 +1,5 @@
 using Microsoft.ReportingServices.Rendering.ExcelRenderer.Excel;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 {
 	/// <summary>
-	/// Cross-platform image provider using SixLabors.ImageSharp.
+	/// Cross-platform image provider using SkiaSharp.
 	/// Used for non-chart image operations (Excel embedded images, web rendering).
 	/// Returns null for chart operations (not supported on non-Windows platforms).
 	/// </summary>
@@ -25,20 +24,23 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 			try
 			{
 				imageStream.Position = 0;
-				var imageInfo = Image.Identify(imageStream);
+				using SKCodec codec = SKCodec.Create(imageStream);
 
-				if (imageInfo == null)
+				if (codec == null)
 					return null;
 
 				imageStream.Position = 0;
 
+				// SkiaSharp carries no embedded resolution metadata (see docs/decisions.md,
+				// "ImageLoader's DPI-mismatch rescaling was dropped, not ported"); assume the
+				// same fixed 96 DPI baseline used elsewhere in the cross-platform renderers.
 				var metadata = new ImageMetadata
 				{
-					Width = imageInfo.Width,
-					Height = imageInfo.Height,
-					HorizontalResolution = (float)imageInfo.Metadata.HorizontalResolution,
-					VerticalResolution = (float)imageInfo.Metadata.VerticalResolution,
-					Format = DetermineFormat(imageInfo.Metadata.DecodedImageFormat)
+					Width = codec.Info.Width,
+					Height = codec.Info.Height,
+					HorizontalResolution = 96f,
+					VerticalResolution = 96f,
+					Format = DetermineFormat(codec.EncodedFormat)
 				};
 
 				return metadata;
@@ -60,58 +62,53 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer
 		}
 
 		/// <summary>
-		/// Decode into a tightly-packed top-down BGRA32 buffer via ImageSharp.
-		/// SixLabors.ImageSharp.PixelFormats.Bgra32 has the same in-memory byte
-		/// order (B,G,R,A) as System.Drawing's Format32bppArgb, so the pixel
+		/// Decode into a tightly-packed top-down BGRA32 buffer via SkiaSharp.
+		/// SKColorType.Bgra8888 with SKAlphaType.Unpremul has the same in-memory
+		/// byte order (B,G,R,A) as System.Drawing's Format32bppArgb, so the pixel
 		/// buffer can be copied out directly with no channel reordering.
 		/// </summary>
 		public byte[] DecodeToBgra32(Stream imageStream, int width, int height)
 		{
 			imageStream.Position = 0;
-			using (Image<Bgra32> image = Image.Load<Bgra32>(imageStream))
+			var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+			using (SKCodec codec = SKCodec.Create(imageStream))
+			using (SKBitmap bitmap = new SKBitmap(info))
 			{
+				codec.GetPixels(info, bitmap.GetPixels());
+
 				byte[] buffer = new byte[width * height * 4];
 				int rowBytes = width * 4;
-				image.ProcessPixelRows(accessor =>
+				IntPtr pixels = bitmap.GetPixels();
+				for (int row = 0; row < height; row++)
 				{
-					for (int row = 0; row < height && row < accessor.Height; row++)
-					{
-						Span<Bgra32> pixelRow = accessor.GetRowSpan(row);
-						Span<byte> rowBytesSpan = MemoryMarshal.AsBytes(pixelRow);
-						int copyBytes = Math.Min(rowBytes, rowBytesSpan.Length);
-						rowBytesSpan.Slice(0, copyBytes).CopyTo(buffer.AsSpan(row * rowBytes, copyBytes));
-					}
-				});
+					IntPtr rowStart = IntPtr.Add(pixels, row * bitmap.RowBytes);
+					Marshal.Copy(rowStart, buffer, row * rowBytes, rowBytes);
+				}
 				return buffer;
 			}
 		}
 
 		/// <summary>
-		/// Decode an arbitrary image and re-encode it as PNG via SixLabors.ImageSharp.
+		/// Decode an arbitrary image and re-encode it as PNG via SkiaSharp.
 		/// </summary>
 		public byte[] EncodeToPng(Stream imageStream)
 		{
 			imageStream.Position = 0;
-			using (Image image = Image.Load(imageStream))
-			using (MemoryStream memoryStream = new MemoryStream())
+			using (SKBitmap bitmap = SKBitmap.Decode(imageStream))
+			using (SKData data = bitmap.Encode(SKEncodedImageFormat.Png, 100))
 			{
-				image.SaveAsPng(memoryStream);
-				return memoryStream.ToArray();
+				return data.ToArray();
 			}
 		}
 
-		private static ImageFormatType DetermineFormat(SixLabors.ImageSharp.Formats.IImageFormat format)
+		private static ImageFormatType DetermineFormat(SKEncodedImageFormat format)
 		{
-			if (format == null)
-				return ImageFormatType.Unknown;
-
-			string formatName = format.Name.ToLowerInvariant();
-			return formatName switch
+			return format switch
 			{
-				"bmp" => ImageFormatType.Bmp,
-				"gif" => ImageFormatType.Gif,
-				"jpeg" => ImageFormatType.Jpeg,
-				"png" => ImageFormatType.Png,
+				SKEncodedImageFormat.Bmp => ImageFormatType.Bmp,
+				SKEncodedImageFormat.Gif => ImageFormatType.Gif,
+				SKEncodedImageFormat.Jpeg => ImageFormatType.Jpeg,
+				SKEncodedImageFormat.Png => ImageFormatType.Png,
 				_ => ImageFormatType.Unknown
 			};
 		}
