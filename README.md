@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/rdlcore-hero.png" alt="RdlCore" width="360">
+</p>
+
 # RdlCore
 
 **A cross-platform .NET rendering engine for RDL/RDLC reports** — the format historically produced by SQL Server Reporting Services and Report Designer. RdlCore lets you load, process, and render `.rdlc`/RDL report definitions to PDF, Excel, Word, HTML, CSV, XML, and image formats on Windows, Linux, and macOS, from ASP.NET Core, console apps, services, or WinForms desktop applications — no SQL Server Reporting Services installation required.
