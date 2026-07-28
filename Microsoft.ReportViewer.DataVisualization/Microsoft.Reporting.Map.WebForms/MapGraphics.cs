@@ -4,12 +4,17 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
+using Microsoft.Reporting.Map.WebForms.Rendering;
+using Microsoft.Reporting.Map.WebForms.Rendering.Gdi;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
 	internal class MapGraphics : RenderingEngine
 	{
 		internal CommonElements common;
+
+		/// <summary>Milestone A (tasks/map-engine-cross-platform.md) — the port for Map's own drawing-resource creation. Gdi-only for now, no Skia backend yet.</summary>
+		internal IMapDrawingResourceFactory ResourceFactory { get; } = new GdiMapResourceFactory();
 
 		private Pen pen;
 
