@@ -1,13 +1,11 @@
 using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.HPBProcessing;
-using Microsoft.ReportingServices.Rendering.RichText;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 {
@@ -17,9 +15,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private Bitmap m_firstImage;
 
-		protected Win32ObjectSafeHandle m_hBitmap;
-
-		protected Win32DCSafeHandle m_hdcBitmap;
+		private Bitmap m_pageBitmap;
 
 		private static ImageCodecInfo[] m_encoders = GetGdiImageEncoders();
 
@@ -42,27 +38,21 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					m_encoderParameters.Dispose();
 					m_encoderParameters = null;
 				}
-			}
-			if (m_hdcBitmap != null)
-			{
-				m_hdcBitmap.Close();
-				m_hdcBitmap = null;
-			}
-			if (m_hBitmap != null)
-			{
-				m_hBitmap.Close();
-				m_hBitmap = null;
+				if (m_pageBitmap != null)
+				{
+					m_pageBitmap.Dispose();
+					m_pageBitmap = null;
+				}
 			}
 			base.Dispose(disposing);
 		}
 
 		internal virtual void Save(Stream outputStream, PaginationSettings.FormatEncoding outputFormat)
 		{
-			Bitmap bitmap = null;
+			Bitmap bitmap = m_pageBitmap;
 			bool flag = true;
 			try
 			{
-				bitmap = System.Drawing.Image.FromHbitmap(m_hBitmap.Handle);
 				switch (outputFormat)
 				{
 				case PaginationSettings.FormatEncoding.BMP:
@@ -82,6 +72,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					{
 						m_firstImage = bitmap;
 						flag = false;
+						m_pageBitmap = null;
 						m_encoderParameters = new EncoderParameters(2);
 						m_encoderParameters.Param[0] = new EncoderParameter(Encoder.SaveFlag, 18L);
 						m_encoderParameters.Param[1] = new EncoderParameter(Encoder.ColorDepth, 24L);
@@ -108,6 +99,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				{
 					bitmap.Dispose();
 					bitmap = null;
+					m_pageBitmap = null;
 				}
 			}
 		}
@@ -120,77 +112,29 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				m_graphicsBase.Dispose();
 				m_graphicsBase = null;
 			}
-			if (m_hdcBitmap != null)
+			if (m_pageBitmap != null)
 			{
-				m_hdcBitmap.Close();
-				m_hdcBitmap = null;
+				m_pageBitmap.Dispose();
+				m_pageBitmap = null;
 			}
-			if (m_hBitmap != null)
-			{
-				m_hBitmap.Close();
-				m_hBitmap = null;
-			}
-			IntPtr intPtr = IntPtr.Zero;
-			try
-			{
-				intPtr = Microsoft.ReportingServices.Rendering.RichText.Win32.GetDC(IntPtr.Zero);
-				HandleError(intPtr);
-				m_hdcBitmap = Microsoft.ReportingServices.Rendering.RichText.Win32.CreateCompatibleDC(intPtr);
-				HandleError(m_hdcBitmap);
-				Microsoft.ReportingServices.Rendering.RichText.Win32.BITMAPINFOHEADER pbmi = new Microsoft.ReportingServices.Rendering.RichText.Win32.BITMAPINFOHEADER(ConvertToPixels(pageWidth), ConvertToPixels(pageHeight), base.DpiX, base.DpiY);
-				IntPtr ppvBits = IntPtr.Zero;
-				m_hBitmap = Microsoft.ReportingServices.Rendering.RichText.Win32.CreateDIBSection(m_hdcBitmap, ref pbmi, 0u, ref ppvBits, IntPtr.Zero, 0u);
-				HandleError(m_hBitmap);
-				Microsoft.ReportingServices.Rendering.RichText.Win32.SelectObject(m_hdcBitmap, m_hBitmap);
-				m_graphicsBase = System.Drawing.Graphics.FromHdc(m_hdcBitmap.Handle);
-				SetGraphicsProperties(m_graphicsBase);
-				m_graphicsBase.Clear(Color.White);
-			}
-			catch (Exception)
-			{
-				if (m_hdcBitmap != null)
-				{
-					m_hdcBitmap.Close();
-					m_hdcBitmap = null;
-				}
-				if (m_hBitmap != null)
-				{
-					m_hBitmap.Close();
-					m_hBitmap = null;
-				}
-				throw;
-			}
-			finally
-			{
-				if (IntPtr.Zero != intPtr)
-				{
-					Microsoft.ReportingServices.Rendering.RichText.Win32.ReleaseDC(IntPtr.Zero, intPtr);
-				}
-			}
-		}
-
-		private void HandleError(Win32DCSafeHandle handle)
-		{
-			if (handle.IsInvalid)
-			{
-				throw new ReportRenderingException(Marshal.GetExceptionForHR(Marshal.GetLastWin32Error()));
-			}
-		}
-
-		private void HandleError(Win32ObjectSafeHandle handle)
-		{
-			if (handle.IsInvalid)
-			{
-				throw new ReportRenderingException(Marshal.GetExceptionForHR(Marshal.GetLastWin32Error()));
-			}
-		}
-
-		private void HandleError(IntPtr handle)
-		{
-			if (IntPtr.Zero == handle)
-			{
-				throw new ReportRenderingException(Marshal.GetExceptionForHR(Marshal.GetLastWin32Error()));
-			}
+			// Builds the per-page raster surface as a plain System.Drawing.Bitmap rather than
+			// via raw Win32 GetDC/CreateCompatibleDC/CreateDIBSection HBITMAP interop (as this
+			// used to). That HBITMAP path is unavailable on non-Windows System.Drawing.Common
+			// (libgdiplus has no HDC/HBITMAP concept) and failed immediately, before any drawing,
+			// on every page for every raster format (TIFF included) - see
+			// tasks/image-renderer-cross-platform.md. Bitmap+Graphics.FromImage is the same
+			// portable construction GraphicsBase.EnsureGraphics already uses for its scratch
+			// HDC, and is what Chart's GdiRenderSurface/SkiaRenderSurface pair already models.
+			// Format32bppRgb (no per-pixel alpha), not the Bitmap(w, h) default of
+			// Format32bppArgb - the old CreateDIBSection-backed HDC surface had no real alpha
+			// channel, and drawing alpha-edged content (e.g. an embedded chart PNG) onto a
+			// true-alpha surface instead changes edge-pixel compositing enough to fail
+			// SunburstChartRdlTests's pixel-diff baseline.
+			m_pageBitmap = new Bitmap(ConvertToPixels(pageWidth), ConvertToPixels(pageHeight), PixelFormat.Format32bppRgb);
+			m_pageBitmap.SetResolution(base.DpiX, base.DpiY);
+			m_graphicsBase = System.Drawing.Graphics.FromImage(m_pageBitmap);
+			SetGraphicsProperties(m_graphicsBase);
+			m_graphicsBase.Clear(Color.White);
 		}
 
 		internal void DrawLine(Pen pen, float x1, float y1, float x2, float y2)
