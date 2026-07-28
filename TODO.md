@@ -20,7 +20,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔵 **LOW** | Word (WORD/WORDOPENXML) renderer: cross-platform support | 🔄 Image-decode gap fixed (2026-07-27) — WORDOPENXML fully cross-platform; WORD (binary) blocked on a separate COM/OLE Structured Storage gap; see `tasks/word-renderer-cross-platform.md` | LOW |
 | 🔵 **LOW** | IMAGE (TIFF/EMF) renderer: cross-platform support | 🔄 Raw Win32 HBITMAP interop fixed (2026-07-27); deeper GDI+-on-Linux wall confirmed still blocking, needs Skia; see `tasks/image-renderer-cross-platform.md` | MEDIUM |
 | 🔵 **LOW** | RDL expression compiler: sandboxing + single-file deployment | ✅ Sandboxing documented as permanent limitation; single-file deployment fixed and verified end-to-end (2026-07-27, published-single-file harness); see `tasks/expression-compiler-modernization.md` | LOW |
-| 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | 🔄 HTML/CSV/XML/WORD/Gauge/IMAGE(TIFF/BMP) done (2026-07-27); Map still open; see `tasks/test-coverage-gaps.md` | LOW |
+| 🔵 **LOW** | Test coverage: HTML/CSV/XML/WORD/IMAGE/Gauge/Map have none | ✅ DONE (2026-07-27) — HTML/CSV/XML/WORD/Gauge/IMAGE(TIFF/BMP)/Map all have smoke-test coverage now; see `tasks/test-coverage-gaps.md` | LOW |
 
 ### Long-Term Vision
 

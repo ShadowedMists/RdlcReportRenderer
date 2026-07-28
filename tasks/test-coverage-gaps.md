@@ -1,6 +1,6 @@
 # Rendering format test-coverage gaps
 
-**Status: Partially done.** HTML/HTML4.0/CSV/XML smoke tests added 2026-07-27; Gauge RDL-render-level smoke tests added 2026-07-27; IMAGE TIFF/BMP smoke tests added 2026-07-27 (see `tasks/image-renderer-cross-platform.md`); Map RDL-render-level coverage still open. Compiled 2026-07-27 while auditing README's "Supported rendering formats" against actual test coverage, since the Chart/Excel/PDF work has been verified in real depth (including WSL cross-platform runs) while other formats had no attention at all.
+**Status: Done for this doc's original scope.** HTML/HTML4.0/CSV/XML smoke tests added 2026-07-27; Gauge RDL-render-level smoke tests added 2026-07-27; IMAGE TIFF/BMP smoke tests added 2026-07-27 (see `tasks/image-renderer-cross-platform.md`); Map RDL-render-level smoke test added 2026-07-27 (confirms existing Windows-only behavior actually works — item 3 below). Compiled 2026-07-27 while auditing README's "Supported rendering formats" against actual test coverage, since the Chart/Excel/PDF work has been verified in real depth (including WSL cross-platform runs) while other formats had no attention at all.
 
 ## Current state (updated 2026-07-27)
 
@@ -17,7 +17,7 @@ Only three test projects exist: `Microsoft.ReportViewer.Chart.Rdl.Tests`, `Micro
 | CSV | Yes (2026-07-27) — `HtmlCsvXmlRdlTests.cs`; smoke-test only (asserts non-null, not content — `SimpleTextboxReport.rdlc` has no tablix/list/table data region, so CSV's real per-row output isn't exercised. A future pass should add a data-region-bearing fixture) |
 | XML | Yes (2026-07-27) — `HtmlCsvXmlRdlTests.cs`, WSL-verified |
 | Gauge | Yes (2026-07-27) — `GaugeRdlTests.cs`, a new `SimpleGaugeReport.rdlc` fixture (no pre-existing Gauge `.rdlc` existed; authored from `ReportDefinition.xsd`'s `GaugePanelType`/`RadialGaugeType` schema) with a data-bound radial-gauge needle pointer, rendered via `IMAGE`/`PDF` |
-| Map | None — consistent with its migration being deferred, but the *existing* Windows-only rendering behavior is also unverified by any test — still open |
+| Map | Yes (2026-07-27) — `MapRdlTests.cs`, a new `SimpleMapReport.rdlc` fixture (minimal `<Map>`/`<MapViewport>`, no layers — `MapViewport` is the only required child per schema) confirms the existing Windows-only behavior works, rendered via `IMAGE`. Migration itself remains deferred (see `docs/decisions.md`) |
 
 ## Why this matters now
 
@@ -27,7 +27,7 @@ The PDF fix committed 2026-07-27 (itemized-text-shape cache crashing on non-Wind
 
 1. ~~Add at least one end-to-end RDL render smoke test per currently-untested format (HTML, CSV, XML at minimum...)~~ — done 2026-07-27 (`HtmlCsvXmlRdlTests.cs`, WSL-verified for HTML5/HTML4.0/XML; CSV is a non-throwing smoke test only, see the table note above).
 2. ~~For Gauge: add RDL-render-level tests...~~ — done 2026-07-27 (`GaugeRdlTests.cs`; asserts well-formed PNG/PDF output rather than pixel content, since no Gauge visual baseline exists yet — a future pass could add one, mirroring Chart's `ImageComparer.CompareToBaseline`).
-3. For Map: at minimum, confirm the existing Windows-only behavior actually works via one baseline test, before any further migration decision is made — right now there is no automated evidence either way. **Still open.**
+3. ~~For Map: at minimum, confirm the existing Windows-only behavior actually works via one baseline test...~~ — done 2026-07-27 (`MapRdlTests.cs`; a smoke test only, no visual baseline, matching the same rationale as Gauge's).
 4. Treat WORD/WORDOPENXML and IMAGE/TIFF/EMF test coverage as part of those renderers' own dedicated tasks (already tracked — see the linked files above) rather than duplicating scope here.
 5. As each gap closes, update the table above and remove the row rather than leaving a stale "none found" note next to a now-tested format.
 6. A future pass should add a tablix/list/table-bearing RDL fixture so CSV's real per-row output gets exercised, not just "doesn't throw" — the current fixture (`SimpleTextboxReport.rdlc`) has no data region for CSV to act on.
