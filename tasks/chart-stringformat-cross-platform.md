@@ -1,0 +1,65 @@
+# Chart StringFormat cross-platform gap
+
+**Status: `Label.cs`'s raw `StringFormat` construction (the confirmed next blocker after the Font and GraphicsPath/HotRegionsList gaps) is fixed, 2026-07-28. The remaining ~64-site sweep across ~19 other Chart-engine files is scoped below but not started.**
+
+## Background
+
+Discovered while chasing the Chart default-Font gap (`tasks/chart-default-font-cross-platform.md`) and the follow-on HotRegionsList/GraphicsPath gap (`tasks/chart-hotregion-graphicspath-cross-platform.md`): once both of those were fixed, WSL testing showed the crash moved to `Label.Paint` constructing a raw `System.Drawing.StringFormat()` directly — same Phase 0 wall as `Font`/`GraphicsPath` (GDI+ can't construct *any* `System.Drawing` object on Linux).
+
+## Research before fixing (2026-07-28)
+
+Used a research agent to trace the full scope before touching code (per the established discipline from Legend/Axis/HotRegionsList). Key findings:
+- `Microsoft.Reporting.Rendering.ITextFormat` (portable equivalent) and its full `IDrawingResourceFactory.CreateTextFormat()`/Gdi+Skia adapter implementations **already exist** — this is a pure caller-migration task, not new infrastructure, exactly like the GraphicsPath fix.
+- `ChartGraphics` already has full dual-overload pairing for every text measure/draw method (`MeasureString`/`MeasureStringRel`/`MeasureStringAbs`/`DrawString`/`DrawStringRel` all have both `Font`+`StringFormat` and `IChartFont`+`ITextFormat` overloads; `DrawLabelStringRel` is already portable-only, no legacy overload at all).
+- `ITextFormat` was missing exactly one member actually used by callers: `Clone()` (`StringFormat.Clone()` is called once in `Label.cs` chart-side, plus a few times in the out-of-scope Map engine).
+- Project-wide, raw `new StringFormat(` construction sites: **~64 in ~20 files within the Chart engine** (`Chart.WebForms`, `.ChartTypes`, `.Formulas` namespaces) — comparable in size to the GraphicsPath caller migration, not a small fix. Map engine (~20 sites) and Gauge engine (~9 sites) have their own separate, currently-unstarted equivalents — out of scope here (Map's `MapGraphics` doesn't even have `IChartFont`/`ITextFormat` overloads yet).
+
+## Fix done (2026-07-28): `ITextFormat.Clone()` + `Label.cs`
+
+- Added `ITextFormat Clone();` to the interface (`Microsoft.Reporting.Rendering/ITextFormat.cs`).
+- Implemented in `GdiTextFormat` (both Chart's and Gauge's `Rendering/Gdi/GdiTextFormat.cs` — `new GdiTextFormat((StringFormat)NativeFormat.Clone())`) and Chart's `SkiaTextFormat` (`Rendering/Skia/SkiaTextFormat.cs` — plain property copy, since it's a descriptor with no native backing object).
+- `Label.cs`'s `Paint` method: `StringFormat stringFormat = new StringFormat();` → `ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();`. This method already ended by manually copying `Alignment`/`LineAlignment`/`FormatFlags`/`Trimming` onto a separate `ITextFormat` right before the `DrawLabelStringRel` call (a bridge added in an earlier milestone) — with `stringFormat` itself now interface-typed, that bridge is redundant and was removed; `stringFormat` is passed to `DrawLabelStringRel` directly.
+- `Label.cs`'s `Paint3D` method: same `StringFormat` → `ITextFormat` change, plus:
+  - `GetAllLabelsRect(ChartArea, AxisPosition, ref StringFormat)`'s parameter changed to `ref ITextFormat` (this method is called by both `Paint3D` itself, an by-ref-mutates-the-caller's-format helper, so its signature had to change too).
+  - The local `StringFormat stringFormat2` (used to snapshot/restore format state for grouped bottom-axis labels) changed to `ITextFormat`; `stringFormat2 = (StringFormat)stringFormat.Clone();` → `stringFormat2 = stringFormat.Clone();` (this is exactly why `Clone()` had to be added to the interface first).
+  - Same redundant manual bridge (`bridgedLabelFormat`) removed, `stringFormat` passed to `DrawLabelStringRel` directly.
+- **Verified**: `dotnet build --no-incremental` 0 errors. All 137 `VisualRegressionTests` + 187 `Chart.Rdl.Tests` pass on Windows with byte-identical baselines. **WSL-confirmed a genuine milestone**: `SimpleBarChart_MatchesBaseline`/`SimpleBarChart_RendersViaSkia_MatchesBaseline` no longer throw an exception at all — they now actually render a bitmap on Linux and fail only on a pixel-tolerance diff (5.9%/4.5% of pixels differ beyond tolerance 2), a qualitatively different and much better kind of failure than an unhandled crash. Aggregate `VisualRegressionTests` moved from 30/137 to 31/137 — a small number, but the aggregate count understates the real progress here: many still-failing tests are likely now failing on pixel-diff grounds (partial/imperfect rendering) rather than crashing outright, which the raw pass/fail count doesn't distinguish. Worth a closer per-test look before assuming "not fixed" from the aggregate number alone.
+
+## Not investigated: the pixel-diff itself
+
+`SimpleBarChart`'s 5.9%/4.5% pixel diff on Linux was not investigated further this pass — it may be a legitimate, expected difference (font hinting/anti-aliasing differences between GDI+ and Skia backends, or between Windows and Linux system fonts, are a known general risk for any cross-platform rendering migration) rather than a bug. Someone picking this up next should view `SimpleBarChart.diff.png` (in the WSL test's `Results/` output folder) to characterize what's actually different before assuming it's a defect.
+
+## Remaining scope: ~64-site / ~19-file sweep (not started)
+
+Every one of these files builds a local `StringFormat` (usually via `new StringFormat(StringFormat.GenericTypographic)` or a bare `new StringFormat()`), sets 1-4 properties, and passes it into a legacy `Font`+`StringFormat` overload of `MeasureString`/`DrawString`/etc. Since the interface-typed overloads and `CreateTypographicTextFormat()`/`CreateDefaultTextFormat()` factory methods already exist, most of these are expected to be a mechanical swap (same shape as the font-argument migration already done for Legend/Axis): build via `graph.ResourceFactory.CreateTypographicTextFormat()`/`CreateTextFormat()` instead of `new StringFormat(...)`, and switch the paired `Font` argument to `IChartFont`/`WrapFont(...)` at the same time (the two must move together, since the portable overloads only pair `IChartFont` with `ITextFormat`, never mixed with the concrete types).
+
+Files with `new StringFormat(` sites found via `grep -rn "new StringFormat(" Microsoft.ReportViewer.DataVisualization/Microsoft.Reporting.Chart.WebForms*` (2026-07-28, excluding `Rendering/Gdi/GdiResourceFactory.cs`'s own legitimate backend implementation and now-fixed `Label.cs`) — re-grep before starting, this list may drift:
+
+- `Microsoft.Reporting.Chart.WebForms\Annotation.cs` (2 sites)
+- `Microsoft.Reporting.Chart.WebForms\Axis.cs` (3 sites — distinct from the already-fixed `autoLabelFont`/`autoLabelFont`-adjacent sites; these are separate `StringFormat` uses)
+- `Microsoft.Reporting.Chart.WebForms\ChartPicture.cs` (1 site)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\BarChart.cs` (2 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\BoxPlotChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\ErrorBarChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\FunnelChart.cs` (2 sites) + `FunnelPointLabelInfo.cs` (field)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\PieChart.cs` (7 sites — largest single file)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\PointChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\RadarChart.cs` (2 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\RangeColumnChart.cs` (4 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\StackedAreaChart.cs` (4 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\StackedBarChart.cs` (5 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\StackedColumnChart.cs` (6 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\StockChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\SunburstChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.ChartTypes\TreeMapChart.cs` (3 sites)
+- `Microsoft.Reporting.Chart.WebForms.Formulas\FinancialMarkers.cs` (5 sites)
+
+Map engine (`Microsoft.Reporting.Map.WebForms`, ~20 sites across `BendingText.cs`/`Group.cs`/`Legend.cs`/`LegendCell.cs`/`LinearScale.cs`/`MapCore.cs`/`MapImage.cs`/`MapLabel.cs`/`Shape.cs`/`Symbol.cs`/`ColorSwatchPanel.cs`/`DistanceScalePanel.cs`) and Gauge engine (~9 sites: `GaugeCore.cs`/`GaugeImage.cs`/`GaugeLabel.cs`/`NumericIndicator.cs`/`StateIndicator.cs`) have the identical shape of gap but are separate, lower-priority efforts — Map's `MapGraphics` doesn't even have `IChartFont`/`ITextFormat` overloads yet (a bigger prerequisite gap, tracked in `tasks/map-engine-cross-platform.md`), and Gauge has no Skia backend at all yet.
+
+## Proposed tasks
+
+1. Re-grep the caller list above (may have drifted) and trace each file's `StringFormat` usage — note whether the paired `Font` argument also needs to move to `IChartFont`/`WrapFont(...)` at the same call site (it almost always will).
+2. Start with `PieChart.cs` (7 sites, largest) or a smaller file first to validate the mechanical-swap assumption before doing all ~19 files in one pass.
+3. Verify per-file batch with the full Windows test suite (137+187) — byte-identical baselines expected.
+4. After a meaningful subset (or all) of these are fixed, re-run the full `VisualRegressionTests` suite under WSL and characterize failures per-test: crash vs. pixel-diff-only. The pixel-diff failures are a different, follow-on investigation (font rendering fidelity), not necessarily more `StringFormat`/`Font`/`GraphicsPath` construction bugs — don't assume every remaining red test needs the same fix shape.
+5. Once Chart engine's `StringFormat` sweep is done, consider whether Gauge's identical gap is worth doing (lower priority, no Skia backend yet) versus focusing entirely on Map engine (`tasks/map-engine-cross-platform.md`, not started at all).
