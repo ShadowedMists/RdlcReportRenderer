@@ -47,6 +47,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private int DYNAMIC_IMAGE_MIN_RESOLUTION_Y = 300;
 
+		private ShapedFontCache m_shapedFontCache;
+
+		private ShapedFontCache ShapedFontCache => m_shapedFontCache ??= new ShapedFontCache();
+
 		internal bool IsEmf
 		{
 			get
@@ -106,6 +110,11 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				{
 					m_graphics.Dispose();
 					m_graphics = null;
+				}
+				if (m_shapedFontCache != null)
+				{
+					m_shapedFontCache.Dispose();
+					m_shapedFontCache = null;
 				}
 			}
 			base.Dispose(disposing);
@@ -368,6 +377,145 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					Microsoft.ReportingServices.Rendering.RichText.TextBox.ExtDrawTextRun(run, hdc, fontCache, x, baselineY2, underline);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Phase 3 (tasks/image-renderer-cross-platform.md): the non-Windows text path. Only
+		/// called on non-Windows (see WriterBase.SupportsCrossPlatformRichTextPipeline's default
+		/// false plus Renderer.ProcessSimpleTextBox's OS check - ImageWriter never overrides that
+		/// flag, so Windows keeps using DrawTextRun's original Win32 HDC/Uniscribe path
+		/// unaffected). Reuses PDFWriter's ShapedFontCache/ShapedTextWrapper/ShapedTextMetrics
+		/// infrastructure for wrapping/measurement - only the actual glyph drawing differs
+		/// (Graphics.DrawText's SKCanvas.DrawText call instead of PDF Tj operators).
+		/// </summary>
+		internal override void DrawWrappedText(RectangleF textPosition, PointF offset, string text, ITextRunProps style, RPLFormat.TextAlignments alignment)
+		{
+			if (string.IsNullOrEmpty(text) || textPosition.Width <= 0f || textPosition.Height <= 0f)
+			{
+				return;
+			}
+			int dpi = m_commonGraphics.DpiX;
+			float fontSizePixels = style.FontSize * dpi / 72f;
+			SkiaCachedFont skiaFont = ShapedFontCache.GetFont(style.FontFamily, fontSizePixels, style.Bold, style.Italic);
+			float maxWidthPixels = ConvertToPixels(textPosition.Width);
+			List<string> lines = ShapedTextWrapper.Wrap(text, style.FontFamily, fontSizePixels, style.Bold, style.Italic, maxWidthPixels, ShapedFontCache);
+			float lineHeightPixels = fontSizePixels * 1.2f;
+			float boxLeftPixels = ConvertToPixels(textPosition.X + offset.X);
+			float boxTopPixels = ConvertToPixels(textPosition.Y + offset.Y);
+			float ascentPixels = skiaFont.GetAscent();
+			for (int i = 0; i < lines.Count; i++)
+			{
+				float lineWidthPixels = ShapedTextMetrics.MeasureTotalWidthPoints(lines[i], style.FontFamily, fontSizePixels, style.Bold, style.Italic, ShapedFontCache);
+				float lineX = ComputeLineStartX(alignment, boxLeftPixels, maxWidthPixels, lineWidthPixels);
+				float baselineY = boxTopPixels + ascentPixels + i * lineHeightPixels;
+				m_graphics.DrawText(lines[i], skiaFont, style.Color, lineX, baselineY);
+			}
+		}
+
+		/// <summary>Multi-run counterpart to <see cref="DrawWrappedText"/> - see its remarks.</summary>
+		internal override void DrawWrappedRichText(RectangleF textPosition, PointF offset, List<(RPLFormat.TextAlignments Alignment, List<(string Text, ITextRunProps Style)> Runs)> paragraphs)
+		{
+			if (paragraphs == null || paragraphs.Count == 0 || textPosition.Width <= 0f || textPosition.Height <= 0f)
+			{
+				return;
+			}
+			int dpi = m_commonGraphics.DpiX;
+			float maxWidthPixels = ConvertToPixels(textPosition.Width);
+			float maxFontSizePixels = 1f;
+			foreach ((RPLFormat.TextAlignments _, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
+			{
+				foreach ((string _, ITextRunProps style) in paragraphRuns)
+				{
+					float sizePixels = style.FontSize * dpi / 72f;
+					if (sizePixels > maxFontSizePixels)
+					{
+						maxFontSizePixels = sizePixels;
+					}
+				}
+			}
+			float lineHeightPixels = maxFontSizePixels * 1.2f;
+			float boxLeftPixels = ConvertToPixels(textPosition.X + offset.X);
+			float boxTopPixels = ConvertToPixels(textPosition.Y + offset.Y);
+			float ascentPixels = maxFontSizePixels * 0.8f;
+			float currentBaselineY = boxTopPixels + ascentPixels;
+			float previousLineX = 0f;
+			bool firstLineOverall = true;
+
+			foreach ((RPLFormat.TextAlignments alignment, List<(string Text, ITextRunProps Style)> paragraphRuns) in paragraphs)
+			{
+				var pixelRuns = new List<(string Text, ITextRunProps Style)>(paragraphRuns.Count);
+				foreach ((string runText, ITextRunProps style) in paragraphRuns)
+				{
+					pixelRuns.Add((runText, new PixelScaledTextRunProps(style, dpi)));
+				}
+				List<List<StyledLineFragment>> wrappedLines = ShapedStyledTextWrapper.WrapParagraph(pixelRuns, maxWidthPixels, ShapedFontCache);
+				foreach (List<StyledLineFragment> line in wrappedLines)
+				{
+					float lineWidthPixels = 0f;
+					foreach (StyledLineFragment lineFragment in line)
+					{
+						lineWidthPixels += ShapedTextMetrics.MeasureTotalWidthPoints(lineFragment.Text, lineFragment.Style.FontFamily, lineFragment.Style.FontSize, lineFragment.Style.Bold, lineFragment.Style.Italic, ShapedFontCache);
+					}
+					float lineX = ComputeLineStartX(alignment, boxLeftPixels, maxWidthPixels, lineWidthPixels);
+
+					if (!firstLineOverall)
+					{
+						currentBaselineY += lineHeightPixels;
+					}
+					firstLineOverall = false;
+					previousLineX = lineX;
+
+					float currentX = lineX;
+					foreach (StyledLineFragment fragment in line)
+					{
+						SkiaCachedFont fragmentSkiaFont = ShapedFontCache.GetFont(fragment.Style.FontFamily, fragment.Style.FontSize, fragment.Style.Bold, fragment.Style.Italic);
+						m_graphics.DrawText(fragment.Text, fragmentSkiaFont, fragment.Style.Color, currentX, currentBaselineY);
+						currentX += ShapedTextMetrics.MeasureTotalWidthPoints(fragment.Text, fragment.Style.FontFamily, fragment.Style.FontSize, fragment.Style.Bold, fragment.Style.Italic, ShapedFontCache);
+					}
+				}
+			}
+		}
+
+		private static float ComputeLineStartX(RPLFormat.TextAlignments alignment, float boxLeftPixels, float boxWidthPixels, float lineWidthPixels)
+		{
+			switch (alignment)
+			{
+			case RPLFormat.TextAlignments.Center:
+				return boxLeftPixels + Math.Max(0f, (boxWidthPixels - lineWidthPixels) / 2f);
+			case RPLFormat.TextAlignments.Right:
+				return boxLeftPixels + Math.Max(0f, boxWidthPixels - lineWidthPixels);
+			default:
+				return boxLeftPixels;
+			}
+		}
+
+		/// <summary>
+		/// Adapts an ITextRunProps so FontSize reads in device pixels (dpi/72 * points)
+		/// instead of RDL points - ShapedStyledTextWrapper/ShapedTextMetrics read FontSize
+		/// directly off the style object with no seam to pass a separately-scaled size, unlike
+		/// DrawWrappedText's single-style path (which calls ShapedTextWrapper.Wrap with an
+		/// explicit fontSizePixels parameter instead).
+		/// </summary>
+		private sealed class PixelScaledTextRunProps : ITextRunProps
+		{
+			private readonly ITextRunProps m_inner;
+			private readonly float m_dpi;
+
+			internal PixelScaledTextRunProps(ITextRunProps inner, float dpi)
+			{
+				m_inner = inner;
+				m_dpi = dpi;
+			}
+
+			public string FontFamily => m_inner.FontFamily;
+			public float FontSize => m_inner.FontSize * m_dpi / 72f;
+			public Color Color => m_inner.Color;
+			public bool Bold => m_inner.Bold;
+			public bool Italic => m_inner.Italic;
+			public RPLFormat.TextDecorations TextDecoration => m_inner.TextDecoration;
+			public int IndexInParagraph => m_inner.IndexInParagraph;
+			public string FontKey { get => m_inner.FontKey; set => m_inner.FontKey = value; }
+			public void AddSplitIndex(int index) => m_inner.AddSplitIndex(index);
 		}
 
 		internal override void EndPage()
