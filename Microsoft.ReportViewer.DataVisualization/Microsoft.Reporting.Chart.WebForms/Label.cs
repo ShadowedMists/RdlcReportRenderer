@@ -27,7 +27,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal DateTimeIntervalType intervalOffsetType = DateTimeIntervalType.NotSet;
 
-		internal Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		internal Font font;
 
 		private Color fontColor = Color.Black;
 
@@ -162,7 +162,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -407,7 +408,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						titleColor = item.TitleColor;
 					}
-					Font titleFont = (axis.autoLabelFont == null) ? font : axis.autoLabelFont;
+					Font titleFont = (axis.autoLabelFont == null) ? Font : axis.autoLabelFont;
 					IChartFont bridgedTitleFont = graph.ResourceFactory.WrapFont(titleFont);
 					graph.DrawString(item.Title.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(titleColor), array[0], stringFormat);
 					graph.StopAnimation();
@@ -794,7 +795,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				bridgedStringFormat.LineAlignment = stringFormat.LineAlignment;
 				bridgedStringFormat.FormatFlags = stringFormat.FormatFlags;
 				bridgedStringFormat.Trimming = stringFormat.Trimming;
-				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont((axis.autoLabelFont == null) ? font : axis.autoLabelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedStringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
+				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont((axis.autoLabelFont == null) ? Font : axis.autoLabelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedStringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
 				graph.StopAnimation();
 				axis.ScaleSegments.EnforceSegment(null);
 				axis.ScaleSegments.AllowOutOfScaleValues = false;
@@ -1338,7 +1339,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					InitAnimation(graph, this.axis.CustomLabels.Count, num3);
 					graph.StartAnimation();
-					Font labelFont = (this.axis.autoLabelFont == null) ? font : this.axis.autoLabelFont;
+					Font labelFont = (this.axis.autoLabelFont == null) ? Font : this.axis.autoLabelFont;
 					ITextFormat bridgedLabelFormat = graph.ResourceFactory.CreateTextFormat();
 					bridgedLabelFormat.Alignment = stringFormat.Alignment;
 					bridgedLabelFormat.LineAlignment = stringFormat.LineAlignment;

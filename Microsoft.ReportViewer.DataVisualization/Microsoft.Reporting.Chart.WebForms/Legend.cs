@@ -46,7 +46,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private ChartDashStyle borderStyle;
 
-		private Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font font;
 
 		private Color fontColor = Color.Black;
 
@@ -106,7 +106,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private Color titleBackColor = Color.Empty;
 
-		private Font titleFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
+		private Font titleFont;
 
 		private StringAlignment titleAlignment = StringAlignment.Center;
 
@@ -732,7 +732,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -1017,7 +1018,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return titleFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return titleFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
 			}
 			set
 			{

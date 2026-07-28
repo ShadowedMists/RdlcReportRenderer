@@ -126,7 +126,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal ChartHatchStyle backHatchStyle;
 
-		internal Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		internal Font font;
 
 		internal Color fontColor = Color.Black;
 

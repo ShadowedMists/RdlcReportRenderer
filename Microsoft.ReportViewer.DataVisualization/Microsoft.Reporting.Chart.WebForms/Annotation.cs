@@ -49,7 +49,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private Color textColor = Color.Black;
 
-		private Font textFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font textFont;
 
 		private TextStyle textStyle;
 
@@ -467,7 +467,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return textFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return textFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{

@@ -742,9 +742,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						return (Font)series.EmptyPointStyle.GetAttributeObject(CommonAttributes.Font);
 					}
-					return series.font;
+					// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+					return series.font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 				}
-				return series.font;
+				return series.font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -2226,10 +2227,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					SetAttributeObject(CommonAttributes.BackHatchStyle, ChartHatchStyle.None);
 				}
-				if (!IsAttributeSet(CommonAttributes.Font))
-				{
-					SetAttributeObject(CommonAttributes.Font, new Font(ChartPicture.GetDefaultFontFamilyName(), 8f));
-				}
+				// Deliberately not eagerly defaulted here (unlike the other attributes in this
+				// method) - constructing a Font at all requires GDI+, which cannot construct
+				// anything on Linux under .NET 10, even with libgdiplus installed
+				// (docs/platform-support.md's Phase 0 finding). The Font property's getter
+				// below already falls back to series.font (itself lazy) when this attribute
+				// isn't set, so leaving it unset here is equivalent, just deferred.
 				if (!IsAttributeSet(CommonAttributes.FontColor))
 				{
 					SetAttributeObject(CommonAttributes.FontColor, Color.Black);

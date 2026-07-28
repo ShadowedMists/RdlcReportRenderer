@@ -85,7 +85,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private bool visible = true;
 
-		private Font font = new Font("Microsoft Sans Serif", 8.25f);
+		private Font font;
 
 		private Color borderColor = Color.DimGray;
 
@@ -701,7 +701,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Chart's Title.Font remarks (GDI+/Phase 0 finding).
+				return font ??= new Font("Microsoft Sans Serif", 8.25f);
 			}
 			set
 			{
@@ -1378,7 +1379,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 				num2--;
 			}
 			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
-			SizeF insetSize = g.MeasureString(SR.DefaultMeazureStringSimbol, this.font);
+			SizeF insetSize = g.MeasureString(SR.DefaultMeazureStringSimbol, Font);
 			RectangleF rectangleF = absoluteRectangle;
 			rectangleF.Width /= num2;
 			RectangleF boundRect = rectangleF;

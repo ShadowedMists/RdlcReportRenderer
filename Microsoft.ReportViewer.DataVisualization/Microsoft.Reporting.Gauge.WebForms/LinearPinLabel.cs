@@ -8,7 +8,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 	{
 		private string text = "";
 
-		private Font font = new Font("Microsoft Sans Serif", 12f);
+		private Font font;
 
 		private FontUnit fontUnit;
 
@@ -46,7 +46,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Chart's Title.Font remarks (GDI+/Phase 0 finding).
+				return font ??= new Font("Microsoft Sans Serif", 12f);
 			}
 			set
 			{
