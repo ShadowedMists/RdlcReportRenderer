@@ -17,7 +17,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private Graphics m_graphics;
 
-		private Dictionary<string, System.Drawing.Image> m_cachedImages = new Dictionary<string, System.Drawing.Image>();
+		private Dictionary<string, PortableImage> m_cachedImages = new Dictionary<string, PortableImage>();
 
 		internal PaginationSettings.FormatEncoding OutputFormat;
 
@@ -169,7 +169,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal override void DrawBackgroundImage(RPLImageData imageData, RPLFormat.BackgroundRepeatTypes repeat, PointF start, RectangleF position)
 		{
-			System.Drawing.Image image;
+			PortableImage image;
 			bool image2 = GetImage(imageData.ImageName, imageData.ImageData, imageData.ImageDataOffset, dynamicImage: false, out image);
 			if (image == null)
 			{
@@ -181,7 +181,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				if (SharedRenderer.CalculateImageClippedUnscaledBounds(this, position, image.Width, image.Height, start.X, start.Y, m_measureImageDpiX, m_measureImageDpiY, out destination, out source))
 				{
-					m_graphics.DrawImage(image, destination, source);
+					if (image.IsGdiBacked)
+					{
+						m_graphics.DrawImage(image.GdiImage, destination, source);
+					}
 				}
 			}
 			else
@@ -204,7 +207,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					{
 						if (SharedRenderer.CalculateImageClippedUnscaledBounds(this, position, image.Width, image.Height, num5, num6, m_measureImageDpiX, m_measureImageDpiY, out destination, out source))
 						{
-							m_graphics.DrawImage(image, destination, source);
+							if (image.IsGdiBacked)
+							{
+								m_graphics.DrawImage(image.GdiImage, destination, source);
+							}
 						}
 					}
 				}
@@ -221,13 +227,18 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_graphics.DrawLine(GDIPen.GetPen(m_pens, color, ConvertToPixels(size), style), x1, y1, x2, y2);
 		}
 
-		internal void GetDefaultImage(out System.Drawing.Image gdiImage)
+		internal void GetDefaultImage(out PortableImage image)
 		{
 			string key = "__int__InvalidImage";
-			if (m_cachedImages.TryGetValue(key, out gdiImage))
+			if (m_cachedImages.TryGetValue(key, out image))
 			{
 				return;
 			}
+			// The "InvalidImage" placeholder is itself a GDI+ Bitmap resource
+			// (Renderer.ImageResources) - only reachable on Windows for now. On
+			// non-Windows this is unreachable today (the caller's primary decode
+			// already succeeds via IImageProvider or the whole page-surface path
+			// has already failed earlier - see tasks/image-renderer-cross-platform.md).
 			Bitmap bitmap = Renderer.ImageResources["InvalidImage"];
 			Bitmap bitmap2 = null;
 			lock (bitmap)
@@ -239,13 +250,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 			}
 			bitmap2.SetResolution(m_commonGraphics.DpiX, m_commonGraphics.DpiY);
-			gdiImage = bitmap2;
-			m_cachedImages.Add(key, gdiImage);
+			image = PortableImage.FromGdiImage(bitmap2);
+			m_cachedImages.Add(key, image);
 		}
 
 		internal override void DrawDynamicImage(string imageName, Stream imageStream, long imageDataOffset, RectangleF position)
 		{
-			System.Drawing.Image image;
+			PortableImage image;
 			bool flag = GetImage(imageName, imageStream, imageDataOffset, dynamicImage: true, out image);
 			if (image == null)
 			{
@@ -255,7 +266,10 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			GetScreenDpi(out int dpiX, out int _);
 			float num = 1f * (float)DEFAULT_RESOLUTION_X / (float)dpiX;
 			RectangleF source = new RectangleF(0f, 0f, num * (float)image.Width, num * (float)image.Height);
-			m_graphics.DrawImage(image, position, source, tile: false);
+			if (image.IsGdiBacked)
+			{
+				m_graphics.DrawImage(image.GdiImage, position, source, tile: false);
+			}
 			if (!flag)
 			{
 				image.Dispose();
@@ -266,7 +280,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 		internal override void DrawImage(RectangleF position, RPLImage image, RPLImageProps instanceProperties, RPLImagePropsDef definitionProperties)
 		{
 			RPLImageData image2 = instanceProperties.Image;
-			System.Drawing.Image image3;
+			PortableImage image3;
 			bool flag = GetImage(image2.ImageName, image2.ImageData, image2.ImageDataOffset, dynamicImage: false, out image3);
 			RPLFormat.Sizings sizing = definitionProperties.Sizing;
 			if (image3 == null)
@@ -275,9 +289,14 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				flag = true;
 				sizing = RPLFormat.Sizings.Clip;
 			}
-			GDIImageProps gDIImageProps = new GDIImageProps(image3);
+			GDIImageProps gDIImageProps = image3.IsGdiBacked
+				? new GDIImageProps(image3.GdiImage)
+				: new GDIImageProps { Width = image3.Width, Height = image3.Height, HorizontalResolution = image3.HorizontalResolution, VerticalResolution = image3.VerticalResolution };
 			SharedRenderer.CalculateImageRectangle(position, gDIImageProps.Width, gDIImageProps.Height, m_measureImageDpiX, m_measureImageDpiY, sizing, out RectangleF imagePositionAndSize, out RectangleF imagePortion);
-			m_graphics.DrawImage(image3, imagePositionAndSize, imagePortion);
+			if (image3.IsGdiBacked)
+			{
+				m_graphics.DrawImage(image3.GdiImage, imagePositionAndSize, imagePortion);
+			}
 			if (!flag)
 			{
 				image3.Dispose();
@@ -351,7 +370,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_graphics.FillRectangle(GDIBrush.GetBrush(m_brushes, color), rectangle);
 		}
 
-		private bool GetImage(string imageName, byte[] imageBytes, long imageDataOffset, bool dynamicImage, out System.Drawing.Image image)
+		private bool GetImage(string imageName, byte[] imageBytes, long imageDataOffset, bool dynamicImage, out PortableImage image)
 		{
 			image = null;
 			if (dynamicImage || string.IsNullOrEmpty(imageName) || !m_cachedImages.TryGetValue(imageName, out image))
@@ -362,7 +381,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 				try
 				{
-					image = System.Drawing.Image.FromStream(new MemoryStream(imageBytes));
+					image = PortableImage.FromStream(new MemoryStream(imageBytes));
 				}
 				catch
 				{
@@ -377,7 +396,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			return false;
 		}
 
-		private bool GetImage(string imageName, Stream imageStream, long imageDataOffset, bool dynamicImage, out System.Drawing.Image image)
+		private bool GetImage(string imageName, Stream imageStream, long imageDataOffset, bool dynamicImage, out PortableImage image)
 		{
 			image = null;
 			if (dynamicImage || string.IsNullOrEmpty(imageName) || !m_cachedImages.TryGetValue(imageName, out image))
@@ -396,7 +415,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				}
 				try
 				{
-					image = System.Drawing.Image.FromStream(imageStream);
+					image = PortableImage.FromStream(imageStream);
 				}
 				catch
 				{
@@ -411,20 +430,16 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			return false;
 		}
 
-		private void AddImageToCache(System.Drawing.Image image, bool dynamicImage, string imageName)
+		private void AddImageToCache(PortableImage image, bool dynamicImage, string imageName)
 		{
-			Bitmap bitmap = image as Bitmap;
-			if (bitmap != null)
-			{
-				SetResolution(bitmap, dynamicImage);
-			}
+			SetResolution(image, dynamicImage);
 			if (!dynamicImage && !string.IsNullOrEmpty(imageName))
 			{
 				m_cachedImages.Add(imageName, image);
 			}
 		}
 
-		private void SetResolution(Bitmap bitmap, bool dynamicImage)
+		private void SetResolution(PortableImage image, bool dynamicImage)
 		{
 			int num = m_dpiX;
 			int num2 = m_dpiY;
@@ -439,7 +454,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					num2 = DYNAMIC_IMAGE_MIN_RESOLUTION_Y;
 				}
 			}
-			bitmap.SetResolution(num, num2);
+			image.SetResolution(num, num2);
 		}
 
 		internal override void ClipTextboxRectangle(Win32DCSafeHandle hdc, RectangleF position)
