@@ -53,5 +53,28 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
             Assert.AreEqual((byte)'B', actual[0], "Output should be a well-formed BMP image");
             Assert.AreEqual((byte)'M', actual[1], "Output should be a well-formed BMP image");
         }
+
+        /// <summary>
+        /// Text-free report (Rectangle border+fill, dashed Line) exercising Graphics.cs's Phase 2
+        /// Skia raster path (tasks/image-renderer-cross-platform.md) - DrawRectangle/FillRectangle/
+        /// DrawLine's non-Windows overloads - without touching ImageWriter.DrawTextRun's still-
+        /// Windows-only Win32 HDC path (Phase 3, not done). Asserts well-formed PNG only, no pixel
+        /// baseline yet.
+        /// </summary>
+        [TestMethod]
+        public void ShapesOnly_RendersToPng()
+        {
+            var report = LoadReport("ShapesOnlyReport.rdlc");
+
+            const string deviceInfo = "<DeviceInfo><OutputFormat>PNG</OutputFormat></DeviceInfo>";
+            var actual = report.Render("IMAGE", deviceInfo);
+
+            Assert.IsTrue(actual.Length > 8, "PNG output should not be empty");
+            byte[] pngSignature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+            for (int i = 0; i < pngSignature.Length; i++)
+            {
+                Assert.AreEqual(pngSignature[i], actual[i], "Output should be a well-formed PNG image");
+            }
+        }
     }
 }

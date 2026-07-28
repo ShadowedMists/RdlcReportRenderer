@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Rectangle Name="ShapeRectangle">
+            <Style>
+              <Border>
+                <Style>Solid</Style>
+                <Color>Black</Color>
+                <Width>2pt</Width>
+              </Border>
+              <BackgroundColor>LightBlue</BackgroundColor>
+            </Style>
+            <Top>0.25in</Top>
+            <Left>0.25in</Left>
+            <Height>1in</Height>
+            <Width>1in</Width>
+          </Rectangle>
+          <Line Name="ShapeLine">
+            <Style>
+              <Border>
+                <Style>Dashed</Style>
+                <Color>Red</Color>
+                <Width>1pt</Width>
+              </Border>
+            </Style>
+            <Top>1.5in</Top>
+            <Left>0.25in</Left>
+            <Height>0in</Height>
+            <Width>1in</Width>
+          </Line>
+        </ReportItems>
+        <Height>2in</Height>
+      </Body>
+      <Width>1.5in</Width>
+      <Page>
+        <PageHeight>2.5in</PageHeight>
+        <PageWidth>2in</PageWidth>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>

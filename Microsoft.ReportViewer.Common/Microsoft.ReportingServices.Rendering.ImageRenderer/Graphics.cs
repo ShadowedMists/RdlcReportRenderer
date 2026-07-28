@@ -1,14 +1,27 @@
 using Microsoft.ReportingServices.OnDemandReportRendering;
 using Microsoft.ReportingServices.Rendering.HPBProcessing;
+using Microsoft.ReportingServices.Rendering.RPLProcessing;
+using SkiaSharp;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 {
+	/// <summary>
+	/// Phase 2 of the IMAGE renderer's Skia-backend migration (tasks/image-renderer-cross-platform.md):
+	/// every method here branches on OperatingSystem.IsWindows() - the Windows branch is the
+	/// original GDI+ code, byte-for-byte unchanged, so Windows behavior/output is identical to
+	/// before this migration. The non-Windows branch draws onto an SKBitmap/SKCanvas instead,
+	/// covering BMP/GIF/JPEG/PNG only (narrowed scope decision, 2026-07-28) - TIFF has no
+	/// SkiaSharp encoder and stays Windows-only, same as EMF. Text drawing is Phase 3, not yet
+	/// done - ImageWriter's DrawTextRun still requires a real Win32 HDC end to end, so a
+	/// text-bearing report still won't render on non-Windows even after this phase.
+	/// </summary>
 	internal class Graphics : GraphicsBase
 	{
 		private EncoderParameters m_encoderParameters;
@@ -17,7 +30,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private Bitmap m_pageBitmap;
 
-		private static ImageCodecInfo[] m_encoders = GetGdiImageEncoders();
+		private static ImageCodecInfo[] m_encoders;
+
+		private SKBitmap m_skBitmap;
+
+		private SKCanvas m_skCanvas;
+
+		private int m_skBaseSaveCount;
 
 		internal Graphics(float dpiX, float dpiY)
 			: base(dpiX, dpiY)
@@ -43,11 +62,47 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					m_pageBitmap.Dispose();
 					m_pageBitmap = null;
 				}
+				DisposeSkiaPage();
 			}
 			base.Dispose(disposing);
 		}
 
 		internal virtual void Save(Stream outputStream, PaginationSettings.FormatEncoding outputFormat)
+		{
+			if (OperatingSystem.IsWindows())
+			{
+				SaveGdi(outputStream, outputFormat);
+				return;
+			}
+			SKBitmap bitmap = m_skBitmap;
+			m_skCanvas?.Dispose();
+			m_skCanvas = null;
+			m_skBitmap = null;
+			try
+			{
+				// SkiaSharp's SKImage.Encode only actually supports Jpeg/Png (empirically
+				// confirmed under WSL - Bmp/Gif both return null data, silently). BMP/GIF
+				// output stays Windows-only for now alongside TIFF/EMF - see
+				// tasks/image-renderer-cross-platform.md.
+				SKEncodedImageFormat format = outputFormat switch
+				{
+					PaginationSettings.FormatEncoding.JPEG => SKEncodedImageFormat.Jpeg,
+					PaginationSettings.FormatEncoding.PNG => SKEncodedImageFormat.Png,
+					_ => throw new NotSupportedException($"IMAGE output format '{outputFormat}' is not yet supported on non-Windows platforms - see tasks/image-renderer-cross-platform.md."),
+				};
+				using SKImage image = SKImage.FromBitmap(bitmap);
+				using SKData data = image.Encode(format, 100)
+					?? throw new InvalidOperationException($"SkiaSharp failed to encode the page as {format}.");
+				data.SaveTo(outputStream);
+				outputStream.Flush();
+			}
+			finally
+			{
+				bitmap?.Dispose();
+			}
+		}
+
+		private void SaveGdi(Stream outputStream, PaginationSettings.FormatEncoding outputFormat)
 		{
 			Bitmap bitmap = m_pageBitmap;
 			bool flag = true;
@@ -106,6 +161,21 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal void NewPage(float pageWidth, float pageHeight, int dpiX, int dpiY)
 		{
+			if (OperatingSystem.IsWindows())
+			{
+				NewPageGdi(pageWidth, pageHeight);
+				return;
+			}
+			DisposeSkiaPage();
+			SKImageInfo info = new SKImageInfo(ConvertToPixels(pageWidth), ConvertToPixels(pageHeight), SKColorType.Bgra8888, SKAlphaType.Opaque);
+			m_skBitmap = new SKBitmap(info);
+			m_skCanvas = new SKCanvas(m_skBitmap);
+			m_skCanvas.Clear(SKColors.White);
+			m_skBaseSaveCount = m_skCanvas.Save();
+		}
+
+		private void NewPageGdi(float pageWidth, float pageHeight)
+		{
 			if (m_graphicsBase != null)
 			{
 				ReleaseCachedHdc(releaseHdc: true);
@@ -137,12 +207,30 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_graphicsBase.Clear(Color.White);
 		}
 
+		private void DisposeSkiaPage()
+		{
+			m_skCanvas?.Dispose();
+			m_skCanvas = null;
+			m_skBitmap?.Dispose();
+			m_skBitmap = null;
+		}
+
 		internal void DrawLine(Pen pen, float x1, float y1, float x2, float y2)
 		{
 			ReleaseCachedHdc(releaseHdc: true);
 			ExecuteSync(delegate
 			{
 				m_graphicsBase.DrawLine(pen, ConvertToPixels(x1), ConvertToPixels(y1), ConvertToPixels(x2), ConvertToPixels(y2));
+			});
+		}
+
+		/// <summary>Non-Windows sibling of <see cref="DrawLine(Pen, float, float, float, float)"/> - takes primitives instead of a pre-built Pen, since Pen construction itself needs GDI+.</summary>
+		internal void DrawLine(Color color, float sizeInPixels, RPLFormat.BorderStyles style, float x1, float y1, float x2, float y2)
+		{
+			ExecuteSync(delegate
+			{
+				using SKPaint paint = CreateSkiaStrokePaint(color, sizeInPixels, style);
+				m_skCanvas.DrawLine(ConvertToPixels(x1), ConvertToPixels(y1), ConvertToPixels(x2), ConvertToPixels(y2), paint);
 			});
 		}
 
@@ -183,12 +271,51 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			});
 		}
 
+		/// <summary>
+		/// Non-Windows sibling of <see cref="DrawImage(System.Drawing.Image, RectangleF, RectangleF, bool)"/> -
+		/// takes an already-decoded BGRA32 pixel buffer (PortableImage.GetBgra32Pixels) instead of a
+		/// System.Drawing.Image, since Image construction itself needs GDI+. Does not implement true
+		/// tiling (GDI+'s ImageAttributes.SetWrapMode(WrapMode.Tile)) - a documented, honest gap for
+		/// the rarely-exercised background-repeat case, same "approximate but disclosed" precedent as
+		/// SkiaHatchBrush/SkiaPathGradientBrush (docs/decisions.md).
+		/// </summary>
+		internal void DrawImage(byte[] bgra32Pixels, int sourceWidth, int sourceHeight, RectangleF destination, RectangleF source)
+		{
+			ExecuteSync(delegate
+			{
+				SKImageInfo info = new SKImageInfo(sourceWidth, sourceHeight, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+				using SKBitmap sourceBitmap = new SKBitmap(info);
+				GCHandle handle = GCHandle.Alloc(bgra32Pixels, GCHandleType.Pinned);
+				try
+				{
+					sourceBitmap.InstallPixels(info, handle.AddrOfPinnedObject(), info.RowBytes);
+					SKRect destRect = SKRect.Create(ConvertToPixels(destination.X), ConvertToPixels(destination.Y), ConvertToPixels(destination.Width), ConvertToPixels(destination.Height));
+					SKRect srcRect = SKRect.Create(source.X, source.Y, source.Width, source.Height);
+					m_skCanvas.DrawBitmap(sourceBitmap, srcRect, destRect);
+				}
+				finally
+				{
+					handle.Free();
+				}
+			});
+		}
+
 		internal void DrawRectangle(Pen pen, RectangleF rectangle)
 		{
 			ReleaseCachedHdc(releaseHdc: true);
 			ExecuteSync(delegate
 			{
 				m_graphicsBase.DrawRectangle(pen, ConvertToPixels(rectangle.X), ConvertToPixels(rectangle.Y), ConvertToPixels(rectangle.Width), ConvertToPixels(rectangle.Height));
+			});
+		}
+
+		/// <summary>Non-Windows sibling of <see cref="DrawRectangle(Pen, RectangleF)"/> - see <see cref="DrawLine(Color, float, RPLFormat.BorderStyles, float, float, float, float)"/>.</summary>
+		internal void DrawRectangle(Color color, float sizeInPixels, RPLFormat.BorderStyles style, RectangleF rectangle)
+		{
+			ExecuteSync(delegate
+			{
+				using SKPaint paint = CreateSkiaStrokePaint(color, sizeInPixels, style);
+				m_skCanvas.DrawRect(SKRect.Create(ConvertToPixels(rectangle.X), ConvertToPixels(rectangle.Y), ConvertToPixels(rectangle.Width), ConvertToPixels(rectangle.Height)), paint);
 			});
 		}
 
@@ -208,6 +335,23 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			});
 		}
 
+		/// <summary>Non-Windows sibling of <see cref="FillPolygon(Brush, PointF[])"/> - takes a Color instead of a pre-built Brush.</summary>
+		internal void FillPolygon(Color color, PointF[] polygon)
+		{
+			ExecuteSync(delegate
+			{
+				using SKPaint paint = new SKPaint { Style = SKPaintStyle.Fill, Color = ToSKColor(color) };
+				using SKPath path = new SKPath { FillType = SKPathFillType.EvenOdd };
+				path.MoveTo(ConvertToPixels(polygon[0].X), ConvertToPixels(polygon[0].Y));
+				for (int i = 1; i < polygon.Length; i++)
+				{
+					path.LineTo(ConvertToPixels(polygon[i].X), ConvertToPixels(polygon[i].Y));
+				}
+				path.Close();
+				m_skCanvas.DrawPath(path, paint);
+			});
+		}
+
 		internal void FillRectangle(Brush brush, RectangleF rectangle)
 		{
 			ReleaseCachedHdc(releaseHdc: true);
@@ -217,20 +361,39 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			});
 		}
 
+		/// <summary>Non-Windows sibling of <see cref="FillRectangle(Brush, RectangleF)"/> - takes a Color instead of a pre-built Brush.</summary>
+		internal void FillRectangle(Color color, RectangleF rectangle)
+		{
+			ExecuteSync(delegate
+			{
+				using SKPaint paint = new SKPaint { Style = SKPaintStyle.Fill, Color = ToSKColor(color) };
+				m_skCanvas.DrawRect(SKRect.Create(ConvertToPixels(rectangle.X), ConvertToPixels(rectangle.Y), ConvertToPixels(rectangle.Width), ConvertToPixels(rectangle.Height)), paint);
+			});
+		}
+
 		internal void ResetClipAndTransform(RectangleF bounds)
 		{
 			ReleaseCachedHdc(releaseHdc: true);
 			ExecuteSync(delegate
 			{
-				m_graphicsBase.ResetClip();
-				m_graphicsBase.ResetTransform();
-				System.Drawing.Rectangle clip = new System.Drawing.Rectangle(ConvertToPixels(bounds.X), ConvertToPixels(bounds.Y), ConvertToPixels(bounds.Width), ConvertToPixels(bounds.Height));
-				m_graphicsBase.SetClip(clip);
-				using (Matrix matrix = new Matrix())
+				if (OperatingSystem.IsWindows())
 				{
-					matrix.Translate(clip.Left, clip.Top);
-					m_graphicsBase.Transform = matrix;
+					m_graphicsBase.ResetClip();
+					m_graphicsBase.ResetTransform();
+					System.Drawing.Rectangle clip = new System.Drawing.Rectangle(ConvertToPixels(bounds.X), ConvertToPixels(bounds.Y), ConvertToPixels(bounds.Width), ConvertToPixels(bounds.Height));
+					m_graphicsBase.SetClip(clip);
+					using (Matrix matrix = new Matrix())
+					{
+						matrix.Translate(clip.Left, clip.Top);
+						m_graphicsBase.Transform = matrix;
+					}
+					return;
 				}
+				m_skCanvas.RestoreToCount(m_skBaseSaveCount);
+				m_skCanvas.Save();
+				SKRect clipRect = SKRect.Create(ConvertToPixels(bounds.X), ConvertToPixels(bounds.Y), ConvertToPixels(bounds.Width), ConvertToPixels(bounds.Height));
+				m_skCanvas.ClipRect(clipRect);
+				m_skCanvas.Translate(clipRect.Left, clipRect.Top);
 			});
 		}
 
@@ -239,7 +402,12 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			ReleaseCachedHdc(releaseHdc: true);
 			ExecuteSync(delegate
 			{
-				m_graphicsBase.RotateTransform(angle);
+				if (OperatingSystem.IsWindows())
+				{
+					m_graphicsBase.RotateTransform(angle);
+					return;
+				}
+				m_skCanvas.RotateDegrees(angle);
 			});
 		}
 
@@ -269,27 +437,53 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		private static ImageCodecInfo GetEncoderInfo(string mimeType)
 		{
-			if (m_encoders == null)
+			ImageCodecInfo[] encoders = GetGdiImageEncoders();
+			if (encoders == null)
 			{
 				return null;
 			}
-			for (int i = 0; i < m_encoders.Length; i++)
+			for (int i = 0; i < encoders.Length; i++)
 			{
-				if (m_encoders[i].MimeType == mimeType)
+				if (encoders[i].MimeType == mimeType)
 				{
-					return m_encoders[i];
+					return encoders[i];
 				}
 			}
 			return null;
 		}
 
+		// Lazily initialized (rather than a static field initializer) so merely loading this
+		// type doesn't call into GDI+ - only Save's Windows-only TIFF branch ever calls this.
 		private static ImageCodecInfo[] GetGdiImageEncoders()
 		{
-			if (m_encoders == null)
+			return m_encoders ??= ImageCodecInfo.GetImageEncoders();
+		}
+
+		/// <summary>Mirrors GdiPen/SkiaPen's DashStyle->SKPathEffect conversion (Rendering/Skia/SkiaPen.cs) for visual consistency with Chart's established dash-pattern ratios.</summary>
+		private static SKPaint CreateSkiaStrokePaint(Color color, float widthPixels, RPLFormat.BorderStyles style)
+		{
+			SKPaint paint = new SKPaint
 			{
-				return ImageCodecInfo.GetImageEncoders();
+				Style = SKPaintStyle.Stroke,
+				Color = ToSKColor(color),
+				StrokeWidth = widthPixels,
+			};
+			float unit = widthPixels <= 0f ? 1f : widthPixels;
+			switch (style)
+			{
+			case RPLFormat.BorderStyles.Dashed:
+				paint.PathEffect = SKPathEffect.CreateDash(new[] { 3f * unit, 1f * unit }, 0f);
+				break;
+			case RPLFormat.BorderStyles.Dotted:
+				paint.PathEffect = SKPathEffect.CreateDash(new[] { 1f * unit, 1f * unit }, 0f);
+				break;
 			}
-			return m_encoders;
+			return paint;
+		}
+
+		private static SKColor ToSKColor(Color color)
+		{
+			return new SKColor(color.R, color.G, color.B, color.A);
 		}
 	}
 }

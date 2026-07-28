@@ -23,6 +23,8 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 	{
 		private readonly Image m_gdiImage;
 
+		private readonly byte[] m_bgra32Pixels;
+
 		private int m_width;
 
 		private int m_height;
@@ -43,6 +45,15 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal float VerticalResolution => m_verticalResolution;
 
+		/// <summary>
+		/// Tightly-packed top-down BGRA32 pixel buffer, decoded eagerly at construction time
+		/// (non-Windows only) via IImageProvider.DecodeToBgra32 - Graphics.DrawImage's Skia
+		/// overload consumes this directly. Eager rather than lazy so the object doesn't need
+		/// to keep the source stream alive past FromStream returning; images are cached by
+		/// ImageWriter (m_cachedImages) so this only runs once per distinct embedded image.
+		/// </summary>
+		internal byte[] Bgra32Pixels => m_bgra32Pixels;
+
 		private PortableImage(Image gdiImage)
 		{
 			m_gdiImage = gdiImage;
@@ -52,12 +63,13 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			m_verticalResolution = gdiImage.VerticalResolution;
 		}
 
-		private PortableImage(int width, int height, float horizontalResolution, float verticalResolution)
+		private PortableImage(int width, int height, float horizontalResolution, float verticalResolution, byte[] bgra32Pixels)
 		{
 			m_width = width;
 			m_height = height;
 			m_horizontalResolution = horizontalResolution;
 			m_verticalResolution = verticalResolution;
+			m_bgra32Pixels = bgra32Pixels;
 		}
 
 		internal static PortableImage FromStream(Stream stream)
@@ -66,9 +78,25 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				return new PortableImage(Image.FromStream(stream));
 			}
-			ImageMetadata metadata = ImageProviderFactory.CreateProvider().LoadImage(stream)
+			// Buffered rather than passed straight through: IImageProvider.LoadImage
+			// disposes its SKCodec internally, which also closes the stream it was
+			// created from (SkiaSharp behavior) - a second call (DecodeToBgra32) on
+			// the same stream instance would throw ObjectDisposedException.
+			if (stream.CanSeek)
+			{
+				stream.Position = 0;
+			}
+			byte[] sourceBytes;
+			using (MemoryStream buffer = new MemoryStream())
+			{
+				stream.CopyTo(buffer);
+				sourceBytes = buffer.ToArray();
+			}
+			IImageProvider provider = ImageProviderFactory.CreateProvider();
+			ImageMetadata metadata = provider.LoadImage(new MemoryStream(sourceBytes))
 				?? throw new InvalidDataException("Unable to decode image stream.");
-			return new PortableImage(metadata.Width, metadata.Height, metadata.HorizontalResolution, metadata.VerticalResolution);
+			byte[] pixels = provider.DecodeToBgra32(new MemoryStream(sourceBytes), metadata.Width, metadata.Height);
+			return new PortableImage(metadata.Width, metadata.Height, metadata.HorizontalResolution, metadata.VerticalResolution, pixels);
 		}
 
 		internal static PortableImage FromGdiImage(Image gdiImage)

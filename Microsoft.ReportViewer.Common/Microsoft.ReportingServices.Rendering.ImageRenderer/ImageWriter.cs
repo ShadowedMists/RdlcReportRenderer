@@ -181,10 +181,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				if (SharedRenderer.CalculateImageClippedUnscaledBounds(this, position, image.Width, image.Height, start.X, start.Y, m_measureImageDpiX, m_measureImageDpiY, out destination, out source))
 				{
-					if (image.IsGdiBacked)
-					{
-						m_graphics.DrawImage(image.GdiImage, destination, source);
-					}
+					DrawPortableImage(image, destination, source);
 				}
 			}
 			else
@@ -207,10 +204,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					{
 						if (SharedRenderer.CalculateImageClippedUnscaledBounds(this, position, image.Width, image.Height, num5, num6, m_measureImageDpiX, m_measureImageDpiY, out destination, out source))
 						{
-							if (image.IsGdiBacked)
-							{
-								m_graphics.DrawImage(image.GdiImage, destination, source);
-							}
+							DrawPortableImage(image, destination, source);
 						}
 					}
 				}
@@ -224,7 +218,31 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal override void DrawLine(Color color, float size, RPLFormat.BorderStyles style, float x1, float y1, float x2, float y2)
 		{
-			m_graphics.DrawLine(GDIPen.GetPen(m_pens, color, ConvertToPixels(size), style), x1, y1, x2, y2);
+			if (OperatingSystem.IsWindows())
+			{
+				m_graphics.DrawLine(GDIPen.GetPen(m_pens, color, ConvertToPixels(size), style), x1, y1, x2, y2);
+			}
+			else
+			{
+				m_graphics.DrawLine(color, ConvertToPixels(size), style, x1, y1, x2, y2);
+			}
+		}
+
+		/// <summary>
+		/// Draws a decoded PortableImage on whichever backend is active - GDI+ on Windows, Skia
+		/// (via the already-decoded BGRA32 buffer) elsewhere. tile is honored on the GDI+ path
+		/// only - the Skia path doesn't implement tiling yet (see Graphics.DrawImage's byte[] overload).
+		/// </summary>
+		private void DrawPortableImage(PortableImage image, RectangleF destination, RectangleF source, bool tile = true)
+		{
+			if (image.IsGdiBacked)
+			{
+				m_graphics.DrawImage(image.GdiImage, destination, source, tile);
+			}
+			else
+			{
+				m_graphics.DrawImage(image.Bgra32Pixels, image.Width, image.Height, destination, source);
+			}
 		}
 
 		internal void GetDefaultImage(out PortableImage image)
@@ -234,11 +252,14 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			{
 				return;
 			}
-			// The "InvalidImage" placeholder is itself a GDI+ Bitmap resource
-			// (Renderer.ImageResources) - only reachable on Windows for now. On
-			// non-Windows this is unreachable today (the caller's primary decode
-			// already succeeds via IImageProvider or the whole page-surface path
-			// has already failed earlier - see tasks/image-renderer-cross-platform.md).
+			if (!OperatingSystem.IsWindows())
+			{
+				// The "InvalidImage" placeholder is itself a GDI+ Bitmap resource
+				// (Renderer.ImageResources) - not yet ported to a portable equivalent.
+				// Only reached when the primary image decode fails (corrupt/unsupported
+				// image), an edge case - see tasks/image-renderer-cross-platform.md.
+				throw new PlatformNotSupportedException("The default/placeholder image fallback is not yet supported on non-Windows platforms.");
+			}
 			Bitmap bitmap = Renderer.ImageResources["InvalidImage"];
 			Bitmap bitmap2 = null;
 			lock (bitmap)
@@ -266,10 +287,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 			GetScreenDpi(out int dpiX, out int _);
 			float num = 1f * (float)DEFAULT_RESOLUTION_X / (float)dpiX;
 			RectangleF source = new RectangleF(0f, 0f, num * (float)image.Width, num * (float)image.Height);
-			if (image.IsGdiBacked)
-			{
-				m_graphics.DrawImage(image.GdiImage, position, source, tile: false);
-			}
+			DrawPortableImage(image, position, source, tile: false);
 			if (!flag)
 			{
 				image.Dispose();
@@ -293,10 +311,7 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 				? new GDIImageProps(image3.GdiImage)
 				: new GDIImageProps { Width = image3.Width, Height = image3.Height, HorizontalResolution = image3.HorizontalResolution, VerticalResolution = image3.VerticalResolution };
 			SharedRenderer.CalculateImageRectangle(position, gDIImageProps.Width, gDIImageProps.Height, m_measureImageDpiX, m_measureImageDpiY, sizing, out RectangleF imagePositionAndSize, out RectangleF imagePortion);
-			if (image3.IsGdiBacked)
-			{
-				m_graphics.DrawImage(image3.GdiImage, imagePositionAndSize, imagePortion);
-			}
+			DrawPortableImage(image3, imagePositionAndSize, imagePortion);
 			if (!flag)
 			{
 				image3.Dispose();
@@ -306,7 +321,14 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal override void DrawRectangle(Color color, float size, RPLFormat.BorderStyles style, RectangleF rectangle)
 		{
-			m_graphics.DrawRectangle(GDIPen.GetPen(m_pens, color, ConvertToPixels(size), style), rectangle);
+			if (OperatingSystem.IsWindows())
+			{
+				m_graphics.DrawRectangle(GDIPen.GetPen(m_pens, color, ConvertToPixels(size), style), rectangle);
+			}
+			else
+			{
+				m_graphics.DrawRectangle(color, ConvertToPixels(size), style, rectangle);
+			}
 		}
 
 		internal override void DrawTextRun(Win32DCSafeHandle hdc, FontCache fontCache, ReportTextBox textBox, Microsoft.ReportingServices.Rendering.RichText.TextRun run, TypeCode typeCode, RPLFormat.TextAlignments textAlign, RPLFormat.VerticalAlignments verticalAlign, RPLFormat.WritingModes writingMode, RPLFormat.Directions direction, Point pointPosition, System.Drawing.Rectangle layoutRectangle, int lineHeight, int baselineY)
@@ -362,12 +384,26 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal override void FillPolygon(Color color, PointF[] polygon)
 		{
-			m_graphics.FillPolygon(GDIBrush.GetBrush(m_brushes, color), polygon);
+			if (OperatingSystem.IsWindows())
+			{
+				m_graphics.FillPolygon(GDIBrush.GetBrush(m_brushes, color), polygon);
+			}
+			else
+			{
+				m_graphics.FillPolygon(color, polygon);
+			}
 		}
 
 		internal override void FillRectangle(Color color, RectangleF rectangle)
 		{
-			m_graphics.FillRectangle(GDIBrush.GetBrush(m_brushes, color), rectangle);
+			if (OperatingSystem.IsWindows())
+			{
+				m_graphics.FillRectangle(GDIBrush.GetBrush(m_brushes, color), rectangle);
+			}
+			else
+			{
+				m_graphics.FillRectangle(color, rectangle);
+			}
 		}
 
 		private bool GetImage(string imageName, byte[] imageBytes, long imageDataOffset, bool dynamicImage, out PortableImage image)
