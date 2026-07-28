@@ -4,8 +4,6 @@
 
 > **Licensing notice:** Large parts of this codebase originate from decompiling a proprietary Microsoft product. That code is **not** covered by an open-source license, and no license granted by this project can extend one to it. See [License](#license) below before using this project in anything you redistribute. This is not legal advice — if that matters to your use case, consult your own counsel.
 
-For version history and recent fixes, see the [changelog](CHANGELOG.md).
-
 ## Acknowledgements
 
 RdlCore builds directly on the extraordinary work of **[Łukasz Kosson](https://github.com/lkosson)**, whose [reportviewercore](https://github.com/lkosson/reportviewercore) project first decompiled and ported Microsoft's Report Viewer for WinForms to .NET Core, and kept it alive and usable long after Microsoft made clear there would be no official successor. Every renderer in this repository — Excel, PDF, Word, Chart, Gauge, and the RDL processing engine itself — exists because of that original effort. This project is a fork and continuation of that work, focused specifically on removing the remaining Windows-only dependencies so the engine can run natively wherever .NET runs.
