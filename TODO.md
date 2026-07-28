@@ -12,7 +12,7 @@ Infrastructure complete. Excel Phases 4-5 complete. Chart engine GDI+→interfac
 | 🔴 **HIGH** | Excel Phase 5: IImageProvider Abstraction | ✅ COMPLETE | MEDIUM |
 | 🟡 **HIGH** | Chart engine: GDI+ → interface abstraction | ✅ Substantially complete — see `docs/rendering-abstractions.md`, `docs/platform-support.md` | HIGH |
 | 🟡 **HIGH** | Gauge engine: GDI+ → interface abstraction | ✅ COMPLETE (no Skia backend — not started, low priority) | HIGH |
-| 🔴 **HIGH** | Chart/Gauge: model classes' default Font crashed Linux at *construction* time (not just rendering) | 🔄 Construction-time crash fixed (2026-07-28, lazy Font fields); rendering that needs a real default Font (e.g. any chart with a Legend) still crashes — permanent-class GDI+ wall, not a quick fix; see `tasks/chart-default-font-cross-platform.md` | HIGH |
+| 🔴 **HIGH** | Chart/Gauge: model classes' default Font crashed Linux at *construction* time (not just rendering) | 🔄 Construction-time crash fixed (2026-07-28); Legend's auto-fit measurement/drawing path ported to IChartFont and verified (2026-07-28, WSL-confirmed the crash moved past Legend into Axis); Axis's equivalent path is the confirmed next blocker, not yet fixed; see `tasks/chart-default-font-cross-platform.md` | HIGH |
 | 🔵 **LOW** | PDF: cross-platform rendering | ✅ COMPLETE — see `docs/platform-support.md`'s "PDF (RDL engine)" section | LOW |
 | 🔵 **LOW** | WebRequest → HttpClient migration (SYSLIB0014) | ✅ DONE except 2 Map-engine sites, deliberately deferred with the rest of the Map engine; see `tasks/webrequest-httpclient-migration.md` | LOW |
 | 🔵 **LOW** | XmlValidatingReader → XmlReader migration (CS0618) | ✅ DONE (2026-07-27); see `docs/decisions.md`'s `RDLValidatingReader` entry | LOW |
