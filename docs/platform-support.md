@@ -72,7 +72,7 @@ There are **three separate, parallel GDI+-coupled rendering engines** in the sol
 
 **Narrower than full parity, and one gap still open:**
 - SkiaSharp's `SKImage.Encode` only actually supports JPEG/PNG (BMP/GIF return null data) — those two, plus TIFF/EMF, stay Windows-only, throwing a clear exception rather than crashing.
-- **Text still doesn't render on non-Windows for IMAGE format** — `ImageWriter.DrawTextRun` still requires a real Win32 HDC end to end (no `DrawWrappedText`/`DrawWrappedRichText` override yet, unlike `PDFWriter`). A report containing a textbox still won't render its text on Linux.
+- **Text now renders on non-Windows for IMAGE format (2026-07-28)** — `ImageWriter` overrides `DrawWrappedText`/`DrawWrappedRichText`, reusing `PDFWriter`'s `ShapedFontCache`/`ShapedTextWrapper` infrastructure for wrapping and a new `Graphics.DrawText` (SkiaSharp) for drawing. Visually verified under WSL: single-style and multi-run/multi-color/center-aligned rich text both wrap and position correctly.
 - **Chart/Gauge/Map content doesn't reach the page on Linux for IMAGE format** — a separate, newly-discovered gap upstream of `Graphics.cs`/`ImageWriter.cs`: `Renderer.ProcessDynamicImage` never gets real `DynamicImageContent` bytes for these report items on Linux, so `Writer.DrawDynamicImage` is simply never called (no crash, chart silently absent). The same chart renders correctly via PDF and via Windows IMAGE, so this is specific to the IMAGE renderer's dynamic-image population path — not yet investigated.
 
 See `tasks/image-renderer-cross-platform.md`'s Phase 1/2/3 breakdown for what's done and what's left.
