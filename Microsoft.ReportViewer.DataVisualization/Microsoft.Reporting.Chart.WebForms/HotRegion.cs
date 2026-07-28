@@ -1,11 +1,11 @@
+using Microsoft.Reporting.Rendering;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 
 namespace Microsoft.Reporting.Chart.WebForms
 {
 	internal class HotRegion
 	{
-		private GraphicsPath path;
+		private IGraphicsPath path;
 
 		private bool relativeCoordinates = true;
 
@@ -21,7 +21,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private object selectedSubObject;
 
-		internal GraphicsPath Path
+		internal IGraphicsPath Path
 		{
 			get
 			{
