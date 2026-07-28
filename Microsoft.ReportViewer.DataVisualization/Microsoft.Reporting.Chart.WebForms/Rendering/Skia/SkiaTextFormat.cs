@@ -20,6 +20,14 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 
 		public StringTrimming Trimming { get; set; }
 
+		public ITextFormat Clone() => new SkiaTextFormat
+		{
+			Alignment = Alignment,
+			LineAlignment = LineAlignment,
+			FormatFlags = FormatFlags,
+			Trimming = Trimming
+		};
+
 		public void Dispose()
 		{
 		}
