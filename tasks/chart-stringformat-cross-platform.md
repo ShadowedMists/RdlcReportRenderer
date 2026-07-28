@@ -37,7 +37,7 @@ Files with `new StringFormat(` sites found via `grep -rn "new StringFormat(" Mic
 
 - `Microsoft.Reporting.Chart.WebForms\Annotation.cs` (2 sites)
 - `Microsoft.Reporting.Chart.WebForms\Axis.cs` (3 sites — distinct from the already-fixed `autoLabelFont`/`autoLabelFont`-adjacent sites; these are separate `StringFormat` uses)
-- `Microsoft.Reporting.Chart.WebForms\ChartPicture.cs` (1 site)
+- ~~`Microsoft.Reporting.Chart.WebForms\ChartPicture.cs` (1 site)~~ — done 2026-07-28 (`DrawTitle`: `StringFormat`→`ITextFormat`, `TitleFont`→`WrapFont(TitleFont)`, `new SolidBrush(...)`→`CreateSolidBrush(...)`, matching the portable `DrawStringRel` overload)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\BarChart.cs` (2 sites)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\BoxPlotChart.cs` (3 sites)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\ErrorBarChart.cs` (3 sites)

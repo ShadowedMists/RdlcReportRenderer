@@ -984,7 +984,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private void DrawTitle(ChartGraphics graph, bool selectionMode, int x, int y, out object obj)
 		{
 			obj = null;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
 			if (selectionMode)
@@ -998,7 +998,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else
 			{
-				graph.DrawStringRel(Title.Replace("\\n", "\n"), TitleFont, new SolidBrush(TitleFontColor), titlePosition, stringFormat);
+				graph.DrawStringRel(Title.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(TitleFont), graph.ResourceFactory.CreateSolidBrush(TitleFontColor), titlePosition, stringFormat);
 			}
 		}
 
