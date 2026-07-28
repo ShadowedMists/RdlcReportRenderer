@@ -450,7 +450,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			cachedCellSizeFontReducedBy = 0;
 		}
 
-		internal void SetCellPosition(ChartGraphics graph, int columnIndex, int rowIndex, Rectangle position, int fontSizeReducedBy, Font legendAutoFont, Size singleWCharacterSize)
+		internal void SetCellPosition(ChartGraphics graph, int columnIndex, int rowIndex, Rectangle position, int fontSizeReducedBy, IChartFont legendAutoFont, Size singleWCharacterSize)
 		{
 			cellPosition = position;
 			cellPositionWithMargins = position;
@@ -466,7 +466,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		internal Size MeasureCell(ChartGraphics graph, int fontSizeReducedBy, Font legendAutoFont, Size singleWCharacterSize)
+		internal Size MeasureCell(ChartGraphics graph, int fontSizeReducedBy, IChartFont legendAutoFont, Size singleWCharacterSize)
 		{
 			if (cachedCellSizeFontReducedBy == fontSizeReducedBy && !cachedCellSize.IsEmpty)
 			{
@@ -474,7 +474,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			Size result = Size.Empty;
 			bool disposeFont = false;
-			Font cellFont = GetCellFont(legendAutoFont, fontSizeReducedBy, out disposeFont);
+			IChartFont cellFont = GetCellFont(graph, legendAutoFont, fontSizeReducedBy, out disposeFont);
 			if (CellType == LegendCellType.SeriesSymbol)
 			{
 				result.Width = (int)((float)(Math.Abs(SeriesSymbolSize.Width) * singleWCharacterSize.Width) / 100f);
@@ -543,7 +543,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return result;
 		}
 
-		private Font GetCellFont(Font legendAutoFont, int fontSizeReducedBy, out bool disposeFont)
+		/// <summary>
+		/// Resolves the effective font for this cell as an IChartFont - the "resize" branch
+		/// below (a real System.Drawing.Font, already owned by the caller, being shrunk by
+		/// fontSizeReducedBy) uses IDrawingResourceFactory.CreateFont directly, never
+		/// System.Drawing.Font, so this works on Linux (GDI+ cannot construct Font at all
+		/// there - docs/platform-support.md's Phase 0 finding). disposeFont is only true for
+		/// that resize case (a genuinely new, owned font); the plain-wrap case returns a
+		/// thin IChartFont wrapper over a Font this method doesn't own, so it's never
+		/// disposed here, matching the original method's semantics.
+		/// </summary>
+		private IChartFont GetCellFont(ChartGraphics graph, IChartFont legendAutoFont, int fontSizeReducedBy, out bool disposeFont)
 		{
 			Font font = Font;
 			disposeFont = false;
@@ -570,9 +580,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					num2 = 1;
 				}
-				font = new Font(font.FontFamily, num2, font.Style, font.Unit);
+				return graph.ResourceFactory.CreateFont(font.FontFamily.Name, num2, font.Style, font.Unit);
 			}
-			return font;
+			return graph.ResourceFactory.WrapFont(font);
 		}
 
 		private string GetCellToolTip()
@@ -700,7 +710,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return legendItem;
 		}
 
-		internal void Paint(ChartGraphics chartGraph, int fontSizeReducedBy, Font legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
+		internal void Paint(ChartGraphics chartGraph, int fontSizeReducedBy, IChartFont legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
 		{
 			if (cellPosition.Width <= 0 || cellPosition.Height <= 0)
 			{
@@ -737,15 +747,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		private void PaintCellText(ChartGraphics chartGraph, int fontSizeReducedBy, Font legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
+		private void PaintCellText(ChartGraphics chartGraph, int fontSizeReducedBy, IChartFont legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
 		{
 			bool disposeFont = false;
-			Font cellFont = GetCellFont(legendAutoFont, fontSizeReducedBy, out disposeFont);
+			IChartFont cellFont = GetCellFont(chartGraph, legendAutoFont, fontSizeReducedBy, out disposeFont);
 			chartGraph.StartHotRegion(GetCellHref(), GetCellToolTip());
 			chartGraph.StartAnimation();
 			using (IBrush brush = chartGraph.ResourceFactory.CreateSolidBrush(GetCellTextColor()))
 			{
-				IChartFont bridgedCellFont = chartGraph.ResourceFactory.WrapFont(cellFont);
+				IChartFont bridgedCellFont = cellFont;
 				ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 				stringFormat.FormatFlags = StringFormatFlags.LineLimit;
 				stringFormat.Trimming = StringTrimming.EllipsisCharacter;
@@ -787,7 +797,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		private void PaintCellImage(ChartGraphics chartGraph, int fontSizeReducedBy, Font legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
+		private void PaintCellImage(ChartGraphics chartGraph, int fontSizeReducedBy, IChartFont legendAutoFont, Size singleWCharacterSize, PointF animationLocationAdjustment)
 		{
 			if (Image.Length <= 0)
 			{
@@ -869,7 +879,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			chartGraph.InterpolationMode = interpolationMode;
 		}
 
-		private void PaintCellSeriesSymbol(ChartGraphics chartGraph, int fontSizeReducedBy, Font legendAutoFont, SizeF singleWCharacterSize, PointF animationLocationAdjustment)
+		private void PaintCellSeriesSymbol(ChartGraphics chartGraph, int fontSizeReducedBy, IChartFont legendAutoFont, SizeF singleWCharacterSize, PointF animationLocationAdjustment)
 		{
 			Rectangle r = cellPosition;
 			if (SeriesSymbolSize.Width >= 0)
