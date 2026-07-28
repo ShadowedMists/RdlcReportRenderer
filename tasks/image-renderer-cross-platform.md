@@ -25,7 +25,7 @@ Chose "Skia, narrowed scope" (BMP/GIF/JPEG/PNG only; TIFF/EMF stay Windows-only)
 
 ## Remaining gaps after Phases 1-3
 
-- **Chart/Gauge/Map embedding** still doesn't reach the page on Linux for IMAGE format (the `ProcessDynamicImage`/`DynamicImageContent` gap found during Phase 2 - see above). Not yet investigated.
+- **Chart/Gauge/Map embedding** still doesn't reach the page on Linux for IMAGE format (the `ProcessDynamicImage`/`DynamicImageContent` gap found during Phase 2 - see above). Root-caused 2026-07-28: `DynamicImageInstance.GetImage` silently swallows the real exception and falls back to a GDI+-based `CreateExceptionImage` that *also* fails silently on Linux. The underlying exception traces to Chart/Gauge's own default-Font handling - see `tasks/chart-default-font-cross-platform.md`, a construction-time crash there is now fixed, but rendering-time measurement (e.g. any chart with a Legend) still isn't. Not an IMAGE-renderer-specific bug - fixing the linked task should fix this too.
 - **BMP/GIF/TIFF/EMF** stay Windows-only (SkiaSharp encode limitation for the first two, no portable equivalent at all for the last two).
 - **No pixel-baseline tests yet** for the new Phase 2/3 fixtures (`ShapesOnlyReport.rdlc`, `RichTextProbeReport.rdlc`, and the pre-existing `SimpleTextboxReport.rdlc`'s new PNG coverage) - they assert well-formed output only, matching Gauge/Map's existing precedent (no baseline exists), not a pixel-exact regression guard. A future pass could add one, mirroring Chart's `ImageComparer.CompareToBaseline`.
 
