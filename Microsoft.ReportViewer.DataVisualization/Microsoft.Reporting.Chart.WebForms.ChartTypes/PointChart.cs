@@ -305,8 +305,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 			}
 			SizeF relativeSize = graph.GetRelativeSize(new SizeF(markerSize, markerSize));
-			SizeF relativeSize2 = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
-			SizeF relativeSize3 = graph.GetRelativeSize(graph.MeasureString("W", point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+			IChartFont measureFont = graph.ResourceFactory.WrapFont(point.Font);
+			ITextFormat typographicFormat = graph.ResourceFactory.CreateTypographicTextFormat();
+			SizeF relativeSize2 = graph.GetRelativeSize(graph.MeasureString(text, measureFont, new SizeF(1000f, 1000f), typographicFormat));
+			SizeF relativeSize3 = graph.GetRelativeSize(graph.MeasureString("W", measureFont, new SizeF(1000f, 1000f), typographicFormat));
 			SizeF size = new SizeF(relativeSize2.Width, relativeSize2.Height);
 			float num = size.Width / (float)text.Length;
 			size.Height += relativeSize3.Height / 2f;
