@@ -83,7 +83,11 @@ Used a research agent to survey the real 24 painter files before touching code (
 
 **Files surveyed but explicitly deprioritized** (not self-contained, or blocked on more than the `WrapPen`/`WrapBrush` fix): `EmbossBorder.cs` (uses `Region`/clip-region, deferred), `LinearPointer.cs` (depends on `MapGraphics.GetMarkerBrush`/`CreateMarker` returning concrete types), `LegendCell.cs` (depends on `Path.cs`'s `GetColorPen`/`GetFillPen` static helpers), `XamlLayer.cs` (its `Brushes`/`Pens`/`Paths` fields are populated entirely from a different file, `XamlRenderer.cs` — a coordinated cross-file change, bigger scope).
 
-**Recommended next candidates** (per the research agent, not yet done): `Viewport.cs`'s and `Panel.cs`'s `RenderBorder` methods (clean, self-contained `Pen` construction) first, then their `FillRectangle` sites and `MapLabel.cs`'s shadow branch (now unblocked by `WrapBrush`).
+**`Viewport.cs` and `Panel.cs`** (done) — both fully converted: `RenderBorder`'s locally-built `Pen` → `IPen` via `CreatePen`; `Render`/`RenderBackground`'s `GetShadowBrush()`/`CreateBrush(...)` (concrete-`Brush`-returning `MapGraphics` helpers) → wrapped via the new `WrapBrush`; `Panel.cs`'s locally-built `new SolidBrush(...)` → `CreateSolidBrush`. Disposal semantics preserved exactly: `GetShadowBrush()`'s result was never disposed via `using` in the original code (in either file), so the wrapped version isn't disposed either; only `CreateBrush(...)`'s result, which the original wrapped in `using`, keeps that same `using` treatment post-conversion.
+
+**Verified**: `dotnet build --no-incremental` 0 errors. Full Windows suite (137+187) pass with byte-identical baselines.
+
+This brings real Milestone B conversions to 3 of the ~20 painter files (`MapImage.cs`, `Viewport.cs`, `Panel.cs`). **Recommended next candidates**: `ZoomPanel.cs` and `MapLabel.cs`'s shadow branch — both were blocked solely on the now-fixed `WrapBrush` gap, per the original research agent survey.
 3. **Milestone C**: the render-surface abstraction reaching into `MapMapper.GetPngImage`/`GetEmfImage` (the "new for Map" item above).
 4. **Milestone D**: a `SkiaMapRenderingEngine`/`SkiaMapDrawingResourceFactory` pair, plus platform-selection wiring (mirroring `ChartRenderingBackendFactory`).
 5. **Milestone E**: EMF stays permanently Windows-only (guard, not port) — same as Chart's `SaveIntoMetafile` and the IMAGE renderer's `MetafileGraphics`.
