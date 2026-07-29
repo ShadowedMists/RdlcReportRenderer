@@ -12,8 +12,6 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 {
 	internal sealed class SunburstChart : IChartType
 	{
-		private static StringFormat format;
-
 		public string Name => "Sunburst";
 
 		public bool Stacked => false;
@@ -49,15 +47,6 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		public int YValuesPerPoint => 1;
 
 		public bool Doughnut => false;
-
-		static SunburstChart()
-		{
-			format = new StringFormat();
-			format.Alignment = StringAlignment.Center;
-			format.LineAlignment = StringAlignment.Center;
-			format.FormatFlags = (StringFormatFlags.FitBlackBox | StringFormatFlags.NoClip);
-			format.Trimming = StringTrimming.None;
-		}
 
 		public Image GetImage(ChartTypeRegistry registry)
 		{
@@ -321,9 +310,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				if (graph.CanLabelFitInSlice(sliceGraphicsPath, labelRelativeRect, labelRotationAngle))
 				{
 					labelRelativeRect.Width = FindOptimalWidth(width, graph, sliceGraphicsPath, labelRelativeRect, labelRotationAngle);
-					StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic);
-					stringFormat.FormatFlags = format.FormatFlags;
-					graph.MeasureString(text.Replace("\\n", "\n"), textFont, labelRelativeRect.Size, stringFormat, out int charactersFitted, out int _);
+					ITextFormat stringFormat = graph.ResourceFactory.CreateTypographicTextFormat();
+					stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.NoClip;
+					graph.MeasureString(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(textFont), labelRelativeRect.Size, stringFormat, out int charactersFitted, out int _);
 					if (charactersFitted == text.Length)
 					{
 						resizedRect = labelRelativeRect;
@@ -340,7 +329,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				return;
 			}
-			SizeF size = graph.MeasureString(text.Replace("\\n", "\n"), dataPointAttributes.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic));
+			SizeF size = graph.MeasureString(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(dataPointAttributes.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat());
 			SizeF relativeSize = graph.GetRelativeSize(size);
 			float num = relativeSize.Width / (float)text.Length;
 			float num2 = relativeSize.Width + num;
@@ -357,10 +346,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			if (graph.CanLabelFitInSlice(sliceGraphicsPath, resizedRect, num4) || CanFitInResizedArea(text, dataPointAttributes.Font, relativeSize, sliceCenterRelative, graph, sliceGraphicsPath, resizedRect, num4, radiusAbsolute, out resizedRect))
 			{
 				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
-				bridgedFormat.Alignment = format.Alignment;
-				bridgedFormat.LineAlignment = format.LineAlignment;
-				bridgedFormat.FormatFlags = format.FormatFlags;
-				bridgedFormat.Trimming = format.Trimming;
+				bridgedFormat.Alignment = StringAlignment.Center;
+				bridgedFormat.LineAlignment = StringAlignment.Center;
+				bridgedFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.NoClip;
+				bridgedFormat.Trimming = StringTrimming.None;
 				if (dataPoint != null)
 				{
 					IChartFont bridgedFont = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
