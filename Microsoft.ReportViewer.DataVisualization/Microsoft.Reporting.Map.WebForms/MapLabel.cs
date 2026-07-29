@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Numerics;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -365,15 +367,16 @@ namespace Microsoft.Reporting.Map.WebForms
 			string text = Text;
 			_ = Font;
 			text = text.Replace("\\n", "\n");
-			StringFormat stringFormat = GetStringFormat();
+			ITextFormat stringFormat = GetStringFormat(g);
 			TextRenderingHint textRenderingHint = g.TextRenderingHint;
 			float num = DetermineAngle();
 			if (num % 90f != 0f)
 			{
 				g.TextRenderingHint = TextRenderingHint.AntiAlias;
 			}
-			Brush brush = null;
-			brush = ((!drawShadow) ? new SolidBrush(TextColor) : g.GetShadowBrush());
+			IChartFont bridgedFont = g.ResourceFactory.WrapFont(Font);
+			IBrush brush = null;
+			brush = ((!drawShadow) ? g.ResourceFactory.CreateSolidBrush(TextColor) : g.ResourceFactory.WrapBrush(g.GetShadowBrush()));
 			try
 			{
 				if (num != 0f)
@@ -388,12 +391,12 @@ namespace Microsoft.Reporting.Map.WebForms
 						matrix.Translate(TextShadowOffset, TextShadowOffset, MatrixOrder.Append);
 					}
 					g.Transform = matrix;
-					StringFormat stringFormat2 = new StringFormat();
+					ITextFormat stringFormat2 = g.ResourceFactory.CreateTextFormat();
 					stringFormat2.Alignment = StringAlignment.Center;
 					stringFormat2.LineAlignment = StringAlignment.Center;
 					stringFormat2.Trimming = StringTrimming.EllipsisCharacter;
 					layoutRectangle.Inflate(1000f, 1000f);
-					g.DrawString(text, Font, brush, layoutRectangle, stringFormat2);
+					g.DrawString(text, bridgedFont, brush, layoutRectangle, stringFormat2);
 					g.Transform = transform;
 				}
 				else
@@ -403,7 +406,7 @@ namespace Microsoft.Reporting.Map.WebForms
 						absoluteRectangle.X += TextShadowOffset;
 						absoluteRectangle.Y += TextShadowOffset;
 					}
-					g.DrawString(text, Font, brush, absoluteRectangle, stringFormat);
+					g.DrawString(text, bridgedFont, brush, absoluteRectangle, stringFormat);
 				}
 			}
 			finally
@@ -413,7 +416,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			g.Graphics.TextRenderingHint = textRenderingHint;
 		}
 
-		private RectangleF DetermineTextRectangle(MapGraphics g, StringFormat stringFormat)
+		private RectangleF DetermineTextRectangle(MapGraphics g, ITextFormat stringFormat)
 		{
 			RectangleF result = default(RectangleF);
 			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
@@ -447,9 +450,9 @@ namespace Microsoft.Reporting.Map.WebForms
 			return result;
 		}
 
-		private StringFormat GetStringFormat()
+		private ITextFormat GetStringFormat(MapGraphics g)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = g.ResourceFactory.CreateTextFormat();
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			if (TextAlignment == ContentAlignment.TopLeft)
 			{
@@ -499,25 +502,26 @@ namespace Microsoft.Reporting.Map.WebForms
 			return stringFormat;
 		}
 
-		internal GraphicsPath GetPath(MapGraphics g)
+		internal IGraphicsPath GetPath(MapGraphics g)
 		{
 			if (!IsVisible())
 			{
 				return null;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
 			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
 			graphicsPath.AddRectangle(absoluteRectangle);
 			float num = DetermineAngle();
 			if (num != 0f)
 			{
 				PointF point = new PointF(absoluteRectangle.X + absoluteRectangle.Width / 2f, absoluteRectangle.Y + absoluteRectangle.Height / 2f);
-				using (Matrix matrix = new Matrix())
+				using (Matrix nativeMatrix = new Matrix())
 				{
-					matrix.RotateAt(num, point);
-					graphicsPath.Transform(matrix);
-					return graphicsPath;
+					nativeMatrix.RotateAt(num, point);
+					float[] elements = nativeMatrix.Elements;
+					graphicsPath.Transform(new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]));
 				}
+				return graphicsPath;
 			}
 			return graphicsPath;
 		}
@@ -629,7 +633,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		private SizeF DetermineTextSizeAfterRotation(MapGraphics g)
 		{
 			string text = Text.Replace("\\n", "\n");
-			SizeF unrotatedSize = g.MeasureString(text, Font, new SizeF(0f, 0f), GetStringFormat());
+			SizeF unrotatedSize = g.MeasureString(text, g.ResourceFactory.WrapFont(Font), new SizeF(0f, 0f), GetStringFormat(g));
 			unrotatedSize.Width += 1f;
 			unrotatedSize.Height += 1f;
 			return CalculateRotatedSize(unrotatedSize, DetermineAngle());
