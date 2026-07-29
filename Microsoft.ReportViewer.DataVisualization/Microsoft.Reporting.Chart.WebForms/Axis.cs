@@ -1012,7 +1012,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				num2 = 0f;
 			}
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = TitleAlignment;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags |= StringFormatFlags.FitBlackBox;
@@ -1113,12 +1113,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				stringFormat.LineAlignment = StringAlignment.Center;
 			}
 			IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
-			ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
-			bridgedTitleFormat.Alignment = stringFormat.Alignment;
-			bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
-			bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
-			bridgedTitleFormat.Trimming = stringFormat.Trimming;
-			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), titlePosition, bridgedTitleFormat, GetTextOrientation());
+			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), titlePosition, stringFormat, GetTextOrientation());
 			if (base.Common.ProcessModeRegions)
 			{
 				RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(titlePosition);
@@ -1279,11 +1274,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			PointF pointF = PointF.Empty;
 			int num = 0;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = TitleAlignment;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
-			SizeF sizeF = graph.MeasureString(text.Replace("\\n", "\n"), TitleFont, new SizeF(10000f, 10000f), stringFormat, GetTextOrientation());
+			IChartFont measureTitleFont = graph.ResourceFactory.WrapFont(TitleFont);
+			SizeF sizeF = graph.MeasureString(text.Replace("\\n", "\n"), measureTitleFont, new SizeF(10000f, 10000f), stringFormat, GetTextOrientation());
 			SizeF sizeF2 = SizeF.Empty;
 			if (stringFormat.Alignment != StringAlignment.Center)
 			{
@@ -1443,12 +1439,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (!pointF.IsEmpty && !float.IsNaN(pointF.X) && !float.IsNaN(pointF.Y))
 			{
 				IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
-				ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
-				bridgedTitleFormat.Alignment = stringFormat.Alignment;
-				bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
-				bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
-				bridgedTitleFormat.Trimming = stringFormat.Trimming;
-				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, bridgedTitleFormat, num, GetTextOrientation());
+				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, stringFormat, num, GetTextOrientation());
 				if (base.Common.ProcessModeRegions)
 				{
 					using IGraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
@@ -1919,7 +1910,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			titleSize = 0f;
 			if (Title.Length > 0)
 			{
-				SizeF sizeF = chartGraph.MeasureStringRel(Title.Replace("\\n", "\n"), TitleFont, new SizeF(10000f, 10000f), new StringFormat(), GetTextOrientation());
+				SizeF sizeF = chartGraph.MeasureStringRel(Title.Replace("\\n", "\n"), chartGraph.ResourceFactory.WrapFont(TitleFont), new SizeF(10000f, 10000f), chartGraph.ResourceFactory.CreateTextFormat(), GetTextOrientation());
 				float num = 0f;
 				if (AxisPosition == AxisPosition.Bottom || AxisPosition == AxisPosition.Top)
 				{
