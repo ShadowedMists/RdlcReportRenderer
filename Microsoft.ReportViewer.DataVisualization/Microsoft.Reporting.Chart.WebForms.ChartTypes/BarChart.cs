@@ -332,7 +332,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				return;
 			}
 			RectangleF position = RectangleF.Empty;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			string text;
 			if (point.Label.Length == 0)
 			{
@@ -492,12 +492,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				position.Height = sizeF3.Height;
 			}
 			IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
-			ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
-			bridgedFormat.Alignment = stringFormat.Alignment;
-			bridgedFormat.LineAlignment = stringFormat.LineAlignment;
-			bridgedFormat.FormatFlags = stringFormat.FormatFlags;
-			bridgedFormat.Trimming = stringFormat.Trimming;
-			graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, bridgedFormat, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex);
+			graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, stringFormat, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, ser, point, pointIndex);
 			graph.StopAnimation();
 		}
 
@@ -892,7 +887,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				return;
 			}
 			RectangleF rectangleF = RectangleF.Empty;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			string text;
 			if (dataPoint.Label.Length == 0)
 			{
@@ -949,6 +944,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					barValueLabelDrawingStyle = BarValueLabelDrawingStyle.Outside;
 				}
 			}
+			IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
 			bool flag = false;
 			bool flag2 = false;
 			bool flag3 = false;
@@ -1013,7 +1009,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						stringFormat.Alignment = StringAlignment.Far;
 					}
 				}
-				SizeF sizeF = graph.MeasureStringRel(text, dataPoint.Font);
+				SizeF sizeF = graph.MeasureStringRel(text, bridgedFont2);
 				if (!flag2 && !flag3 && sizeF.Width > rectangleF.Width)
 				{
 					flag2 = true;
@@ -1029,7 +1025,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					flag = true;
 				}
 			}
-			SizeF sizeF2 = graph.MeasureStringRel(text, dataPoint.Font, new SizeF(rectangleF.Width, rectangleF.Height), stringFormat);
+			SizeF sizeF2 = graph.MeasureStringRel(text, bridgedFont2, new SizeF(rectangleF.Width, rectangleF.Height), stringFormat);
 			PointF empty = PointF.Empty;
 			if (stringFormat.Alignment == StringAlignment.Near)
 			{
@@ -1081,13 +1077,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				sizeF3.Width += sizeF3.Width / (float)text.Length;
 				backPosition = new RectangleF(empty.X - sizeF3.Width / 2f, empty.Y - sizeF3.Height / 2f, sizeF3.Width, sizeF3.Height);
 			}
-			IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
-			ITextFormat bridgedFormat2 = graph.ResourceFactory.CreateTextFormat();
-			bridgedFormat2.Alignment = stringFormat.Alignment;
-			bridgedFormat2.LineAlignment = stringFormat.LineAlignment;
-			bridgedFormat2.FormatFlags = stringFormat.FormatFlags;
-			bridgedFormat2.Trimming = stringFormat.Trimming;
-			graph.DrawPointLabelStringRel(common, text, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), empty, bridgedFormat2, num2, backPosition, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, ser, dataPoint, pointIndex);
+			graph.DrawPointLabelStringRel(common, text, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), empty, stringFormat, num2, backPosition, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, ser, dataPoint, pointIndex);
 		}
 
 		public void AddSmartLabelMarkerPositions(CommonElements common, ChartArea area, Series series, ArrayList list)
