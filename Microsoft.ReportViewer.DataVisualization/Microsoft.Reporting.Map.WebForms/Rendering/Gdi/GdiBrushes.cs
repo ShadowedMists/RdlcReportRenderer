@@ -15,7 +15,8 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 			NativeBrush = new SolidBrush(color);
 		}
 
-		private GdiSolidBrush(SolidBrush nativeBrush)
+		/// <summary>Wraps an already-constructed native <see cref="SolidBrush"/> rather than creating a new one.</summary>
+		internal GdiSolidBrush(SolidBrush nativeBrush)
 		{
 			NativeBrush = nativeBrush;
 		}
@@ -44,6 +45,12 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 		internal GdiLinearGradientBrush(PointF point1, PointF point2, Color color1, Color color2)
 		{
 			NativeBrush = new LinearGradientBrush(point1, point2, color1, color2);
+		}
+
+		/// <summary>Wraps an already-constructed native <see cref="LinearGradientBrush"/> rather than creating a new one.</summary>
+		internal GdiLinearGradientBrush(LinearGradientBrush existingBrush)
+		{
+			NativeBrush = existingBrush;
 		}
 
 		public Blend Blend
@@ -98,6 +105,12 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 			NativeBrush = new HatchBrush(style, foreColor, backColor);
 		}
 
+		/// <summary>Wraps an already-constructed native <see cref="HatchBrush"/> rather than creating a new one.</summary>
+		internal GdiHatchBrush(HatchBrush existingBrush)
+		{
+			NativeBrush = existingBrush;
+		}
+
 		public HatchStyle HatchStyle => NativeBrush.HatchStyle;
 
 		public Color ForegroundColor => NativeBrush.ForegroundColor;
@@ -115,6 +128,12 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 		internal GdiPathGradientBrush(IGraphicsPath path)
 		{
 			NativeBrush = new PathGradientBrush(((GdiGraphicsPath)path).NativePath);
+		}
+
+		/// <summary>Wraps an already-constructed native <see cref="PathGradientBrush"/> rather than creating a new one.</summary>
+		internal GdiPathGradientBrush(PathGradientBrush existingBrush)
+		{
+			NativeBrush = existingBrush;
 		}
 
 		public Color CenterColor

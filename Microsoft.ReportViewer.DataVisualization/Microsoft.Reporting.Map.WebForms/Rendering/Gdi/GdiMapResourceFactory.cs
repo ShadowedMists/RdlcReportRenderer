@@ -39,6 +39,17 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 
 		public IGraphicsPath WrapPath(GraphicsPath path) => new GdiGraphicsPath(path);
 
+		public IPen WrapPen(Pen pen) => new GdiPen(pen);
+
+		public IBrush WrapBrush(Brush brush) => brush switch
+		{
+			SolidBrush b => new GdiSolidBrush(b),
+			LinearGradientBrush b => new GdiLinearGradientBrush(b),
+			HatchBrush b => new GdiHatchBrush(b),
+			PathGradientBrush b => new GdiPathGradientBrush(b),
+			_ => throw new System.NotSupportedException($"Unrecognized Brush implementation: {brush.GetType()}"),
+		};
+
 		private static Brush NativeBrush(IBrush brush) => brush switch
 		{
 			GdiSolidBrush b => b.NativeBrush,

@@ -46,5 +46,11 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering
 		IGraphicsPath CreatePath(PointF[] points, byte[] types);
 
 		IGraphicsPath WrapPath(GraphicsPath path);
+
+		/// <summary>Wrap an already-constructed native <see cref="Pen"/> as an <see cref="IPen"/> — needed for MapGraphics helper methods (e.g. shadow/marker pens) that build a concrete Pen internally.</summary>
+		IPen WrapPen(Pen pen);
+
+		/// <summary>Wrap an already-constructed native <see cref="Brush"/> (Solid/LinearGradient/Hatch/PathGradient) as an <see cref="IBrush"/> — needed for MapGraphics helper methods (e.g. <c>GetShadowBrush</c>/<c>CreateBrush</c>) that build a concrete Brush internally. Texture brushes are not supported (Milestone A scope).</summary>
+		IBrush WrapBrush(Brush brush);
 	}
 }

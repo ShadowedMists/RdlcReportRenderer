@@ -19,6 +19,12 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 			NativePen = new Pen(brush, width);
 		}
 
+		/// <summary>Wraps an already-constructed native <see cref="Pen"/> rather than creating a new one.</summary>
+		internal GdiPen(Pen existingPen)
+		{
+			NativePen = existingPen;
+		}
+
 		public Color Color
 		{
 			get => NativePen.Color;
