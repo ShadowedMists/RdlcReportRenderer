@@ -87,7 +87,15 @@ Used a research agent to survey the real 24 painter files before touching code (
 
 **Verified**: `dotnet build --no-incremental` 0 errors. Full Windows suite (137+187) pass with byte-identical baselines.
 
-This brings real Milestone B conversions to 3 of the ~20 painter files (`MapImage.cs`, `Viewport.cs`, `Panel.cs`). **Recommended next candidates**: `ZoomPanel.cs` and `MapLabel.cs`'s shadow branch — both were blocked solely on the now-fixed `WrapBrush` gap, per the original research agent survey.
+This brings real Milestone B conversions to 3 of the ~20 painter files (`MapImage.cs`, `Viewport.cs`, `Panel.cs`).
+
+**`ZoomPanel.cs` investigated, deferred (2026-07-28) — not actually a quick win.** The original research agent survey said it was blocked "solely on `WrapBrush`," but that only covered the `FillPath(brush, ...)` call itself — its `graphicsPath` argument is built from `Pointer.GetShadowPath(g)`/`Scale.GetShadowPath()` (`LinearPointer.cs`/`LinearScale.cs`), which in turn call `GetPointerPath(g)` touching `MarkerStyleAttrib`'s shared `.path`/`.brush` fields — exactly the **"large atomic pass trap"** documented in `docs/rendering-abstractions.md` (shared fields consumed together across multiple producers/consumers; converting one piece without the whole cluster in one pass adds unreachable dead code). Deferred to a dedicated future pass, not sliced into this one.
+
+**`MapLabel.cs`** (done instead) — fully converted: `GetStringFormat()` gained a `MapGraphics` parameter (needed for factory access) and now returns `ITextFormat`; `DetermineTextRectangle`'s `stringFormat` parameter retyped to `ITextFormat` (both are private, single-caller helpers — safe to retype directly, confirmed via grep); `DrawText`'s `Font`→`WrapFont`, `brush`→`CreateSolidBrush`/`WrapBrush(GetShadowBrush())` (this file's original code *did* call `brush?.Dispose()` in a `finally` block regardless of branch — unlike `Viewport.cs`/`Panel.cs`, so the wrapped brush is disposed here too, exactly preserving that original behavior), `stringFormat2`→`ITextFormat`; `GetPath(MapGraphics)` retyped to `IGraphicsPath` with the same native-Matrix-then-convert-elements rotation approach as `MapImage.cs`.
+
+**Verified**: `dotnet build --no-incremental` 0 errors. Full Windows suite (137+187) pass with byte-identical baselines.
+
+Milestone B now at 4 of ~20 painter files done (`MapImage.cs`, `Viewport.cs`, `Panel.cs`, `MapLabel.cs`). **Lesson reinforced**: always check whether a file's helper methods cascade into shared-field/"large atomic pass" territory before starting — the research agent's initial per-file complexity estimate isn't always right once you actually trace the call chain (confirmed twice now: once correctly, in `LinearPointer.cs`/`LegendCell.cs`/`XamlLayer.cs` being flagged upfront; once only found by tracing `ZoomPanel.cs` further than the original survey did).
 3. **Milestone C**: the render-surface abstraction reaching into `MapMapper.GetPngImage`/`GetEmfImage` (the "new for Map" item above).
 4. **Milestone D**: a `SkiaMapRenderingEngine`/`SkiaMapDrawingResourceFactory` pair, plus platform-selection wiring (mirroring `ChartRenderingBackendFactory`).
 5. **Milestone E**: EMF stays permanently Windows-only (guard, not port) — same as Chart's `SaveIntoMetafile` and the IMAGE renderer's `MetafileGraphics`.
