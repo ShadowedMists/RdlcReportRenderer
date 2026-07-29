@@ -179,16 +179,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				DataPoint dataPoint = seriesTreeMapNode.DataPoint;
 				using (Font font = GetSeriesLabelFont(dataPoint))
 				{
-					StringFormat stringFormat = new StringFormat();
+					ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 					stringFormat.Alignment = StringAlignment.Near;
 					stringFormat.LineAlignment = StringAlignment.Near;
 					IChartFont bridgedFont = graph.ResourceFactory.CreateFont(font.FontFamily.Name, font.Size, font.Style, font.Unit);
-					ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
-					bridgedFormat.Alignment = stringFormat.Alignment;
-					bridgedFormat.LineAlignment = stringFormat.LineAlignment;
-					bridgedFormat.FormatFlags = stringFormat.FormatFlags;
-					bridgedFormat.Trimming = stringFormat.Trimming;
-					graph.DrawStringRel(series.legendText, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, bridgedFormat, 0);
+					graph.DrawStringRel(series.legendText, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, stringFormat, 0);
 				}
 			}
 		}
@@ -204,17 +199,12 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 		{
 			if (!labelRelativeRect.IsEmpty && CanLabelFit(dataPointRelativeRect, labelRelativeRect) && !labelRelativeRect.IntersectsWith(seriesLabelRelativeRect))
 			{
-				StringFormat stringFormat = new StringFormat();
+				ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 				stringFormat.Alignment = StringAlignment.Near;
 				stringFormat.LineAlignment = StringAlignment.Near;
 				DataPoint dataPoint = dataPointTreeMapNode.DataPoint;
 				IChartFont bridgedFont = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
-				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
-				bridgedFormat.Alignment = stringFormat.Alignment;
-				bridgedFormat.LineAlignment = stringFormat.LineAlignment;
-				bridgedFormat.FormatFlags = stringFormat.FormatFlags;
-				bridgedFormat.Trimming = stringFormat.Trimming;
-				graph.DrawPointLabelStringRel(area.Common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, bridgedFormat, dataPoint.FontAngle, labelRelativeRect, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, index);
+				graph.DrawPointLabelStringRel(area.Common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), labelRelativeRect.Location, stringFormat, dataPoint.FontAngle, labelRelativeRect, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, index);
 			}
 		}
 
@@ -257,7 +247,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				return RectangleF.Empty;
 			}
-			SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(text.Replace("\\n", "\n"), font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+			SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 			float num = relativeSize.Width + relativeSize.Width / (float)text.Length;
 			float num2 = relativeSize.Height + relativeSize.Height / 8f;
 			return new RectangleF(GetLabelXPosition(treeMapNodeRelativeRect, num, labelAlignment), GetLabelYPosition(treeMapNodeRelativeRect, num2, labelAlignment), num, num2);
