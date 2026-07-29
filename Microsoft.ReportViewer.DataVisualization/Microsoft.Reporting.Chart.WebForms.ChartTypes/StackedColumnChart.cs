@@ -413,7 +413,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					SizeF labelSize = SizeF.Empty;
 					if (series.SmartLabels.Enabled)
 					{
-						labelSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+						labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 						bool markerOverlapping = series.SmartLabels.MarkerOverlapping;
 						LabelAlignmentTypes movingDirection = series.SmartLabels.MovingDirection;
 						series.SmartLabels.MarkerOverlapping = true;
@@ -436,7 +436,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						}
 						if (labelSize.IsEmpty)
 						{
-							labelSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+							labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 						}
 						RectangleF empty = RectangleF.Empty;
 						SizeF sizeF = new SizeF(labelSize.Width, labelSize.Height);
@@ -817,7 +817,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				SizeF labelSize = SizeF.Empty;
 				if (series.SmartLabels.Enabled)
 				{
-					labelSize = graph.GetRelativeSize(graph.MeasureString(text, dataPoint.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+					labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(dataPoint.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 					bool markerOverlapping = series.SmartLabels.MarkerOverlapping;
 					LabelAlignmentTypes movingDirection = series.SmartLabels.MovingDirection;
 					series.SmartLabels.MarkerOverlapping = true;
@@ -834,7 +834,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					if (labelSize.IsEmpty)
 					{
-						labelSize = graph.GetRelativeSize(graph.MeasureString(text, dataPoint.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+						labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(dataPoint.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 					}
 					RectangleF empty = RectangleF.Empty;
 					SizeF sizeF = new SizeF(labelSize.Width, labelSize.Height);
