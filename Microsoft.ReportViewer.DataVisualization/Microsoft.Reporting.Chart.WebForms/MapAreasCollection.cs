@@ -1,5 +1,7 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
@@ -193,16 +195,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		internal void Insert(int index, string toolTip, string href, string attr, GraphicsPath path, bool absCoordinates, ChartGraphics graph)
+		internal void Insert(int index, string toolTip, string href, string attr, IGraphicsPath path, bool absCoordinates, ChartGraphics graph)
 		{
-			GraphicsPathIterator graphicsPathIterator = new GraphicsPathIterator(path);
-			if (graphicsPathIterator.SubpathCount > 1)
+			if (HasPathMarkers(path.PathTypes))
 			{
-				GraphicsPath graphicsPath = new GraphicsPath();
-				while (graphicsPathIterator.NextMarker(graphicsPath) > 0)
+				foreach (IGraphicsPath item in SplitAtMarkers(graph, path))
 				{
-					InsertSubpath(index, toolTip, href, attr, graphicsPath, absCoordinates, graph);
-					graphicsPath.Reset();
+					InsertSubpath(index, toolTip, href, attr, item, absCoordinates, graph);
 				}
 			}
 			else
@@ -211,7 +210,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		private void InsertSubpath(int index, string toolTip, string href, string attr, GraphicsPath path, bool absCoordinates, ChartGraphics graph)
+		private void InsertSubpath(int index, string toolTip, string href, string attr, IGraphicsPath path, bool absCoordinates, ChartGraphics graph)
 		{
 			if (path.PointCount <= 0)
 			{
@@ -236,6 +235,49 @@ namespace Microsoft.Reporting.Chart.WebForms
 				array[num++] = pointF.Y;
 			}
 			Insert(index, MapAreaShape.Polygon, toolTip, href, attr, array, null);
+		}
+
+		// Splits a path at its PathMarker-flagged points, mirroring GraphicsPathIterator.NextMarker's
+		// behavior for multi-subpath handling without depending on the GDI+-only GraphicsPathIterator
+		// type. Same pattern as HotRegionsList's/CalloutAnnotation's private helper of the same name.
+		private static bool HasPathMarkers(byte[] types)
+		{
+			const byte PathMarker = 0x20;
+			for (int i = 0; i < types.Length; i++)
+			{
+				if ((types[i] & PathMarker) != 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private static IEnumerable<IGraphicsPath> SplitAtMarkers(ChartGraphics graph, IGraphicsPath path)
+		{
+			const byte PathMarker = 0x20;
+			PointF[] points = path.PathPoints;
+			byte[] types = path.PathTypes;
+			int start = 0;
+			for (int i = 0; i < points.Length; i++)
+			{
+				if ((types[i] & PathMarker) != 0)
+				{
+					yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, i + 1), CopySegment(types, start, i + 1));
+					start = i + 1;
+				}
+			}
+			if (start < points.Length)
+			{
+				yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, points.Length), CopySegment(types, start, points.Length));
+			}
+		}
+
+		private static T[] CopySegment<T>(T[] source, int start, int endExclusive)
+		{
+			T[] array = new T[endExclusive - start];
+			Array.Copy(source, start, array, 0, array.Length);
+			return array;
 		}
 
 		internal void Insert(int index, string toolTip, string href, string attr, RectangleF rect, object tag)

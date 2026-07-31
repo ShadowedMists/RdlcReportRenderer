@@ -342,7 +342,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
 			{
 				int count = common.ChartPicture.MapAreas.Count;
-				common.ChartPicture.MapAreas.Insert(0, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), new GraphicsPath(path.PathPoints, path.PathTypes), !relativePath, graph);
+				common.ChartPicture.MapAreas.Insert(0, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), path, !relativePath, graph);
 				for (int i = 0; i < common.ChartPicture.MapAreas.Count - count; i++)
 				{
 					((IMapAreaAttributes)common.ChartPicture.MapAreas[i]).Tag = ((IMapAreaAttributes)point).Tag;
@@ -379,7 +379,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
 			{
 				int count = common.ChartPicture.MapAreas.Count;
-				common.ChartPicture.MapAreas.Insert(insertIndex, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), new GraphicsPath(path.PathPoints, path.PathTypes), !relativePath, graph);
+				common.ChartPicture.MapAreas.Insert(insertIndex, point.ReplaceKeywords(point.ToolTip), point.ReplaceKeywords(point.Href), point.ReplaceKeywords(point.MapAreaAttributes), path, !relativePath, graph);
 				for (int i = insertIndex; i < common.ChartPicture.MapAreas.Count - count; i++)
 				{
 					((IMapAreaAttributes)common.ChartPicture.MapAreas[i]).Tag = ((IMapAreaAttributes)point).Tag;
@@ -520,7 +520,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (toolTip.Length > 0 || hRef.Length > 0 || mapAreaAttributes.Length > 0))
 			{
-				common.ChartPicture.MapAreas.Insert(0, toolTip, hRef, mapAreaAttributes, new GraphicsPath(path.PathPoints, path.PathTypes), !relativePath, graph);
+				common.ChartPicture.MapAreas.Insert(0, toolTip, hRef, mapAreaAttributes, path, !relativePath, graph);
 			}
 			if ((ProcessChartMode & ProcessMode.HotRegions) == ProcessMode.HotRegions)
 			{
