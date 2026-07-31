@@ -18,6 +18,10 @@ Verify the input payload type and confirm the renderer receives the expected dat
 
 Confirm that the resource payload is exposed as a stream, string, byte array, or another supported object-backed format that the adapter can normalize.
 
+### `Version conflict detected for "Microsoft.CodeAnalysis.Common"`
+
+Add `Microsoft.CodeAnalysis.CSharp.Workspaces`/`Microsoft.CodeAnalysis.Common` yourself first, pinned to a version matching your target framework (3.6.0 for .NET Core 3.1, 3.8.0 for .NET 5, 4.0.1 for .NET 6+).
+
 ### Analyzer warnings remain noisy
 
 Some legacy Windows-specific paths still produce warnings. The current mitigation is to suppress the known warning categories for the legacy paths while new abstractions are introduced.
