@@ -41,6 +41,8 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 
 		public IGraphicsPath WrapPath(GraphicsPath path) => new GdiGraphicsPath(path);
 
+		public GraphicsPath UnwrapPath(IGraphicsPath path) => ((GdiGraphicsPath)path).NativePath;
+
 		public IPen WrapPen(Pen pen) => new GdiPen(pen);
 
 		public IBrush WrapBrush(Brush brush) => brush switch

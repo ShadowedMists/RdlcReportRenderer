@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Xml;
 
@@ -16,13 +18,13 @@ namespace Microsoft.Reporting.Map.WebForms
 	[TypeConverter(typeof(PathConverter))]
 	internal class Path : NamedElement, IContentElement, ILayerElement, IToolTipProvider, ISelectable, ISpatialElement, IImageMapProvider
 	{
-		private GraphicsPath[] cachedPaths;
+		private IGraphicsPath[] cachedPaths;
 
 		private RectangleF[] cachedPathBounds;
 
 		private RectangleF cachedUnionRectangle = RectangleF.Empty;
 
-		private GraphicsPath[] cachedLabelPaths;
+		private IGraphicsPath[] cachedLabelPaths;
 
 		private double[] cachedSegmentLengths;
 
@@ -1129,7 +1131,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			PointF location = mapCore.PixelsToContent(mapCore.Viewport.GetAbsoluteLocation());
 			SizeF sizeInPixels = mapCore.Viewport.GetSizeInPixels();
 			RectangleF rectangleF = new RectangleF(location, sizeInPixels);
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			for (int i = 0; i < paths.Length; i++)
 			{
 				if (rectangleF.Contains(cachedPathBounds[i]) && cachedSegmentLengths[i] > num2)
@@ -1251,21 +1253,21 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			text = text.Replace("\\n", "\n");
 			text = "   " + text;
-			using (Brush brush2 = new SolidBrush(TextColor))
+			using (IBrush brush2 = g.ResourceFactory.CreateSolidBrush(TextColor))
 			{
 				int longestVisibleSegmentIndex = GetLongestVisibleSegmentIndex(g);
 				if (longestVisibleSegmentIndex == -1)
 				{
 					return;
 				}
-				GraphicsPath graphicsPath = cachedLabelPaths[longestVisibleSegmentIndex];
+				IGraphicsPath graphicsPath = cachedLabelPaths[longestVisibleSegmentIndex];
 				if (graphicsPath == null)
 				{
 					PointF[] pathPoints = cachedPaths[longestVisibleSegmentIndex].PathPoints;
 					BendingText bendingText = new BendingText();
 					if (pathPoints.Length > 1)
 					{
-						graphicsPath = bendingText.CreatePath(Font, pathPoints, text, 0, labelOffset);
+						graphicsPath = g.ResourceFactory.WrapPath(bendingText.CreatePath(Font, pathPoints, text, 0, labelOffset));
 						cachedLabelPaths[longestVisibleSegmentIndex] = graphicsPath;
 					}
 				}
@@ -1275,15 +1277,11 @@ namespace Microsoft.Reporting.Map.WebForms
 				}
 				if (TextShadowOffset != 0)
 				{
-					using (Brush brush = g.GetShadowBrush())
+					using (IBrush brush = g.ResourceFactory.WrapBrush(g.GetShadowBrush()))
 					{
-						Matrix matrix = new Matrix();
-						matrix.Translate(TextShadowOffset, TextShadowOffset, MatrixOrder.Append);
-						graphicsPath.Transform(matrix);
+						graphicsPath.Transform(Matrix3x2.CreateTranslation(TextShadowOffset, TextShadowOffset));
 						g.FillPath(brush, graphicsPath);
-						matrix.Reset();
-						matrix.Translate(-TextShadowOffset, -TextShadowOffset, MatrixOrder.Append);
-						graphicsPath.Transform(matrix);
+						graphicsPath.Transform(Matrix3x2.CreateTranslation(-TextShadowOffset, -TextShadowOffset));
 					}
 				}
 				g.FillPath(brush2, graphicsPath);
@@ -1300,7 +1298,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			return clipRect.IntersectsWith(relative);
 		}
 
-		internal GraphicsPath[] GetPaths(MapGraphics g)
+		internal IGraphicsPath[] GetPaths(MapGraphics g)
 		{
 			if (!Visible || PathData.Points == null)
 			{
@@ -1340,7 +1338,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				PointF[] array = ReducePoints(list.ToArray());
 				if (array.Length > 1)
 				{
-					GraphicsPath graphicsPath = new GraphicsPath();
+					IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
 					graphicsPath.AddLines(array);
 					arrayList.Add(graphicsPath);
 					RectangleF bounds = graphicsPath.GetBounds();
@@ -1357,9 +1355,9 @@ namespace Microsoft.Reporting.Map.WebForms
 				}
 			}
 			cachedUnionRectangle.Inflate(WidthInt / 2f, WidthInt / 2f);
-			cachedPaths = (GraphicsPath[])arrayList.ToArray(typeof(GraphicsPath));
+			cachedPaths = (IGraphicsPath[])arrayList.ToArray(typeof(IGraphicsPath));
 			cachedPathBounds = (RectangleF[])arrayList2.ToArray(typeof(RectangleF));
-			cachedLabelPaths = new GraphicsPath[cachedPaths.Length];
+			cachedLabelPaths = new IGraphicsPath[cachedPaths.Length];
 			cachedSegmentLengths = (double[])arrayList3.ToArray(typeof(double));
 			return cachedPaths;
 		}
@@ -1373,7 +1371,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			if (cachedPaths != null)
 			{
-				GraphicsPath[] array = cachedPaths;
+				IGraphicsPath[] array = cachedPaths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -1387,7 +1385,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			cachedUnionRectangle = RectangleF.Empty;
 			if (cachedLabelPaths != null)
 			{
-				GraphicsPath[] array = cachedLabelPaths;
+				IGraphicsPath[] array = cachedLabelPaths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -1516,7 +1514,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return false;
 			}
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			if (paths == null)
 			{
 				return false;
@@ -1539,25 +1537,24 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return;
 			}
-			GraphicsPath[] paths = GetPaths(g);
-			foreach (GraphicsPath graphicsPath in paths)
+			IGraphicsPath[] paths = GetPaths(g);
+			foreach (IGraphicsPath graphicsPath in paths)
 			{
 				if (graphicsPath == null)
 				{
 					continue;
 				}
-				using (Pen pen = GetColorPen(g.GetShadowColor(), WidthInt, BorderWidthInt))
+				using (Pen nativePen = GetColorPen(g.GetShadowColor(), WidthInt, BorderWidthInt))
 				{
-					if (pen != null)
+					if (nativePen != null)
 					{
-						Matrix matrix = new Matrix();
-						int shadowOffsetInt = ShadowOffsetInt;
-						matrix.Translate(shadowOffsetInt, shadowOffsetInt, MatrixOrder.Append);
-						graphicsPath.Transform(matrix);
-						g.DrawPath(pen, graphicsPath);
-						matrix.Reset();
-						matrix.Translate(-shadowOffsetInt, -shadowOffsetInt, MatrixOrder.Append);
-						graphicsPath.Transform(matrix);
+						using (IPen pen = g.ResourceFactory.WrapPen(nativePen))
+						{
+							int shadowOffsetInt = ShadowOffsetInt;
+							graphicsPath.Transform(Matrix3x2.CreateTranslation(shadowOffsetInt, shadowOffsetInt));
+							g.DrawPath(pen, graphicsPath);
+							graphicsPath.Transform(Matrix3x2.CreateTranslation(-shadowOffsetInt, -shadowOffsetInt));
+						}
 					}
 				}
 			}
@@ -1570,29 +1567,29 @@ namespace Microsoft.Reporting.Map.WebForms
 				return;
 			}
 			g.StartHotRegion(this);
-			Brush brush = null;
-			Brush brush2 = null;
-			Pen pen = null;
 			try
 			{
-				GraphicsPath[] paths = GetPaths(g);
-				foreach (GraphicsPath graphicsPath in paths)
+				IGraphicsPath[] paths = GetPaths(g);
+				foreach (IGraphicsPath graphicsPath in paths)
 				{
-					if (graphicsPath != null)
+					if (graphicsPath == null)
 					{
-						pen = GetBorderPen();
-						if (pen != null && BorderWidthInt != 0 && BorderColorInt.A != 0)
+						continue;
+					}
+					using (Pen nativePen = GetBorderPen())
+					{
+						if (nativePen != null && BorderWidthInt != 0 && BorderColorInt.A != 0)
 						{
-							g.DrawPath(pen, graphicsPath);
+							using (IPen pen = g.ResourceFactory.WrapPen(nativePen))
+							{
+								g.DrawPath(pen, graphicsPath);
+							}
 						}
 					}
 				}
 			}
 			finally
 			{
-				brush2?.Dispose();
-				brush?.Dispose();
-				pen?.Dispose();
 				g.EndHotRegion();
 			}
 		}
@@ -1606,27 +1603,35 @@ namespace Microsoft.Reporting.Map.WebForms
 			g.StartHotRegion(this);
 			try
 			{
-				GraphicsPath[] paths = GetPaths(g);
-				GraphicsPath[] array = paths;
-				foreach (GraphicsPath graphicsPath in array)
+				IGraphicsPath[] paths = GetPaths(g);
+				IGraphicsPath[] array = paths;
+				foreach (IGraphicsPath graphicsPath in array)
 				{
 					if (graphicsPath == null)
 					{
 						continue;
 					}
-					using (Pen pen = GetFillPen(g, graphicsPath, cachedUnionRectangle, WidthInt, LineStyle, ApplyLayerTransparency(ColorInt), ApplyLayerTransparency(SecondaryColorInt), GradientTypeInt, HatchStyleInt))
+					using (Pen nativePen = GetFillPen(g, null, cachedUnionRectangle, WidthInt, LineStyle, ApplyLayerTransparency(ColorInt), ApplyLayerTransparency(SecondaryColorInt), GradientTypeInt, HatchStyleInt))
 					{
-						if (pen != null)
+						if (nativePen != null)
 						{
-							g.DrawPath(pen, graphicsPath);
-							if (pen.Brush != null)
+							using (IPen pen = g.ResourceFactory.WrapPen(nativePen))
 							{
-								pen.Brush.Dispose();
+								g.DrawPath(pen, graphicsPath);
+							}
+							if (nativePen.Brush != null)
+							{
+								nativePen.Brush.Dispose();
 							}
 						}
 					}
 				}
-				hotRegions.SetHotRegion(g, this, paths);
+				GraphicsPath[] nativePaths = new GraphicsPath[array.Length];
+				for (int i = 0; i < array.Length; i++)
+				{
+					nativePaths[i] = (array[i] != null) ? g.ResourceFactory.UnwrapPath(array[i]) : null;
+				}
+				hotRegions.SetHotRegion(g, this, nativePaths);
 			}
 			finally
 			{
@@ -1691,7 +1696,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		RectangleF ISelectable.GetSelectionRectangle(MapGraphics g, RectangleF clipRect)
 		{
 			RectangleF rectangleF = RectangleF.Empty;
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			if (paths == null || paths.Length == 0)
 			{
 				return RectangleF.Empty;

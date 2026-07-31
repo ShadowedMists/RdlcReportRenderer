@@ -49,6 +49,9 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering
 
 		IGraphicsPath WrapPath(GraphicsPath path);
 
+		/// <summary>Unwrap an <see cref="IGraphicsPath"/> back to a native <see cref="GraphicsPath"/> — needed for <c>HotRegionList.SetHotRegion</c>, whose interactive hit-testing (<c>GraphicsPath.IsOutlineVisible(float,float,Pen)</c>) has no interface equivalent and is a permanent, concrete-only boundary (same shape as Gauge's own <c>HotRegionList.SetHotRegion</c>/<c>UnwrapPath</c>). Only meaningful while Gdi is the sole Map backend.</summary>
+		GraphicsPath UnwrapPath(IGraphicsPath path);
+
 		/// <summary>Wrap an already-constructed native <see cref="Pen"/> as an <see cref="IPen"/> — needed for MapGraphics helper methods (e.g. shadow/marker pens) that build a concrete Pen internally.</summary>
 		IPen WrapPen(Pen pen);
 
