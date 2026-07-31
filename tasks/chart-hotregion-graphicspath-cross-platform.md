@@ -36,7 +36,7 @@ Files with `AddHotRegion(...)` calls passing a local `GraphicsPath`-typed variab
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\PieChart.cs` (2 sites)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\LineChart.cs` (2 sites)
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\KagiChart.cs`
-- `Microsoft.Reporting.Chart.WebForms.ChartTypes\FunnelChart.cs` (6 sites)
+- ~~`Microsoft.Reporting.Chart.WebForms.ChartTypes\FunnelChart.cs`~~ — done 2026-07-30, found via the `StringFormat`-sweep's HotRegionsList trace (`tasks/chart-stringformat-cross-platform.md`): `DrawFunnelCircularSegment`'s `graphicsPath`/`graphicsPath2`/`graphicsPath3`/`graphicsPath4` locals (feeding `AddHotRegion` at lines ~490/513/537) were constructed **unconditionally** via raw `new GraphicsPath()`, regardless of rendering backend — a genuine Linux crash, not just a hit-testing-reachability concern. Ported to `IGraphicsPath` via `graph.ResourceFactory.CreatePath()`; the sibling `graphicsPath5`/`graphicsPath6` sites (lines ~505/529) were already `IGraphicsPath`-typed pre-fix. `DrawFunnel3DSquareSegment` in the same file was already fully `IGraphicsPath`-typed throughout (not part of this fix). `HotRegionsList.AddHotRegion` itself needed no further changes — confirmed via research agent trace that its own internals (from the 2026-07-28 fix above) are already fully portable, `IsVisible`-based hit-testing throughout, no concrete-type dependency anywhere in `CheckHotRegions`.
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\FastLineChart.cs`
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\ColumnChart.cs`
 - `Microsoft.Reporting.Chart.WebForms.ChartTypes\BarChart.cs`
