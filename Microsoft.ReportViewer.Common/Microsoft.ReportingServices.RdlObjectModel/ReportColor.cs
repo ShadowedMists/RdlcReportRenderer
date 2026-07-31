@@ -14,6 +14,8 @@ namespace Microsoft.ReportingServices.RdlObjectModel
 	{
 		private Color m_color;
 
+		// Deliberately left at its type default (m_color = default(Color), which already equals
+		// Color.Empty) - the idiomatic way to express a zero-valued sentinel, not dead code.
 		private static readonly ReportColor m_empty;
 
 		public static ReportColor Empty => m_empty;

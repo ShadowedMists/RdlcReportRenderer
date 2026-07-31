@@ -80,6 +80,9 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 
 		private short m_mappingMode;
 
+		// m_xExt/m_yExt/m_hMF: legacy WMF-metafile-picture fields in the PICF record layout
+		// (serialized in Serialize() below) - unused since this renderer only ever emits
+		// Escher/blip (JPEG/PNG) pictures, never metafiles. Correctly always 0 here.
 		private short m_xExt;
 
 		private short m_yExt;
@@ -104,6 +107,9 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 
 		private int m_dyaCropBottom;
 
+		// m_info/m_xOrigin/m_yOrigin/m_cProps: part of the PICF record layout (serialized in
+		// Serialize() below), but this renderer never needs non-default values for them -
+		// always written out as 0.
 		private short m_info;
 
 		private int m_brcTop;
