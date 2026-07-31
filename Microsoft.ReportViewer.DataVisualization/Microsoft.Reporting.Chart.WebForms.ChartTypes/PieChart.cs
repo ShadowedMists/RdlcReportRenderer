@@ -1259,9 +1259,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return true;
 		}
 
-		public static bool CreateMapAreaPath(float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, out GraphicsPath path, out float[] coord)
+		public static bool CreateMapAreaPath(float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, out IGraphicsPath path, out float[] coord)
 		{
-			path = new GraphicsPath();
+			path = graph.ResourceFactory.CreatePath();
 			RectangleF empty = RectangleF.Empty;
 			empty.X = rectangle.X + rectangle.Width * (1f - (100f - doughnutRadius) / 100f) / 2f;
 			empty.Y = rectangle.Y + rectangle.Height * (1f - (100f - doughnutRadius) / 100f) / 2f;
@@ -1280,7 +1280,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				empty = graph.GetAbsoluteRectangle(empty);
 				path.AddPie(empty.X, empty.Y, empty.Width, empty.Width, startAngle, sweepAngle);
 			}
-			path.Flatten(new Matrix(), 1f);
+			path.Flatten(1f);
 			PointF[] array = new PointF[path.PointCount];
 			for (int i = 0; i < path.PointCount; i++)
 			{
@@ -1297,7 +1297,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		public static void Map(CommonElements common, DataPoint point, float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, int pointIndex)
 		{
-			if (CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut, doughnutRadius, graph, out GraphicsPath path, out float[] coord))
+			if (CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut, doughnutRadius, graph, out IGraphicsPath path, out float[] coord))
 			{
 				if (point.IsAttributeSet("_COLLECTED_DATA_POINT"))
 				{

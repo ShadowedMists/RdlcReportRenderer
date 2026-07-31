@@ -236,7 +236,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		public static void MapCategoryNode(CommonElements common, CategoryNode node, float startAngle, float sweepAngle, RectangleF rectangle, float doughnutRadius, ChartGraphics graph)
 		{
-			if (PieChart.CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut: true, doughnutRadius, graph, out GraphicsPath path, out float[] _))
+			if (PieChart.CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut: true, doughnutRadius, graph, out IGraphicsPath path, out float[] _))
 			{
 				common.HotRegionsList.AddHotRegion(graph, path, relativePath: false, node.ToolTip, node.Href, "", node, ChartElementType.Nothing);
 			}
