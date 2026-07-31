@@ -1,3 +1,4 @@
+using Microsoft.ReportingServices.Common;
 using Microsoft.ReportingServices.ReportProcessing;
 using System;
 using System.Collections.Generic;
@@ -87,12 +88,35 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 				m_defaultFontFamily = defaultFontFamily;
 			}
 
+			// Family-name-only accessor for callers that just need a fallback font family string
+			// (e.g. to feed into further style-resolution logic) - unlike GetDefaultFont(), this
+			// never constructs a System.Drawing.Font, so it's safe to call even where GDI+ isn't
+			// available at all (Linux under .NET 10 - see docs/platform-support.md).
+			internal string DefaultFontFamily => m_defaultFontFamily;
+
 			public Font GetFontFromCache(int id, string familyName, float size, FontStyle style)
 			{
 				KeyInfo key = new KeyInfo(id, familyName, size, style);
 				if (!m_cachedFonts.ContainsKey(key))
 				{
-					m_cachedFonts.Add(key, CreateSafeFont(familyName, size, style));
+					// System.Drawing.Font construction is impossible on Linux under .NET 10
+					// (GDI+ cannot construct anything at all there, even with libgdiplus
+					// installed - see docs/platform-support.md). Cache a null rather than
+					// letting the exception propagate and abort the whole RDL-to-model
+					// mapping pass; callers that assign this onto a model's Font property
+					// leave it at its own (already-lazy) default, which several Chart-engine
+					// render paths already tolerate (Legend/Axis - see
+					// tasks/chart-default-font-cross-platform.md).
+					Font font;
+					try
+					{
+						font = CreateSafeFont(familyName, size, style);
+					}
+					catch (Exception ex) when (!AsynchronousExceptionDetection.IsStoppingException(ex))
+					{
+						font = null;
+					}
+					m_cachedFonts.Add(key, font);
 				}
 				return m_cachedFonts[key];
 			}
@@ -111,14 +135,22 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 					m_fonts.Add(font);
 					return font;
 				}
-				catch
+				catch (Exception ex)
 				{
 					if (font != null && !m_fonts.Contains(font))
 					{
 						font.Dispose();
 						font = null;
 					}
-					throw;
+					// See the comment in GetFontFromCache: Font construction is impossible on
+					// Linux under .NET 10, no matter what family/size/style is requested. Return
+					// null instead of throwing so a caller assigning this onto a model's Font
+					// property just leaves it unset, rather than aborting the whole mapping pass.
+					if (AsynchronousExceptionDetection.IsStoppingException(ex))
+					{
+						throw;
+					}
+					return null;
 				}
 			}
 
@@ -203,7 +235,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 				}
 				foreach (Font value2 in m_cachedFonts.Values)
 				{
-					value2.Dispose();
+					value2?.Dispose();
 				}
 				m_cachedFonts.Clear();
 				foreach (Font font in m_fonts)
@@ -311,12 +343,12 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		internal Font GetFontFromCache(int id, Style style, StyleInstance styleInstance)
 		{
-			return GetFontFromCache(id, MappingHelper.GetStyleFontFamily(style, styleInstance, GetDefaultFont().Name), MappingHelper.GetStyleFontSize(style, styleInstance), MappingHelper.GetStyleFontStyle(style, styleInstance), MappingHelper.GetStyleFontWeight(style, styleInstance), MappingHelper.GetStyleFontTextDecoration(style, styleInstance));
+			return GetFontFromCache(id, MappingHelper.GetStyleFontFamily(style, styleInstance, m_fontCache.DefaultFontFamily), MappingHelper.GetStyleFontSize(style, styleInstance), MappingHelper.GetStyleFontStyle(style, styleInstance), MappingHelper.GetStyleFontWeight(style, styleInstance), MappingHelper.GetStyleFontTextDecoration(style, styleInstance));
 		}
 
 		protected Font GetFont(Style style, StyleInstance styleInstance)
 		{
-			return m_fontCache.GetFont(MappingHelper.GetStyleFontFamily(style, styleInstance, GetDefaultFont().Name), MappingHelper.GetStyleFontSize(style, styleInstance), MappingHelper.GetStyleFontStyle(MappingHelper.GetStyleFontStyle(style, styleInstance), MappingHelper.GetStyleFontWeight(style, styleInstance), MappingHelper.GetStyleFontTextDecoration(style, styleInstance)));
+			return m_fontCache.GetFont(MappingHelper.GetStyleFontFamily(style, styleInstance, m_fontCache.DefaultFontFamily), MappingHelper.GetStyleFontSize(style, styleInstance), MappingHelper.GetStyleFontStyle(MappingHelper.GetStyleFontStyle(style, styleInstance), MappingHelper.GetStyleFontWeight(style, styleInstance), MappingHelper.GetStyleFontTextDecoration(style, styleInstance)));
 		}
 
 		private static void ValidatePositiveValue(double value)
