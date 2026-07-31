@@ -712,6 +712,19 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 
 		internal static void GetScreenDpi(out int dpiX, out int dpiY)
 		{
+			// This queries the *screen's* DPI via a raw Win32 HDC (GetDeviceCaps) - meaningless
+			// in a headless/server-side rendering context to begin with, and GDI+ cannot
+			// construct any System.Drawing object at all on Linux under .NET 10, even with
+			// libgdiplus installed (docs/platform-support.md's Phase 0 finding). Default to
+			// 96 DPI on non-Windows - the same "no scaling needed" value DEFAULT_RESOLUTION_X/Y
+			// already uses, and exactly what this method returns on a standard-DPI Windows
+			// display anyway.
+			if (!OperatingSystem.IsWindows())
+			{
+				dpiX = 96;
+				dpiY = 96;
+				return;
+			}
 			using (Bitmap image = new Bitmap(2, 2))
 			{
 				using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(image))
