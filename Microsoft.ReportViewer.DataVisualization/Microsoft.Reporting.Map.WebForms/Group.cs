@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -983,7 +984,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			string text = (TextInt.IndexOf("#", StringComparison.Ordinal) == -1) ? TextInt : GetMapCore().ResolveAllKeywords(TextInt, this);
 			text = text.Replace("\\n", "\n");
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = g.ResourceFactory.CreateTextFormat();
 			if (TextAlignment == ContentAlignment.BottomRight)
 			{
 				stringFormat.Alignment = StringAlignment.Near;
@@ -1029,19 +1030,19 @@ namespace Microsoft.Reporting.Map.WebForms
 				stringFormat.Alignment = StringAlignment.Far;
 				stringFormat.LineAlignment = StringAlignment.Far;
 			}
-			SizeF sizeF = g.MeasureString(text, Font, new SizeF(0f, 0f), StringFormat.GenericTypographic);
+			SizeF sizeF = g.MeasureString(text, g.ResourceFactory.WrapFont(Font), new SizeF(0f, 0f), g.ResourceFactory.CreateTypographicTextFormat());
 			PointF centerPointInContentPixels = GetCenterPointInContentPixels(g);
 			new RectangleF(centerPointInContentPixels.X, centerPointInContentPixels.Y - 1f, 0f, 0f).Inflate(sizeF.Width / 2f, sizeF.Height / 2f);
 			if (TextShadowOffset != 0)
 			{
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.ResourceFactory.WrapBrush(g.GetShadowBrush()))
 				{
-					g.DrawString(point: new PointF(centerPointInContentPixels.X + (float)TextShadowOffset, centerPointInContentPixels.Y + (float)TextShadowOffset), s: text, font: Font, brush: brush, format: stringFormat);
+					g.DrawString(point: new PointF(centerPointInContentPixels.X + (float)TextShadowOffset, centerPointInContentPixels.Y + (float)TextShadowOffset), s: text, font: g.ResourceFactory.WrapFont(Font), brush: brush, format: stringFormat);
 				}
 			}
-			using (Brush brush2 = new SolidBrush(TextColor))
+			using (IBrush brush2 = g.ResourceFactory.CreateSolidBrush(TextColor))
 			{
-				g.DrawString(text, Font, brush2, centerPointInContentPixels, stringFormat);
+				g.DrawString(text, g.ResourceFactory.WrapFont(Font), brush2, centerPointInContentPixels, stringFormat);
 			}
 		}
 

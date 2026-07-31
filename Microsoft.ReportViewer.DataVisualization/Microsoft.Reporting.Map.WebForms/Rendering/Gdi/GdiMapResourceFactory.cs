@@ -33,6 +33,8 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering.Gdi
 
 		public ITextFormat CreateTextFormat() => new GdiTextFormat(new StringFormat());
 
+		public ITextFormat CreateTypographicTextFormat() => new GdiTextFormat(new StringFormat(StringFormat.GenericTypographic));
+
 		public IGraphicsPath CreatePath() => new GdiGraphicsPath();
 
 		public IGraphicsPath CreatePath(PointF[] points, byte[] types) => new GdiGraphicsPath(points, types);

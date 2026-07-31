@@ -41,6 +41,8 @@ namespace Microsoft.Reporting.Map.WebForms.Rendering
 
 		ITextFormat CreateTextFormat();
 
+		ITextFormat CreateTypographicTextFormat();
+
 		IGraphicsPath CreatePath();
 
 		IGraphicsPath CreatePath(PointF[] points, byte[] types);
