@@ -63,6 +63,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 				return;
 			}
 			symbol.SetPoints(new Microsoft.Reporting.Map.WebForms.MapPoint[] { point });
+			symbol.Layer = m_mapVectorLayer.Name;
 			ProcessNonSpatialFields(embeddedElement, spatialElement);
 			m_spatialElementManager.AddSpatialElement(spatialElement);
 			OnSpatialElementAdded(new SpatialElementInfo
