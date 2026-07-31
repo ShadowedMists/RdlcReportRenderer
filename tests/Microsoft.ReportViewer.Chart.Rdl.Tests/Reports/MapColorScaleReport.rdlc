@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Map Name="ColorScaleMap">
+            <MapLayers>
+              <MapPointLayer Name="PointLayer1">
+                <MapPoints>
+                  <MapPoint>
+                    <VectorData>POINT (0 0)</VectorData>
+                  </MapPoint>
+                  <MapPoint>
+                    <VectorData>POINT (1 1)</VectorData>
+                  </MapPoint>
+                  <MapPoint>
+                    <VectorData>POINT (2 2)</VectorData>
+                  </MapPoint>
+                </MapPoints>
+                <MapPointRules>
+                  <MapColorRangeRule>
+                    <DataValue>50</DataValue>
+                    <DistributionType>EqualInterval</DistributionType>
+                    <BucketCount>5</BucketCount>
+                    <StartValue>0</StartValue>
+                    <EndValue>100</EndValue>
+                    <ShowInColorScale>true</ShowInColorScale>
+                    <StartColor>Green</StartColor>
+                    <MiddleColor>Yellow</MiddleColor>
+                    <EndColor>Red</EndColor>
+                  </MapColorRangeRule>
+                </MapPointRules>
+              </MapPointLayer>
+            </MapLayers>
+            <MapViewport>
+              <MapSize>
+                <Width>3</Width>
+                <Height>3</Height>
+              </MapSize>
+            </MapViewport>
+            <MapColorScale Name="ColorScale1" />
+            <Top>0in</Top>
+            <Left>0in</Left>
+            <Height>3in</Height>
+            <Width>3in</Width>
+          </Map>
+        </ReportItems>
+        <Height>3in</Height>
+      </Body>
+      <Width>3in</Width>
+      <Page>
+        <PageHeight>3.5in</PageHeight>
+        <PageWidth>3.5in</PageWidth>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+</Report>
