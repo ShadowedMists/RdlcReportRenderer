@@ -13,14 +13,14 @@ using System.Runtime.InteropServices;
 namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 {
 	/// <summary>
-	/// Phase 2 of the IMAGE renderer's Skia-backend migration (tasks/image-renderer-cross-platform.md):
+	/// Phases 2-3 of the IMAGE renderer's Skia-backend migration (tasks/image-renderer-cross-platform.md):
 	/// every method here branches on OperatingSystem.IsWindows() - the Windows branch is the
 	/// original GDI+ code, byte-for-byte unchanged, so Windows behavior/output is identical to
 	/// before this migration. The non-Windows branch draws onto an SKBitmap/SKCanvas instead,
 	/// covering BMP/GIF/JPEG/PNG only (narrowed scope decision, 2026-07-28) - TIFF has no
-	/// SkiaSharp encoder and stays Windows-only, same as EMF. Text drawing is Phase 3, not yet
-	/// done - ImageWriter's DrawTextRun still requires a real Win32 HDC end to end, so a
-	/// text-bearing report still won't render on non-Windows even after this phase.
+	/// SkiaSharp encoder and stays Windows-only, same as EMF. DrawText (Phase 3) is the
+	/// non-Windows text path, reusing PDFWriter's existing ShapedFontCache/SkiaCachedFont
+	/// infrastructure for wrapping/measurement - see ImageWriter.DrawWrappedText/DrawWrappedRichText.
 	/// </summary>
 	internal class Graphics : GraphicsBase
 	{
@@ -408,6 +408,22 @@ namespace Microsoft.ReportingServices.Rendering.ImageRenderer
 					return;
 				}
 				m_skCanvas.RotateDegrees(angle);
+			});
+		}
+
+		/// <summary>
+		/// Non-Windows-only text drawing (Phase 3) - draws a single line at the given baseline
+		/// position using an already-resolved SkiaCachedFont (see ImageWriter.DrawWrappedText/
+		/// DrawWrappedRichText, which own wrapping/measurement via ShapedFontCache). No Windows
+		/// equivalent here: on Windows, ImageWriter.DrawTextRun keeps using the original Win32
+		/// HDC/Uniscribe LineBreaker/TextBox pipeline, unaffected by this method's existence.
+		/// </summary>
+		internal void DrawText(string text, Microsoft.ReportingServices.Rendering.RichText.SkiaCachedFont font, Color color, float xPixels, float baselineYPixels)
+		{
+			ExecuteSync(delegate
+			{
+				using SKPaint paint = new SKPaint { Color = ToSKColor(color), IsAntialias = true };
+				m_skCanvas.DrawText(text, xPixels, baselineYPixels, font.Font, paint);
 			});
 		}
 

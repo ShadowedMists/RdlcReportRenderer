@@ -1,6 +1,7 @@
 using Microsoft.Reporting.Chart.WebForms.Rendering;
 using Microsoft.Reporting.Rendering;
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
@@ -106,20 +107,21 @@ namespace Microsoft.Reporting.Chart.WebForms
 						bool flag2 = false;
 						if (hotRegion.Path != null)
 						{
-							GraphicsPathIterator graphicsPathIterator = new GraphicsPathIterator(hotRegion.Path);
-							if (graphicsPathIterator.SubpathCount > 1)
+							PointF point2 = new PointF(x3, y3);
+							if (HasPathMarkers(hotRegion.Path.PathTypes))
 							{
-								GraphicsPath graphicsPath = new GraphicsPath();
-								while (graphicsPathIterator.NextMarker(graphicsPath) > 0 && !flag2)
+								foreach (IGraphicsPath item in SplitAtMarkers(common.graph, hotRegion.Path))
 								{
-									if (graphicsPath.IsVisible(x3, y3))
+									using (item)
 									{
-										flag2 = true;
+										if (!flag2 && item.IsVisible(point2))
+										{
+											flag2 = true;
+										}
 									}
-									graphicsPath.Reset();
 								}
 							}
-							else if (hotRegion.Path.IsVisible(x3, y3))
+							else if (hotRegion.Path.IsVisible(point2))
 							{
 								flag2 = true;
 							}
@@ -226,6 +228,51 @@ namespace Microsoft.Reporting.Chart.WebForms
 			return result;
 		}
 
+		private static bool HasPathMarkers(byte[] types)
+		{
+			const byte PathMarker = 0x20;
+			for (int i = 0; i < types.Length; i++)
+			{
+				if ((types[i] & PathMarker) != 0)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Splits a path at its PathMarker-flagged points, mirroring <see cref="GraphicsPathIterator.NextMarker(GraphicsPath)"/>'s
+		/// behavior for multi-subpath hit-testing without depending on the GDI+-only <see cref="GraphicsPathIterator"/> type.
+		/// Same pattern as <see cref="CalloutAnnotation"/>'s private helper of the same name.
+		/// </summary>
+		private static IEnumerable<IGraphicsPath> SplitAtMarkers(ChartGraphics graph, IGraphicsPath path)
+		{
+			const byte PathMarker = 0x20;
+			PointF[] points = path.PathPoints;
+			byte[] types = path.PathTypes;
+			int start = 0;
+			for (int i = 0; i < points.Length; i++)
+			{
+				if ((types[i] & PathMarker) != 0)
+				{
+					yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, i + 1), CopySegment(types, start, i + 1));
+					start = i + 1;
+				}
+			}
+			if (start < points.Length)
+			{
+				yield return graph.ResourceFactory.CreatePath(CopySegment(points, start, points.Length), CopySegment(types, start, points.Length));
+			}
+		}
+
+		private static T[] CopySegment<T>(T[] source, int start, int endExclusive)
+		{
+			T[] array = new T[endExclusive - start];
+			System.Array.Copy(source, start, array, 0, array.Length);
+			return array;
+		}
+
 		public void AddHotRegion(ChartGraphics graph, RectangleF rectSize, DataPoint point, string seriesName, int pointIndex)
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
@@ -276,6 +323,22 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				return;
 			}
+			AddHotRegion(graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.
+		/// This is now the primary implementation — <see cref="HotRegion.Path"/> is interface-typed, so no
+		/// concrete <see cref="GraphicsPath"/> reconstruction happens on this path; the concrete-typed
+		/// overload above bridges into this one instead, for callers not yet ported (see
+		/// tasks/chart-hotregion-graphicspath-cross-platform.md).
+		/// </summary>
+		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
+		{
+			if (path == null)
+			{
+				return;
+			}
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
 			{
 				int count = common.ChartPicture.MapAreas.Count;
@@ -291,7 +354,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				hotRegion.SeriesName = seriesName;
 				hotRegion.PointIndex = pointIndex;
 				hotRegion.Type = ChartElementType.DataPoint;
-				hotRegion.Path = path;
+				hotRegion.Path = graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes);
 				hotRegion.BoundingRectangle = path.GetBounds();
 				hotRegion.RelativeCoordinates = relativePath;
 				if (point != null && point.IsAttributeSet("OriginalPointIndex"))
@@ -302,20 +365,16 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 		}
 
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>
-		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Rebuilds a concrete <see cref="GraphicsPath"/>
-		/// from <paramref name="path"/>'s already-interface-exposed <c>PathPoints</c>/<c>PathTypes</c> rather
-		/// than casting to a backend-specific adapter type — <see cref="HotRegion"/>'s storage and
-		/// <see cref="CheckHotRegions"/>'s hit-testing (which uses <see cref="GraphicsPathIterator"/>, itself
-		/// GDI+-only with no interface equivalent) are unchanged and stay concrete.
-		/// </summary>
-		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
+		internal void AddHotRegion(int insertIndex, GraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
 		{
-			AddHotRegion(new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
+			AddHotRegion(insertIndex, graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
 		}
 
-		internal void AddHotRegion(int insertIndex, GraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(int, GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.
+		/// Primary implementation — see remarks on <see cref="AddHotRegion(IGraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.
+		/// </summary>
+		internal void AddHotRegion(int insertIndex, IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
 			{
@@ -332,7 +391,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				hotRegion.SeriesName = seriesName;
 				hotRegion.PointIndex = pointIndex;
 				hotRegion.Type = ChartElementType.DataPoint;
-				hotRegion.Path = path;
+				hotRegion.Path = graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes);
 				hotRegion.BoundingRectangle = path.GetBounds();
 				hotRegion.RelativeCoordinates = relativePath;
 				if (point != null && point.IsAttributeSet("OriginalPointIndex"))
@@ -344,24 +403,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 		}
 
 		/// <summary>
-		/// Interface-typed counterpart of <see cref="AddHotRegion(int, GraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>
-		/// (E1 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
-		/// </summary>
-		internal void AddHotRegion(int insertIndex, IGraphicsPath path, bool relativePath, ChartGraphics graph, DataPoint point, string seriesName, int pointIndex)
-		{
-			AddHotRegion(insertIndex, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, point, seriesName, pointIndex);
-		}
-
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, float[], DataPoint, string, int)"/>
-		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
+		/// Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, float[], DataPoint, string, int)"/>.
+		/// Primary implementation — see remarks on <see cref="AddHotRegion(IGraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.
 		/// </summary>
 		internal void AddHotRegion(ChartGraphics graph, IGraphicsPath path, bool relativePath, float[] coord, DataPoint point, string seriesName, int pointIndex)
-		{
-			AddHotRegion(graph, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, coord, point, seriesName, pointIndex);
-		}
-
-		internal void AddHotRegion(ChartGraphics graph, GraphicsPath path, bool relativePath, float[] coord, DataPoint point, string seriesName, int pointIndex)
 		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (point.ToolTip.Length > 0 || point.Href.Length > 0 || point.MapAreaAttributes.Length > 0))
 			{
@@ -373,7 +418,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				hotRegion.SeriesName = seriesName;
 				hotRegion.PointIndex = pointIndex;
 				hotRegion.Type = ChartElementType.DataPoint;
-				hotRegion.Path = path;
+				hotRegion.Path = graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes);
 				hotRegion.BoundingRectangle = path.GetBounds();
 				hotRegion.RelativeCoordinates = relativePath;
 				if (point != null && point.IsAttributeSet("OriginalPointIndex"))
@@ -382,6 +427,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				regionList.Add(hotRegion);
 			}
+		}
+
+		internal void AddHotRegion(ChartGraphics graph, GraphicsPath path, bool relativePath, float[] coord, DataPoint point, string seriesName, int pointIndex)
+		{
+			AddHotRegion(graph, graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes), relativePath, coord, point, seriesName, pointIndex);
 		}
 
 		internal void AddHotRegion(int insertIndex, ChartGraphics graph, float x, float y, float radius, DataPoint point, string seriesName, int pointIndex)
@@ -401,7 +451,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				HotRegion hotRegion = new HotRegion();
 				PointF absolutePoint = graph.GetAbsolutePoint(new PointF(x, y));
 				SizeF absoluteSize = graph.GetAbsoluteSize(new SizeF(radius, radius));
-				GraphicsPath graphicsPath = new GraphicsPath();
+				IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 				graphicsPath.AddEllipse(absolutePoint.X - absoluteSize.Width, absolutePoint.Y - absoluteSize.Width, 2f * absoluteSize.Width, 2f * absoluteSize.Width);
 				hotRegion.BoundingRectangle = graphicsPath.GetBounds();
 				hotRegion.SeriesName = seriesName;
@@ -462,6 +512,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void AddHotRegion(ChartGraphics graph, GraphicsPath path, bool relativePath, string toolTip, string hRef, string mapAreaAttributes, object selectedObject, ChartElementType type)
 		{
+			AddHotRegion(graph, graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes), relativePath, toolTip, hRef, mapAreaAttributes, selectedObject, type);
+		}
+
+		/// <summary>Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, string, string, string, object, ChartElementType)"/>. Primary implementation — see remarks on <see cref="AddHotRegion(IGraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.</summary>
+		internal void AddHotRegion(ChartGraphics graph, IGraphicsPath path, bool relativePath, string toolTip, string hRef, string mapAreaAttributes, object selectedObject, ChartElementType type)
+		{
 			if ((ProcessChartMode & ProcessMode.ImageMaps) == ProcessMode.ImageMaps && common.ChartPicture.MapEnabled && (toolTip.Length > 0 || hRef.Length > 0 || mapAreaAttributes.Length > 0))
 			{
 				common.ChartPicture.MapAreas.Insert(0, toolTip, hRef, mapAreaAttributes, path, !relativePath, graph);
@@ -470,18 +526,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				HotRegion hotRegion = new HotRegion();
 				hotRegion.Type = type;
-				hotRegion.Path = path;
+				hotRegion.Path = graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes);
 				hotRegion.SelectedObject = selectedObject;
 				hotRegion.BoundingRectangle = path.GetBounds();
 				hotRegion.RelativeCoordinates = relativePath;
 				regionList.Add(hotRegion);
 			}
-		}
-
-		/// <summary>Interface-typed counterpart of <see cref="AddHotRegion(ChartGraphics, GraphicsPath, bool, string, string, string, object, ChartElementType)"/> (Milestone B2 — see remarks on the other interface-typed overload above).</summary>
-		internal void AddHotRegion(ChartGraphics graph, IGraphicsPath path, bool relativePath, string toolTip, string hRef, string mapAreaAttributes, object selectedObject, ChartElementType type)
-		{
-			AddHotRegion(graph, new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, toolTip, hRef, mapAreaAttributes, selectedObject, type);
 		}
 
 		internal void AddHotRegion(RectangleF rectArea, object selectedObject, ChartElementType type, bool relativeCoordinates)
@@ -511,25 +561,25 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void AddHotRegion(GraphicsPath path, bool relativePath, ChartGraphics graph, ChartElementType type, object selectedObject)
 		{
+			AddHotRegion(graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes), relativePath, graph, type, selectedObject);
+		}
+
+		/// <summary>
+		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, ChartElementType, object)"/>.
+		/// Primary implementation — see remarks on <see cref="AddHotRegion(IGraphicsPath, bool, ChartGraphics, DataPoint, string, int)"/>.
+		/// </summary>
+		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, ChartElementType type, object selectedObject)
+		{
 			if ((ProcessChartMode & ProcessMode.HotRegions) == ProcessMode.HotRegions)
 			{
 				HotRegion hotRegion = new HotRegion();
 				hotRegion.SelectedObject = selectedObject;
 				hotRegion.Type = type;
-				hotRegion.Path = path;
+				hotRegion.Path = graph.ResourceFactory.CreatePath(path.PathPoints, path.PathTypes);
 				hotRegion.BoundingRectangle = path.GetBounds();
 				hotRegion.RelativeCoordinates = relativePath;
 				regionList.Add(hotRegion);
 			}
-		}
-
-		/// <summary>
-		/// Interface-typed counterpart of <see cref="AddHotRegion(GraphicsPath, bool, ChartGraphics, ChartElementType, object)"/>
-		/// (Milestone B2 — see chart-gdi-type-abstraction.md). Same <c>PathPoints</c>/<c>PathTypes</c> bridge as the other interface-typed overloads.
-		/// </summary>
-		internal void AddHotRegion(IGraphicsPath path, bool relativePath, ChartGraphics graph, ChartElementType type, object selectedObject)
-		{
-			AddHotRegion(new GraphicsPath(path.PathPoints, path.PathTypes), relativePath, graph, type, selectedObject);
 		}
 
 		internal int FindInsertIndex()

@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Numerics;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -367,15 +369,15 @@ namespace Microsoft.Reporting.Map.WebForms
 			else
 			{
 				string text = "No image.";
-				Font font = new Font("Microsoft Sans Serif", 8.25f);
+				IChartFont font = g.ResourceFactory.CreateFont("Microsoft Sans Serif", 8.25f);
 				SizeF sizeF = g.MeasureString(text, font);
-				StringFormat stringFormat = new StringFormat();
+				ITextFormat stringFormat = g.ResourceFactory.CreateTextFormat();
 				stringFormat.Alignment = StringAlignment.Center;
 				stringFormat.LineAlignment = StringAlignment.Center;
 				RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
 				PointF absolutePoint = g.GetAbsolutePoint(new PointF(50f, 50f));
 				new RectangleF(absolutePoint.X, absolutePoint.Y, 0f, 0f).Inflate(sizeF.Width / 2f, sizeF.Height / 2f);
-				using (Brush brush = new SolidBrush(Color.Gray))
+				using (IBrush brush = g.ResourceFactory.CreateSolidBrush(Color.Gray))
 				{
 					g.DrawString(text, font, brush, absoluteRectangle, stringFormat);
 				}
@@ -383,9 +385,9 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			if (mapDashStyle != 0 && BorderColor != Color.Transparent && BorderWidth != 0)
 			{
-				using (GraphicsPath path = GetPath(g))
+				using (IGraphicsPath path = GetPath(g))
 				{
-					using (Pen pen = GetPen())
+					using (IPen pen = GetPen(g))
 					{
 						AntiAliasing antiAliasing = g.AntiAliasing;
 						if (Angle % 90f == 0f)
@@ -493,29 +495,30 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 		}
 
-		internal GraphicsPath GetPath(MapGraphics g)
+		internal IGraphicsPath GetPath(MapGraphics g)
 		{
 			if (!IsVisible())
 			{
 				return null;
 			}
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
 			RectangleF absoluteRectangle = g.GetAbsoluteRectangle(new RectangleF(0f, 0f, 100f, 100f));
 			graphicsPath.AddRectangle(absoluteRectangle);
 			if (Angle != 0f)
 			{
 				PointF point = new PointF(absoluteRectangle.X + absoluteRectangle.Width / 2f, absoluteRectangle.Y + absoluteRectangle.Height / 2f);
-				using (Matrix matrix = new Matrix())
+				using (Matrix nativeMatrix = new Matrix())
 				{
-					matrix.RotateAt(Angle, point);
-					graphicsPath.Transform(matrix);
-					return graphicsPath;
+					nativeMatrix.RotateAt(Angle, point);
+					float[] elements = nativeMatrix.Elements;
+					graphicsPath.Transform(new Matrix3x2(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]));
 				}
+				return graphicsPath;
 			}
 			return graphicsPath;
 		}
 
-		internal Pen GetPen()
+		internal IPen GetPen(MapGraphics g)
 		{
 			if (BorderWidth <= 0)
 			{
@@ -524,11 +527,10 @@ namespace Microsoft.Reporting.Map.WebForms
 			_ = BorderColor;
 			_ = BorderWidth;
 			_ = BorderStyle;
-			return new Pen(BorderColor, BorderWidth)
-			{
-				DashStyle = MapGraphics.GetPenStyle(BorderStyle),
-				Alignment = PenAlignment.Center
-			};
+			IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth);
+			pen.DashStyle = MapGraphics.GetPenStyle(BorderStyle);
+			pen.Alignment = PenAlignment.Center;
+			return pen;
 		}
 
 		internal override object GetDefaultPropertyValue(string prop, object currentValue)

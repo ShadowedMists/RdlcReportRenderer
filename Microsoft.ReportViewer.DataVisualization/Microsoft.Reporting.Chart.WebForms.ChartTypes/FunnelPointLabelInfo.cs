@@ -16,8 +16,6 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		public FunnelLabelStyle Style = FunnelLabelStyle.OutsideInColumn;
 
-		public StringFormat Format = new StringFormat();
-
 		public FunnelLabelVerticalAlignment VerticalAlignment;
 
 		public FunnelLabelPlacement OutsidePlacement;

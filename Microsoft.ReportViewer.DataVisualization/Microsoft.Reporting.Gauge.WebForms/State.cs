@@ -8,7 +8,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 	[TypeConverter(typeof(StateConverter))]
 	internal class State : Range
 	{
-		private Font font = new Font("Microsoft Sans Serif", 8.25f);
+		private Font font;
 
 		private Color borderColor = Color.Black;
 
@@ -121,7 +121,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Chart's Title.Font remarks (GDI+/Phase 0 finding).
+				return font ??= new Font("Microsoft Sans Serif", 8.25f);
 			}
 			set
 			{

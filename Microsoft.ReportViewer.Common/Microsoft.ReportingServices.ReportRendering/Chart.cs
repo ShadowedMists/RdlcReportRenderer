@@ -19,6 +19,13 @@ namespace Microsoft.ReportingServices.ReportRendering
 
 		private int m_categoryGroupingLevels;
 
+		// Confirmed dead (2026-07-28): never assigned anywhere (RenderChartImageMap below is a
+		// no-op stub that never populates it, and GetImage always returns hasImageMap=false, so
+		// no caller's ".MapAreas" read - the only consumer - is ever reachable). This is the
+		// legacy pre-rendered-snapshot chart image-map path (IsOldSnapshot), not the modern
+		// ChartMapper/OnDemandReportRendering path real RDL charts render through - left as an
+		// intentionally-unimplemented stub rather than a real fix, since "fixing" it would mean
+		// implementing legacy chart image-map rendering this fork doesn't otherwise support.
 		private ImageMapAreasCollection[] m_imageMapAreaCollection;
 
 		private float m_scaleX = -1f;

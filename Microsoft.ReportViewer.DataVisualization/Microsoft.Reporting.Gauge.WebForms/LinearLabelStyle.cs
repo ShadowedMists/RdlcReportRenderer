@@ -13,7 +13,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private Placement placement;
 
-		private Font font = new Font("Microsoft Sans Serif", 14f);
+		private Font font;
 
 		private FontUnit fontUnit;
 
@@ -71,7 +71,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Chart's Title.Font remarks (GDI+/Phase 0 finding).
+				return font ??= new Font("Microsoft Sans Serif", 14f);
 			}
 			set
 			{

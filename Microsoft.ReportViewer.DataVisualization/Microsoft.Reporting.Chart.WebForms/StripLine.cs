@@ -56,7 +56,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private Color titleColor = Color.Black;
 
-		private Font titleFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font titleFont;
 
 		private StringAlignment titleAlignment = StringAlignment.Far;
 
@@ -495,7 +495,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return titleFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return titleFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{

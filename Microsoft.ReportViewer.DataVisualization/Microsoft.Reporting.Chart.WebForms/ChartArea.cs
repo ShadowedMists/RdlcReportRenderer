@@ -1032,7 +1032,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						}
 						if (axis2.LabelsAutoFit && axis2.autoLabelFont != null)
 						{
-							axesAutoFontSize = Math.Min(axesAutoFontSize, axis2.autoLabelFont.Size);
+							axesAutoFontSize = Math.Min(axesAutoFontSize, axis2.autoLabelFont.SizeInPoints);
 						}
 					}
 				}
@@ -1623,7 +1623,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				CircularAxisLabelsStyle circularAxisLabelsStyle = GetCircularAxisLabelsStyle();
 				if (AxisX.LabelStyle.Enabled && AxisX.LabelsAutoFit)
 				{
-					AxisX.autoLabelFont = new Font(AxisX.LabelStyle.Font.FontFamily, 14f, AxisX.LabelStyle.Font.Style, GraphicsUnit.Pixel);
+					AxisX.autoLabelFont = Axis.ResizeAutoLabelFont(chartGraph, AxisX.GetLabelStyleFontResource(chartGraph), 14f, GraphicsUnit.Pixel);
 					float circularLabelsSize = GetCircularLabelsSize(chartGraph, absoluteRectangle2, absoluteRectangle, absoluteSize);
 					circularLabelsSize = Math.Min(circularLabelsSize * 1.1f, absoluteRectangle.Width / 5f);
 					circularLabelsSize += y;
@@ -1664,7 +1664,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			float num = 0f;
 			foreach (CircularChartAreaAxis item in arrayList)
 			{
-				SizeF sizeF2 = chartGraph.MeasureString(item.Title.Replace("\\n", "\n"), (AxisX.autoLabelFont == null) ? AxisX.LabelStyle.font : AxisX.autoLabelFont);
+				SizeF sizeF2 = chartGraph.MeasureString(item.Title.Replace("\\n", "\n"), AxisX.autoLabelFont ?? AxisX.GetLabelStyleFontResource(chartGraph));
 				sizeF2.Width = (float)Math.Ceiling(sizeF2.Width * 1.1f);
 				sizeF2.Height = (float)Math.Ceiling(sizeF2.Height * 1.1f);
 				switch (circularAxisLabelsStyle)

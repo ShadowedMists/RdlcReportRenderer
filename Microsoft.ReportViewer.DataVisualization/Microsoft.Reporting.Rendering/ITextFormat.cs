@@ -17,5 +17,7 @@ namespace Microsoft.Reporting.Rendering
 		StringFormatFlags FormatFlags { get; set; }
 
 		StringTrimming Trimming { get; set; }
+
+		ITextFormat Clone();
 	}
 }

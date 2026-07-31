@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -18,7 +20,7 @@ namespace Microsoft.Reporting.Map.WebForms
 	[TypeConverter(typeof(SymbolConverter))]
 	internal class Symbol : NamedElement, IContentElement, ILayerElement, IToolTipProvider, ISelectable, ISpatialElement, IImageMapProvider
 	{
-		private GraphicsPath[] cachedPaths;
+		private IGraphicsPath[] cachedPaths;
 
 		private RectangleF[] cachedPathBounds;
 
@@ -1555,7 +1557,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return xamlRenderers;
 			}
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			XamlRenderer[] array = new XamlRenderer[paths.Length - 1];
 			for (int i = 0; i < paths.Length - 1; i++)
 			{
@@ -1656,7 +1658,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 		}
 
-		internal GraphicsPath[] GetPaths(MapGraphics g)
+		internal IGraphicsPath[] GetPaths(MapGraphics g)
 		{
 			if (!VisibleInt)
 			{
@@ -1666,7 +1668,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return cachedPaths;
 			}
-			GraphicsPath[] array = new GraphicsPath[SymbolData.Points.Length + 1];
+			IGraphicsPath[] array = new IGraphicsPath[SymbolData.Points.Length + 1];
 			RectangleF[] array2 = new RectangleF[SymbolData.Points.Length + 1];
 			for (int i = 0; i < SymbolData.Points.Length; i++)
 			{
@@ -1686,7 +1688,7 @@ namespace Microsoft.Reporting.Map.WebForms
 						{
 							rectangleF.Inflate((float)image.Width / 2f, (float)image.Height / 2f);
 						}
-						GraphicsPath graphicsPath = new GraphicsPath();
+						IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
 						graphicsPath.AddRectangle(rectangleF);
 						array[i] = graphicsPath;
 						array2[i] = rectangleF;
@@ -1694,14 +1696,16 @@ namespace Microsoft.Reporting.Map.WebForms
 					else if (IsXamlMarker(MarkerStyleInt))
 					{
 						RectangleF rectangleF2 = CalculateXamlMarkerBounds(MarkerStyleInt, centerPointInContentPixels, WidthInt, HeightInt);
-						GraphicsPath graphicsPath2 = new GraphicsPath();
+						IGraphicsPath graphicsPath2 = g.ResourceFactory.CreatePath();
 						graphicsPath2.AddRectangle(rectangleF2);
 						array[i] = graphicsPath2;
 						array2[i] = rectangleF2;
 					}
 					else
 					{
-						array2[i] = (array[i] = g.CreateMarker(centerPointInContentPixels, WidthInt, HeightInt, MarkerStyleInt)).GetBounds();
+						IGraphicsPath graphicsPath4 = g.ResourceFactory.WrapPath(g.CreateMarker(centerPointInContentPixels, WidthInt, HeightInt, MarkerStyleInt));
+						array[i] = graphicsPath4;
+						array2[i] = graphicsPath4.GetBounds();
 					}
 				}
 				else
@@ -1712,7 +1716,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			if (TextInt != string.Empty && IsLabelVisible() && array[0] != null)
 			{
-				GraphicsPath graphicsPath3 = new GraphicsPath();
+				IGraphicsPath graphicsPath3 = g.ResourceFactory.CreatePath();
 				RectangleF labelRect = GetLabelRect(g, array2[0]);
 				graphicsPath3.AddRectangle(labelRect);
 				array[array.Length - 1] = graphicsPath3;
@@ -1737,7 +1741,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			ResetCachedXamlRenderers();
 			if (cachedPaths != null)
 			{
-				GraphicsPath[] array = cachedPaths;
+				IGraphicsPath[] array = cachedPaths;
 				for (int i = 0; i < array.Length; i++)
 				{
 					array[i]?.Dispose();
@@ -1775,10 +1779,10 @@ namespace Microsoft.Reporting.Map.WebForms
 			PointF centerPointInContentPixels = GetCenterPointInContentPixels(g, 0);
 			string text = (TextInt.IndexOf("#", StringComparison.Ordinal) == -1) ? TextInt : GetMapCore().ResolveAllKeywords(TextInt, this);
 			text = text.Replace("\\n", "\n");
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = g.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
-			SizeF sizeF = g.MeasureString(text, FontInt, new SizeF(0f, 0f), stringFormat);
+			SizeF sizeF = g.MeasureString(text, g.ResourceFactory.WrapFont(FontInt), new SizeF(0f, 0f), stringFormat);
 			RectangleF result = new RectangleF(centerPointInContentPixels.X, centerPointInContentPixels.Y, 0f, 0f);
 			result.Inflate(sizeF.Width / 2f, sizeF.Height / 2f);
 			if (TextAlignmentInt == TextAlignment.Left)
@@ -1810,28 +1814,29 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private void RenderText(MapGraphics g)
 		{
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			if (string.IsNullOrEmpty(TextInt) || paths.Length == 0)
 			{
 				return;
 			}
 			string text = (TextInt.IndexOf("#", StringComparison.Ordinal) == -1) ? TextInt : GetMapCore().ResolveAllKeywords(TextInt, this);
 			text = text.Replace("\\n", "\n");
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = g.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
 			RectangleF rectangleF = cachedPathBounds[cachedPathBounds.Length - 1];
 			PointF point = new PointF(rectangleF.Left + rectangleF.Width / 2f, rectangleF.Top + rectangleF.Height / 2f);
+			IChartFont bridgedFont = g.ResourceFactory.WrapFont(FontInt);
 			if (TextShadowOffsetInt != 0)
 			{
-				using (Brush brush = g.GetShadowBrush())
+				using (IBrush brush = g.ResourceFactory.WrapBrush(g.GetShadowBrush()))
 				{
-					g.DrawString(point: new PointF(point.X + (float)TextShadowOffsetInt, point.Y + (float)TextShadowOffsetInt), s: text, font: FontInt, brush: brush, format: stringFormat);
+					g.DrawString(point: new PointF(point.X + (float)TextShadowOffsetInt, point.Y + (float)TextShadowOffsetInt), s: text, font: bridgedFont, brush: brush, format: stringFormat);
 				}
 			}
-			using (Brush brush2 = new SolidBrush(TextColorInt))
+			using (IBrush brush2 = g.ResourceFactory.CreateSolidBrush(TextColorInt))
 			{
-				g.DrawString(text, FontInt, brush2, point, stringFormat);
+				g.DrawString(text, bridgedFont, brush2, point, stringFormat);
 			}
 		}
 
@@ -1844,7 +1849,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			return clipRect.IntersectsWith(relative);
 		}
 
-		internal Brush GetBackBrush(MapGraphics g, GraphicsPath path)
+		internal IBrush GetBackBrush(MapGraphics g, IGraphicsPath path)
 		{
 			RectangleF bounds = path.GetBounds();
 			Color color = ApplyLayerTransparency(ColorInt);
@@ -1853,13 +1858,13 @@ namespace Microsoft.Reporting.Map.WebForms
 			MapHatchStyle mapHatchStyle = HatchStyleInt;
 			if (mapHatchStyle != 0)
 			{
-				return MapGraphics.GetHatchBrush(mapHatchStyle, color, color2);
+				return g.ResourceFactory.WrapBrush(MapGraphics.GetHatchBrush(mapHatchStyle, color, color2));
 			}
 			if (gradientType != 0)
 			{
-				return g.GetGradientBrush(bounds, color, color2, gradientType);
+				return g.ResourceFactory.WrapBrush(g.GetGradientBrush(bounds, color, color2, gradientType));
 			}
-			return new SolidBrush(color);
+			return g.ResourceFactory.CreateSolidBrush(color);
 		}
 
 		internal Pen GetPen()
@@ -1978,7 +1983,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			{
 				return false;
 			}
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			if (paths == null)
 			{
 				return false;
@@ -2018,7 +2023,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			}
 			try
 			{
-				GraphicsPath[] paths = GetPaths(g);
+				IGraphicsPath[] paths = GetPaths(g);
 				if (MarkerStyleInt != 0)
 				{
 					for (int i = 0; i < paths.Length - 1; i++)
@@ -2042,34 +2047,36 @@ namespace Microsoft.Reporting.Map.WebForms
 						}
 						if (ShadowOffsetInt != 0)
 						{
-							using (Matrix matrix = new Matrix())
+							int num = ShadowOffsetInt;
+							paths[i].Transform(Matrix3x2.CreateTranslation(num, num));
+							using (IBrush brush = g.ResourceFactory.WrapBrush(g.GetShadowBrush()))
 							{
-								int num = ShadowOffsetInt;
-								matrix.Translate(num, num, MatrixOrder.Append);
-								paths[i].Transform(matrix);
-								using (Brush brush = g.GetShadowBrush())
-								{
-									g.FillPath(brush, paths[i]);
-								}
-								matrix.Reset();
-								matrix.Translate(-num, -num, MatrixOrder.Append);
-								paths[i].Transform(matrix);
+								g.FillPath(brush, paths[i]);
 							}
+							paths[i].Transform(Matrix3x2.CreateTranslation(-num, -num));
 						}
-						using (Brush brush2 = GetBackBrush(g, paths[i]))
+						using (IBrush brush2 = GetBackBrush(g, paths[i]))
 						{
 							g.FillPath(brush2, paths[i]);
 						}
 						if (BorderWidthInt > 0)
 						{
-							using (GetPen())
+							using (Pen nativePen = GetPen())
 							{
-								g.DrawPath(GetPen(), paths[i]);
+								using (IPen pen = g.ResourceFactory.WrapPen(nativePen))
+								{
+									g.DrawPath(pen, paths[i]);
+								}
 							}
 						}
 					}
 				}
-				hotRegions.SetHotRegion(g, this, paths);
+				GraphicsPath[] nativePaths = new GraphicsPath[paths.Length];
+				for (int k = 0; k < paths.Length; k++)
+				{
+					nativePaths[k] = (paths[k] != null) ? g.ResourceFactory.UnwrapPath(paths[k]) : null;
+				}
+				hotRegions.SetHotRegion(g, this, nativePaths);
 			}
 			finally
 			{
@@ -2122,7 +2129,7 @@ namespace Microsoft.Reporting.Map.WebForms
 		void ISelectable.DrawSelection(MapGraphics g, RectangleF clipRect, bool designTimeSelection)
 		{
 			MapCore mapCore = GetMapCore();
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			if (paths != null && paths.Length != 0)
 			{
 				RectangleF selectionRectangle = ((ISelectable)this).GetSelectionRectangle(g, clipRect);
@@ -2137,7 +2144,7 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		RectangleF ISelectable.GetSelectionRectangle(MapGraphics g, RectangleF clipRect)
 		{
-			GraphicsPath[] paths = GetPaths(g);
+			IGraphicsPath[] paths = GetPaths(g);
 			RectangleF rectangleF = cachedPathBounds[0];
 			for (int i = 0; i < paths.Length; i++)
 			{

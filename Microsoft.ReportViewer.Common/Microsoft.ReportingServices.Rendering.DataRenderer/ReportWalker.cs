@@ -773,11 +773,7 @@ internal class ReportWalker
 
 	private bool m_firstInstancePass = true;
 
-	private bool m_atomHeaderInstanceWalk;
-
 	private bool m_renderOutDataInWalk;
-
-	private bool m_atomRendererWalk;
 
 	private ArrayList m_dataRegionsOrMaps = new ArrayList();
 
@@ -813,9 +809,14 @@ internal class ReportWalker
 		}
 	}
 
-	internal bool AtomHeaderInstanceWalk => m_atomHeaderInstanceWalk;
+	// Confirmed dead (2026-07-28): decompiled from the original shipped assembly with no
+	// backing field ever assigned anywhere, not just in this port - Microsoft's own compiled
+	// binary never wired these up either. Left as permanently-false stubs rather than fully
+	// removing the (still-referenced) property names and their call sites' branches, since
+	// this is exactly the shape an "atom walk" feature would resume from if ever implemented.
+	internal bool AtomHeaderInstanceWalk => false;
 
-	internal bool AtomRendererWalk => m_atomRendererWalk;
+	internal bool AtomRendererWalk => false;
 
 	internal bool RenderOutDataInWalk => m_renderOutDataInWalk;
 
@@ -850,18 +851,18 @@ internal class ReportWalker
 		{
 			m_outputRowHandler.OnRegionBegin();
 		}
-		if (m_instanceWalk || m_atomHeaderInstanceWalk)
+		if (m_instanceWalk || false)
 		{
 			if (m_dynamicMemberHierarchyRoot == null)
 			{
 				m_dynamicMemberHierarchyRoot = AddContainer("DR" + reportItem.ID, null);
 			}
-			else if (!m_atomHeaderInstanceWalk)
+			else if (!false)
 			{
 				m_dynamicMemberHierarchyRoot.ResetDynamicMembers();
 			}
 		}
-		if (!m_firstInstancePass || (!m_instanceWalk && !m_atomHeaderInstanceWalk) || m_reportHandler is XmlTypeHandler)
+		if (!m_firstInstancePass || (!m_instanceWalk && !false) || m_reportHandler is XmlTypeHandler)
 		{
 			m_renderOutDataInWalk = true;
 		}
@@ -903,11 +904,11 @@ internal class ReportWalker
 		{
 			WalkReportItem(reportItem, m_dynamicMemberHierarchyRoot, outputMembers: true);
 		}
-		if (m_instanceWalk || m_atomHeaderInstanceWalk)
+		if (m_instanceWalk || false)
 		{
 			if (!m_firstInstancePass)
 			{
-				if (!m_atomHeaderInstanceWalk)
+				if (!false)
 				{
 					flag = m_dynamicMemberHierarchyRoot.AdvanceDynamicMembers();
 				}
@@ -948,13 +949,13 @@ internal class ReportWalker
 			m_reportHandler.OnReportBegin(report, ref walkChildren);
 		}
 		bool flag = true;
-		if (m_instanceWalk || m_atomHeaderInstanceWalk)
+		if (m_instanceWalk || false)
 		{
 			if (m_dynamicMemberHierarchyRoot == null)
 			{
 				m_dynamicMemberHierarchyRoot = AddContainer("Report" + report.ID, null);
 			}
-			else if (!m_atomHeaderInstanceWalk)
+			else if (!false)
 			{
 				m_dynamicMemberHierarchyRoot.ResetDynamicMembers();
 			}
@@ -964,7 +965,7 @@ internal class ReportWalker
 			m_outputRowHandler.OnRegionBegin();
 		}
 		bool flag2 = true;
-		if (!m_firstInstancePass || (!m_instanceWalk && !m_atomHeaderInstanceWalk) || m_reportHandler is XmlTypeHandler)
+		if (!m_firstInstancePass || (!m_instanceWalk && !false) || m_reportHandler is XmlTypeHandler)
 		{
 			m_renderOutDataInWalk = true;
 		}
@@ -993,11 +994,11 @@ internal class ReportWalker
 					}
 				}
 			}
-			if (m_instanceWalk || m_atomHeaderInstanceWalk)
+			if (m_instanceWalk || false)
 			{
 				if (!m_firstInstancePass)
 				{
-					if (!m_atomHeaderInstanceWalk)
+					if (!false)
 					{
 						flag = m_dynamicMemberHierarchyRoot.AdvanceDynamicMembers();
 					}
@@ -1005,7 +1006,7 @@ internal class ReportWalker
 				else
 				{
 					bool flag3 = false;
-					flag3 = m_dynamicMemberHierarchyRoot.ResetAllMembers(m_atomHeaderInstanceWalk);
+					flag3 = m_dynamicMemberHierarchyRoot.ResetAllMembers(false);
 					m_firstInstancePass = false;
 					m_renderOutDataInWalk = true;
 					flag = true || flag3;
@@ -1033,7 +1034,7 @@ internal class ReportWalker
 			return;
 		}
 		bool walkMap = false;
-		if (m_atomRendererWalk)
+		if (false)
 		{
 			walkMap = ((!m_firstInstancePass) ? (mapState.IsDynamic ? walkMap : (map.DataElementOutput != DataElementOutputTypes.NoOutput)) : (map.DataElementOutput != DataElementOutputTypes.NoOutput));
 		}
@@ -1302,7 +1303,7 @@ internal class ReportWalker
 		if (memberState == null)
 		{
 			memberState = AddDynamicMember(member, parentMemberState);
-			if (m_instanceWalk && !member.IsStatic && !m_atomHeaderInstanceWalk)
+			if (m_instanceWalk && !member.IsStatic && !false)
 			{
 				memberState.ResetDynamicMembers();
 			}

@@ -37,6 +37,8 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Gdi
 			set => NativeFormat.Trimming = value;
 		}
 
+		public ITextFormat Clone() => new GdiTextFormat((StringFormat)NativeFormat.Clone());
+
 		public void Dispose() => NativeFormat.Dispose();
 	}
 }

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -751,16 +752,16 @@ namespace Microsoft.Reporting.Map.WebForms
 				{
 					RectangleF rect = absoluteRectangle;
 					rect.Offset(BackShadowOffset, BackShadowOffset);
-					g.FillRectangle(g.GetShadowBrush(), rect);
+					g.FillRectangle(g.ResourceFactory.WrapBrush(g.GetShadowBrush()), rect);
 				}
 				if (IsMakeTransparentRequired())
 				{
-					using (Brush brush = new SolidBrush(GetColorForMakeTransparent()))
+					using (IBrush brush = g.ResourceFactory.CreateSolidBrush(GetColorForMakeTransparent()))
 					{
 						g.FillRectangle(brush, absoluteRectangle);
 					}
 				}
-				using (Brush brush2 = g.CreateBrush(absoluteRectangle, BackColor, BackHatchStyle, "", MapImageWrapMode.Unscaled, Color.Empty, MapImageAlign.Center, BackGradientType, BackSecondaryColor))
+				using (IBrush brush2 = g.ResourceFactory.WrapBrush(g.CreateBrush(absoluteRectangle, BackColor, BackHatchStyle, "", MapImageWrapMode.Unscaled, Color.Empty, MapImageAlign.Center, BackGradientType, BackSecondaryColor)))
 				{
 					g.FillRectangle(brush2, absoluteRectangle);
 				}
@@ -786,7 +787,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				{
 					return;
 				}
-				using (Pen pen = new Pen(BorderColor, BorderWidth))
+				using (IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth))
 				{
 					pen.DashStyle = MapGraphics.GetPenStyle(BorderStyle);
 					pen.Alignment = PenAlignment.Inset;

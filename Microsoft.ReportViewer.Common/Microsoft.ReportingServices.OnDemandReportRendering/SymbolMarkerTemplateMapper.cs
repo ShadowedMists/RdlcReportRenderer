@@ -15,7 +15,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		protected override void RenderPointTemplate(MapPointTemplate mapPointTemplate, Symbol coreSymbol, bool customTemplate, bool ignoreBackgoundColor, bool ignoreSize, bool ignoreMarker, bool hasScope)
 		{
 			base.RenderPointTemplate(mapPointTemplate, coreSymbol, customTemplate, ignoreBackgoundColor, ignoreSize, ignoreMarker, hasScope);
-			if (ignoreMarker)
+			if (ignoreMarker || mapPointTemplate == null)
 			{
 				return;
 			}

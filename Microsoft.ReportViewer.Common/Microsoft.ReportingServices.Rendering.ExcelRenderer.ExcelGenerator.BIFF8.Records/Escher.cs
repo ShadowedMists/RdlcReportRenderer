@@ -527,6 +527,9 @@ namespace Microsoft.ReportingServices.Rendering.ExcelRenderer.ExcelGenerator.BIF
 
 			private uint m_cRef;
 
+			// m_MSOFO/usage/cbName/unused2/unused3: part of the MSOFBTBSE record layout (serialized
+			// in GetData() below), but this renderer never needs non-default values for them - always
+			// written out as 0.
 			private uint m_MSOFO;
 
 			private byte usage;

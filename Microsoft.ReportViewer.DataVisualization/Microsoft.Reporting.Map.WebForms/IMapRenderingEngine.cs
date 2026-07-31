@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -111,5 +112,58 @@ namespace Microsoft.Reporting.Map.WebForms
 		void BeginSelection(string hRef, string title);
 
 		void EndSelection();
+
+		// --- Milestone A: backend-agnostic overloads (Rendering.* interfaces) ---
+		// Dual-overload strategy (docs/rendering-abstractions.md): these coexist with
+		// the concrete-typed methods above rather than replacing them. Real callers
+		// migrate one at a time in a later milestone (Milestone B).
+
+		void DrawLine(IPen pen, PointF pt1, PointF pt2);
+
+		void DrawLine(IPen pen, float x1, float y1, float x2, float y2);
+
+		void DrawEllipse(IPen pen, float x, float y, float width, float height);
+
+		void DrawCurve(IPen pen, PointF[] points, int offset, int numberOfSegments, float tension);
+
+		void DrawRectangle(IPen pen, int x, int y, int width, int height);
+
+		void DrawPolygon(IPen pen, PointF[] points);
+
+		void DrawString(string s, IChartFont font, IBrush brush, RectangleF layoutRectangle, ITextFormat format);
+
+		void DrawString(string s, IChartFont font, IBrush brush, PointF point, ITextFormat format);
+
+		void DrawRectangle(IPen pen, float x, float y, float width, float height);
+
+		void DrawPath(IPen pen, IGraphicsPath path);
+
+		void DrawPie(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
+
+		void DrawArc(IPen pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
+
+		void DrawEllipse(IPen pen, RectangleF rect);
+
+		void DrawLines(IPen pen, PointF[] points);
+
+		void FillEllipse(IBrush brush, RectangleF rect);
+
+		void FillPath(IBrush brush, IGraphicsPath path);
+
+		void FillPath(IBrush brush, IGraphicsPath path, float angle, bool useBrushOffset, bool circularFill);
+
+		void FillRectangle(IBrush brush, RectangleF rect);
+
+		void FillRectangle(IBrush brush, float x, float y, float width, float height);
+
+		void FillPolygon(IBrush brush, PointF[] points);
+
+		void FillPie(IBrush brush, float x, float y, float width, float height, float startAngle, float sweepAngle);
+
+		SizeF MeasureString(string text, IChartFont font, SizeF layoutArea, ITextFormat stringFormat);
+
+		SizeF MeasureString(string text, IChartFont font);
+
+		void SetClip(IGraphicsPath path, CombineMode combineMode);
 	}
 }

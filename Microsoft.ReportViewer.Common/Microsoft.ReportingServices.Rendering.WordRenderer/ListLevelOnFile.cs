@@ -24,6 +24,8 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 
 		private byte _nfc;
 
+		// Part of the Word 97 LVLF record layout (serialized in Write() below), but this renderer
+		// never needs a non-default value here - always written out as 0.
 		private byte _info;
 
 		private byte[] _rgbxchNums;
@@ -34,6 +36,7 @@ namespace Microsoft.ReportingServices.Rendering.WordRenderer
 
 		private int _dxaIndent;
 
+		// Reserved padding in the Word 97 LVLF record - correctly always 0 by spec.
 		private short _reserved;
 
 		private byte[] _grpprlPapx;

@@ -370,7 +370,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				int angle = point.FontAngle;
 				if (text.Trim().Length != 0)
 				{
-					SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+					SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 					BarValueLabelDrawingStyle barValueLabelDrawingStyle = BarValueLabelDrawingStyle.Center;
 					string text2 = "";
 					if (point.IsAttributeSet("BarLabelStyle"))
@@ -943,7 +943,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			SizeF labelSize = SizeF.Empty;
 			if (ser.SmartLabels.Enabled)
 			{
-				labelSize = graph.GetRelativeSize(graph.MeasureString(text, dataPoint.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+				labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(dataPoint.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 				bool markerOverlapping = ser.SmartLabels.MarkerOverlapping;
 				LabelAlignmentTypes movingDirection = ser.SmartLabels.MovingDirection;
 				ser.SmartLabels.MarkerOverlapping = true;
@@ -960,7 +960,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				if (labelSize.IsEmpty)
 				{
-					labelSize = graph.GetRelativeSize(graph.MeasureString(text, dataPoint.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+					labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(dataPoint.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 				}
 				RectangleF empty2 = RectangleF.Empty;
 				SizeF sizeF2 = new SizeF(labelSize.Width, labelSize.Height);

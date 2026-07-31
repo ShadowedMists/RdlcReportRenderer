@@ -4,17 +4,19 @@
 
 # RdlCore
 
+> **Internal tool. Not distributed externally.** This is a fork maintained for our own use, not a public open-source project. See the licensing notice below and the [License](#license) section before using it.
+
 **A cross-platform .NET rendering engine for RDL/RDLC reports** — the format historically produced by SQL Server Reporting Services and Report Designer. RdlCore lets you load, process, and render `.rdlc`/RDL report definitions to PDF, Excel, Word, HTML, CSV, XML, and image formats on Windows, Linux, and macOS, from ASP.NET Core, console apps, services, or WinForms desktop applications — no SQL Server Reporting Services installation required.
 
 > **Licensing notice:** Large parts of this codebase originate from decompiling a proprietary Microsoft product. That code is **not** covered by an open-source license, and no license granted by this project can extend one to it. See [License](#license) below before using this project in anything you redistribute. This is not legal advice — if that matters to your use case, consult your own counsel.
 
 ## Acknowledgements
 
-RdlCore builds directly on the extraordinary work of **[Łukasz Kosson](https://github.com/lkosson)**, whose [reportviewercore](https://github.com/lkosson/reportviewercore) project first decompiled and ported Microsoft's Report Viewer for WinForms to .NET Core, and kept it alive and usable long after Microsoft made clear there would be no official successor. Every renderer in this repository — Excel, PDF, Word, Chart, Gauge, and the RDL processing engine itself — exists because of that original effort. This project is a fork and continuation of that work, focused specifically on removing the remaining Windows-only dependencies so the engine can run natively wherever .NET runs.
+RdlCore is a fork of **[Łukasz Kosson](https://github.com/lkosson)**'s [reportviewercore](https://github.com/lkosson/reportviewercore), which decompiled and ported Microsoft's Report Viewer for WinForms to .NET Core. Every renderer in this repository — Excel, PDF, Word, Chart, Gauge, and the RDL processing engine itself — originates from that project. This fork's own work is limited to removing the remaining Windows-only dependencies so the engine can run in our Linux containers.
 
-## Mission
+## Why this exists
 
-Reporting Services' report definition format (RDL/RDLC) is mature, well-tooled (Visual Studio's Report Designer), and used in a huge number of existing business applications — but the only engine that could render it was tied to Windows, GDI+, and a Microsoft product line with no cross-platform future. RdlCore's mission is to turn that engine into a real cross-platform reporting **platform**: one that runs in Linux containers, in cloud-native deployments, and on macOS development machines, with the same fidelity it always had on Windows — so that applications built around RDL reports don't have to choose between keeping their reports and modernizing their infrastructure.
+Our reporting stack depended on RDL/RDLC report definitions rendered through Report Viewer, which is tied to Windows and GDI+. When we moved our product to Linux containers to reduce cloud hosting costs, that engine stopped working, and we temporarily dropped PDF export and reduced Excel export to a raw-data dump. This fork exists to restore that functionality on Linux so we can re-enable it internally, reducing OPEX.
 
 This is an incremental effort. Each rendering engine is migrated from direct GDI+/Windows dependencies to a small set of platform-neutral interfaces (an `IImageProvider`, an `IRenderSurface`, and similar seams), with a platform-specific implementation registered behind each — Windows keeps its original GDI+ path unchanged, while Linux and macOS get a SkiaSharp-, ImageSharp-, or ClosedXML-backed equivalent. Where a real architectural wall exists (a handful of Windows-only primitives with no cross-platform equivalent, documented below), we say so plainly rather than pretend it's solved.
 
@@ -60,14 +62,14 @@ A small number of gaps are architectural, not "not ported yet":
 
 **For step-by-step instructions and sample code** covering local reports, report-server reports, and rendering to HTML/Excel/PDF, see [docs/usage-guide.md](docs/usage-guide.md).
 
-Reference either package depending on your application type:
+This is not published to any package feed. Reference the project you need directly (project reference or internal build output), depending on your application type:
 
-| Scenario | Package | Namespace |
+| Scenario | Project | Namespace |
 | --- | --- | --- |
-| ASP.NET Core, console apps, services, headless rendering | `RdlCore.NETCore` | `Microsoft.Reporting.NETCore` |
-| WinForms desktop app with interactive preview | `RdlCore.WinForms` | `Microsoft.Reporting.WinForms` |
+| ASP.NET Core, console apps, services, headless rendering | `Microsoft.ReportViewer.NETCore` | `Microsoft.Reporting.NETCore` |
+| WinForms desktop app with interactive preview | `Microsoft.ReportViewer.WinForms` | `Microsoft.Reporting.WinForms` |
 
-Assembly and namespace names are unchanged from the upstream `ReportViewerCore` project on purpose, so existing applications can move to RdlCore as a drop-in replacement without code changes — only the NuGet package IDs and repository branding move to `RdlCore`.
+Assembly and namespace names are unchanged from the upstream `ReportViewerCore` project on purpose, so our existing applications can move to this fork as a drop-in replacement without code changes.
 
 ### Designing reports
 
@@ -115,12 +117,6 @@ RdlCore's cross-platform work follows a Ports & Adapters pattern: a small interf
 * [docs/troubleshooting.md](docs/troubleshooting.md) / [docs/build-and-test.md](docs/build-and-test.md) / [docs/examples.md](docs/examples.md) — supporting reference docs
 
 `TODO.md` tracks current priorities and links every active task; `tasks/*.md` files hold the working detail for anything still in progress.
-
-## Reporting bugs
-
-Before filing an issue, please confirm the problem is specific to this package — i.e. it doesn't reproduce against the original Microsoft ReportViewer control, if you have a way to check. Include the full exception stack trace and, where possible, a minimal `.rdlc` or sample project that reproduces it.
-
-If you hit `Version conflict detected for "Microsoft.CodeAnalysis.Common"` when adding this package: add `Microsoft.CodeAnalysis.CSharp.Workspaces`/`Microsoft.CodeAnalysis.Common` yourself first, pinned to a version matching your target framework (3.6.0 for .NET Core 3.1, 3.8.0 for .NET 5, 4.0.1 for .NET 6+).
 
 ## Provenance
 

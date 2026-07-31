@@ -1,5 +1,6 @@
 using Microsoft.Reporting.Chart.WebForms.Design;
 using Microsoft.Reporting.Chart.WebForms.Utilities;
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -742,9 +743,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						return (Font)series.EmptyPointStyle.GetAttributeObject(CommonAttributes.Font);
 					}
-					return series.font;
+					// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+					return series.font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 				}
-				return series.font;
+				return series.font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -758,6 +760,31 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				Invalidate(invalidateLegend: false);
 			}
+		}
+
+		/// <summary>
+		/// Returns an IChartFont for this data point/series's font, without ever constructing a
+		/// System.Drawing.Font when nothing was explicitly set - GDI+ cannot construct Font at all
+		/// on Linux under .NET 10, even with libgdiplus installed (docs/platform-support.md's
+		/// Phase 0 finding), so the common "font left at its default" case must never touch the
+		/// concrete Font property (whose getter would otherwise lazily construct one). Mirrors
+		/// Legend.GetBaseFontResource/Axis.GetLabelStyleFontResource's established pattern.
+		/// </summary>
+		internal IChartFont GetFontResource(ChartGraphics chartGraph)
+		{
+			if (pointAttributes)
+			{
+				if (attributes.Count != 0 && IsAttributeSet(CommonAttributes.Font))
+				{
+					return chartGraph.ResourceFactory.WrapFont((Font)GetAttributeObject(CommonAttributes.Font));
+				}
+				if (emptyPoint)
+				{
+					Font attributeObject = (Font)series.EmptyPointStyle.GetAttributeObject(CommonAttributes.Font);
+					return (attributeObject != null) ? chartGraph.ResourceFactory.WrapFont(attributeObject) : chartGraph.ResourceFactory.CreateFont(ChartPicture.GetDefaultFontFamilyName(), 8f);
+				}
+			}
+			return (series.font != null) ? chartGraph.ResourceFactory.WrapFont(series.font) : chartGraph.ResourceFactory.CreateFont(ChartPicture.GetDefaultFontFamilyName(), 8f);
 		}
 
 		[SRCategory("CategoryAttributeLabelAppearance")]
@@ -2226,10 +2253,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					SetAttributeObject(CommonAttributes.BackHatchStyle, ChartHatchStyle.None);
 				}
-				if (!IsAttributeSet(CommonAttributes.Font))
-				{
-					SetAttributeObject(CommonAttributes.Font, new Font(ChartPicture.GetDefaultFontFamilyName(), 8f));
-				}
+				// Deliberately not eagerly defaulted here (unlike the other attributes in this
+				// method) - constructing a Font at all requires GDI+, which cannot construct
+				// anything on Linux under .NET 10, even with libgdiplus installed
+				// (docs/platform-support.md's Phase 0 finding). The Font property's getter
+				// below already falls back to series.font (itself lazy) when this attribute
+				// isn't set, so leaving it unset here is equivalent, just deferred.
 				if (!IsAttributeSet(CommonAttributes.FontColor))
 				{
 					SetAttributeObject(CommonAttributes.FontColor, Color.Black);

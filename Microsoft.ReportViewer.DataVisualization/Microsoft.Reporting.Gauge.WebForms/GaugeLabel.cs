@@ -30,7 +30,7 @@ namespace Microsoft.Reporting.Gauge.WebForms
 
 		private bool visible = true;
 
-		private Font font = new Font("Microsoft Sans Serif", 8.25f);
+		private Font font;
 
 		private ResizeMode resizeMode = ResizeMode.AutoFit;
 
@@ -262,7 +262,8 @@ namespace Microsoft.Reporting.Gauge.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Chart's Title.Font remarks (GDI+/Phase 0 finding).
+				return font ??= new Font("Microsoft Sans Serif", 8.25f);
 			}
 			set
 			{

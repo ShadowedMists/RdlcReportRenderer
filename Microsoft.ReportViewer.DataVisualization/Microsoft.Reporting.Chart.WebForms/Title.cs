@@ -55,7 +55,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private ChartDashStyle borderStyle = ChartDashStyle.Solid;
 
-		private Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font font;
 
 		private Color color = Color.Black;
 
@@ -490,7 +490,15 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed (not a field initializer) - GDI+ cannot construct any
+				// System.Drawing object at all on Linux under .NET 10, even with libgdiplus
+				// installed (docs/platform-support.md's Phase 0 finding), so eagerly building
+				// a default Font for every Title at construction time crashed non-Windows
+				// platforms immediately, before any rendering. Deferring to first real access
+				// means constructing the Chart/Title object graph itself no longer requires
+				// GDI+ - only code that actually reads .Font (still Windows-only rendering
+				// paths) does.
+				return font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{

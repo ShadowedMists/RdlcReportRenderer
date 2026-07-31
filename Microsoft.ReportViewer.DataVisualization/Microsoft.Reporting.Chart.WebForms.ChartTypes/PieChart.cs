@@ -938,7 +938,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				StringFormat stringFormat = new StringFormat();
 				stringFormat.Alignment = StringAlignment.Center;
 				stringFormat.LineAlignment = StringAlignment.Center;
-				SizeF relativeSize2 = graph.GetRelativeSize(graph.MeasureString(labelText.Replace("\\n", "\n"), point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+				SizeF relativeSize2 = graph.GetRelativeSize(graph.MeasureString(labelText.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 				RectangleF empty = RectangleF.Empty;
 				SizeF size = new SizeF(relativeSize2.Width, relativeSize2.Height);
 				size.Height += size.Height / 8f;
@@ -970,7 +970,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				{
 					graph.DrawLineRel(pieLineColor, point.BorderWidth, ChartDashStyle.Solid, new PointF(x2, y2), new PointF(x3, y3));
 				}
-				StringFormat stringFormat2 = new StringFormat();
+				ITextFormat stringFormat2 = graph.ResourceFactory.CreateTextFormat();
 				stringFormat2.Alignment = StringAlignment.Center;
 				stringFormat2.LineAlignment = StringAlignment.Center;
 				float y4 = (float)Math.Sin((double)num8 * Math.PI / 180.0) * relativeSize.Height * num7 * num3 + middlePoint.Y;
@@ -1043,10 +1043,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						backPosition.X = position.Right - sizeF.Width - num10 / 2f;
 					}
 					IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
-					ITextFormat bridgedFormat2 = graph.ResourceFactory.CreateTextFormat();
-					bridgedFormat2.Alignment = stringFormat2.Alignment;
-					bridgedFormat2.LineAlignment = stringFormat2.LineAlignment;
-					graph.DrawPointLabelStringRel(area.Common, labelText, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, bridgedFormat2, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
+					graph.DrawPointLabelStringRel(area.Common, labelText, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(point.FontColor), position, stringFormat2, point.FontAngle, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, series, point, pointIndex);
 				}
 				else
 				{
@@ -1061,7 +1058,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			}
 		}
 
-		private RectangleF GetLabelRect(PointF labelPosition, ChartArea area, string text, StringFormat format, ChartGraphics graph, DataPoint point, bool leftOrientation)
+		private RectangleF GetLabelRect(PointF labelPosition, ChartArea area, string text, ITextFormat format, ChartGraphics graph, DataPoint point, bool leftOrientation)
 		{
 			RectangleF empty = RectangleF.Empty;
 			if (leftOrientation)
@@ -1078,7 +1075,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				empty.Width = area.Position.Right() - labelPosition.X;
 				empty.Height = area.Position.Height;
 			}
-			SizeF sizeF = graph.MeasureStringRel(text.Replace("\\n", "\n"), point.Font, empty.Size, format);
+			SizeF sizeF = graph.MeasureStringRel(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(point.Font), empty.Size, format);
 			empty.Y = labelPosition.Y - sizeF.Height / 2f * 1.8f;
 			empty.Height = sizeF.Height * 1.8f;
 			return empty;
@@ -1189,7 +1186,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				Math.Sin((double)num5 * Math.PI / 180.0);
 				_ = relativeSize.Height;
 				_ = middlePoint.Y;
-				StringFormat stringFormat = new StringFormat();
+				ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 				stringFormat.Alignment = StringAlignment.Center;
 				stringFormat.LineAlignment = StringAlignment.Center;
 				float num6 = (float)Math.Sin((double)num5 * Math.PI / 180.0) * relativeSize.Height * num4 * num3 + middlePoint.Y;
@@ -1262,9 +1259,9 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return true;
 		}
 
-		public static bool CreateMapAreaPath(float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, out GraphicsPath path, out float[] coord)
+		public static bool CreateMapAreaPath(float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, out IGraphicsPath path, out float[] coord)
 		{
-			path = new GraphicsPath();
+			path = graph.ResourceFactory.CreatePath();
 			RectangleF empty = RectangleF.Empty;
 			empty.X = rectangle.X + rectangle.Width * (1f - (100f - doughnutRadius) / 100f) / 2f;
 			empty.Y = rectangle.Y + rectangle.Height * (1f - (100f - doughnutRadius) / 100f) / 2f;
@@ -1283,7 +1280,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				empty = graph.GetAbsoluteRectangle(empty);
 				path.AddPie(empty.X, empty.Y, empty.Width, empty.Width, startAngle, sweepAngle);
 			}
-			path.Flatten(new Matrix(), 1f);
+			path.Flatten(1f);
 			PointF[] array = new PointF[path.PointCount];
 			for (int i = 0; i < path.PointCount; i++)
 			{
@@ -1300,7 +1297,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 
 		public static void Map(CommonElements common, DataPoint point, float startAngle, float sweepAngle, RectangleF rectangle, bool doughnut, float doughnutRadius, ChartGraphics graph, int pointIndex)
 		{
-			if (CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut, doughnutRadius, graph, out GraphicsPath path, out float[] coord))
+			if (CreateMapAreaPath(startAngle, sweepAngle, rectangle, doughnut, doughnutRadius, graph, out IGraphicsPath path, out float[] coord))
 			{
 				if (point.IsAttributeSet("_COLLECTED_DATA_POINT"))
 				{
@@ -2611,7 +2608,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				return;
 			}
 			graph.DrawLine(pen, points[10], points[11]);
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.LineAlignment = StringAlignment.Center;
 			RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(area.Position.ToRectangleF());
 			RectangleF empty = RectangleF.Empty;
@@ -2668,33 +2665,23 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				backPosition.X = empty.Right - sizeF.Width - num / 2f;
 			}
 			IChartFont bridgedFont3 = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
-			ITextFormat bridgedFormat3 = graph.ResourceFactory.CreateTextFormat();
-			bridgedFormat3.Alignment = stringFormat.Alignment;
-			bridgedFormat3.LineAlignment = stringFormat.LineAlignment;
-			bridgedFormat3.FormatFlags = stringFormat.FormatFlags;
-			bridgedFormat3.Trimming = stringFormat.Trimming;
-			graph.DrawPointLabelStringRel(graph.common, labelText, bridgedFont3, graph.ResourceFactory.CreateSolidBrush(point.FontColor), empty, bridgedFormat3, 0, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, point.series, point, pointIndex);
+			graph.DrawPointLabelStringRel(graph.common, labelText, bridgedFont3, graph.ResourceFactory.CreateSolidBrush(point.FontColor), empty, stringFormat, 0, backPosition, point.LabelBackColor, point.LabelBorderColor, point.LabelBorderWidth, point.LabelBorderStyle, point.series, point, pointIndex);
 		}
 
 		private void Draw3DInsideLabels(ChartGraphics graph, PointF[] points, DataPoint point, int pointIndex)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.LineAlignment = StringAlignment.Center;
 			stringFormat.Alignment = StringAlignment.Center;
 			string labelText = GetLabelText(point);
 			PointF relativePoint = graph.GetRelativePoint(points[12]);
-			SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(labelText.Replace("\\n", "\n"), point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+			SizeF relativeSize = graph.GetRelativeSize(graph.MeasureString(labelText.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 			RectangleF empty = RectangleF.Empty;
 			SizeF sizeF = new SizeF(relativeSize.Width, relativeSize.Height);
 			sizeF.Height += relativeSize.Height / 8f;
 			sizeF.Width += sizeF.Width / (float)labelText.Length;
 			IChartFont bridgedFont = graph.ResourceFactory.CreateFont(point.Font.FontFamily.Name, point.Font.Size, point.Font.Style, point.Font.Unit);
-			ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
-			bridgedFormat.Alignment = stringFormat.Alignment;
-			bridgedFormat.LineAlignment = stringFormat.LineAlignment;
-			bridgedFormat.FormatFlags = stringFormat.FormatFlags;
-			bridgedFormat.Trimming = stringFormat.Trimming;
-			graph.DrawPointLabelStringRel(backPosition: new RectangleF(relativePoint.X - sizeF.Width / 2f, relativePoint.Y - sizeF.Height / 2f - relativeSize.Height / 10f, sizeF.Width, sizeF.Height), common: graph.common, text: labelText, font: bridgedFont, brush: graph.ResourceFactory.CreateSolidBrush(point.FontColor), position: relativePoint, format: bridgedFormat, angle: 0, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: point.series, point: point, pointIndex: pointIndex);
+			graph.DrawPointLabelStringRel(backPosition: new RectangleF(relativePoint.X - sizeF.Width / 2f, relativePoint.Y - sizeF.Height / 2f - relativeSize.Height / 10f, sizeF.Width, sizeF.Height), common: graph.common, text: labelText, font: bridgedFont, brush: graph.ResourceFactory.CreateSolidBrush(point.FontColor), position: relativePoint, format: stringFormat, angle: 0, backColor: point.LabelBackColor, borderColor: point.LabelBorderColor, borderWidth: point.LabelBorderWidth, borderStyle: point.LabelBorderStyle, series: point.series, point: point, pointIndex: pointIndex);
 		}
 
 		private static string GetPointLabel(DataPoint point, bool alwaysIncludeAxisLabel = false)

@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -841,7 +842,7 @@ namespace Microsoft.Reporting.Map.WebForms
 
 		private void DrawLabel(Placement placement, string labelStr, double value, float labelPos, float rotateLabelAngle, Font font, Color color, FontUnit fontUnit)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = Common.Graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Near;
 			float num = GetPositionFromValue(value);
@@ -855,7 +856,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				labels.Add(markerPosition);
 			}
 			MapGraphics graph = Common.Graph;
-			using (Brush brush2 = new SolidBrush(color))
+			using (IBrush brush2 = graph.ResourceFactory.CreateSolidBrush(color))
 			{
 				Font resizedFont = GetResizedFont(font, fontUnit);
 				try
@@ -865,7 +866,7 @@ namespace Microsoft.Reporting.Map.WebForms
 					{
 						num2 = 90f;
 					}
-					SizeF size = graph.MeasureString(labelStr, resizedFont);
+					SizeF size = graph.MeasureString(labelStr, graph.ResourceFactory.WrapFont(resizedFont));
 					float contactPointOffset = Utils.GetContactPointOffset(size, rotateLabelAngle - num2);
 					PointF absolutePoint = graph.GetAbsolutePoint(GetPoint(num, labelPos));
 					switch (placement)
@@ -901,14 +902,14 @@ namespace Microsoft.Reporting.Map.WebForms
 						{
 							if (ShadowOffset != 0f)
 							{
-								using (Brush brush = graph.GetShadowBrush())
+								using (IBrush brush = graph.ResourceFactory.WrapBrush(graph.GetShadowBrush()))
 								{
 									RectangleF layoutRectangle = rectangleF;
 									layoutRectangle.Offset(ShadowOffset, ShadowOffset);
-									graph.DrawString(labelStr, resizedFont, brush, layoutRectangle, stringFormat);
+									graph.DrawString(labelStr, graph.ResourceFactory.WrapFont(resizedFont), brush, layoutRectangle, stringFormat);
 								}
 							}
-							graph.DrawString(labelStr, resizedFont, brush2, rectangleF, stringFormat);
+							graph.DrawString(labelStr, graph.ResourceFactory.WrapFont(resizedFont), brush2, rectangleF, stringFormat);
 							return;
 						}
 						TextRenderingHint textRenderingHint = graph.TextRenderingHint;
@@ -920,20 +921,20 @@ namespace Microsoft.Reporting.Map.WebForms
 							}
 							if (ShadowOffset != 0f)
 							{
-								using (Brush brush3 = graph.GetShadowBrush())
+								using (IBrush brush3 = graph.ResourceFactory.WrapBrush(graph.GetShadowBrush()))
 								{
 									using (Matrix matrix2 = matrix.Clone())
 									{
 										matrix2.Translate(ShadowOffset, ShadowOffset);
 										matrix2.RotateAt(rotateLabelAngle, absolutePoint);
 										graph.Transform = matrix2;
-										graph.DrawString(labelStr, resizedFont, brush3, rectangleF, stringFormat);
+										graph.DrawString(labelStr, graph.ResourceFactory.WrapFont(resizedFont), brush3, rectangleF, stringFormat);
 									}
 								}
 							}
 							matrix.RotateAt(rotateLabelAngle, absolutePoint);
 							graph.Transform = matrix;
-							graph.DrawString(labelStr, resizedFont, brush2, rectangleF, stringFormat);
+							graph.DrawString(labelStr, graph.ResourceFactory.WrapFont(resizedFont), brush2, rectangleF, stringFormat);
 						}
 						finally
 						{

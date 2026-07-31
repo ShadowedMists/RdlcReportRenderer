@@ -27,7 +27,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal DateTimeIntervalType intervalOffsetType = DateTimeIntervalType.NotSet;
 
-		internal Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		internal Font font;
 
 		private Color fontColor = Color.Black;
 
@@ -162,7 +162,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -407,8 +408,10 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						titleColor = item.TitleColor;
 					}
-					Font titleFont = (axis.autoLabelFont == null) ? font : axis.autoLabelFont;
-					IChartFont bridgedTitleFont = graph.ResourceFactory.WrapFont(titleFont);
+					// axis.autoLabelFont is IChartFont-typed and never needs Font construction on
+					// Linux (tasks/chart-default-font-cross-platform.md); the Font fallback here
+					// is this Label's own concrete Font property, a separate, still-open gap.
+					IChartFont bridgedTitleFont = axis.autoLabelFont ?? graph.ResourceFactory.WrapFont(Font);
 					graph.DrawString(item.Title.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(titleColor), array[0], stringFormat);
 					graph.StopAnimation();
 					if (axis.Common.ProcessModeRegions)
@@ -477,7 +480,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void Paint(ChartGraphics graph, bool backElements)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			if (!axis.LabelStyle.Enabled || double.IsNaN(axis.GetViewMinimum()) || double.IsNaN(axis.GetViewMaximum()))
@@ -787,14 +790,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				InitAnimation(graph, axis.CustomLabels.Count, num);
 				graph.StartAnimation();
-				// Bridged to the interface-typed DrawLabelStringRel overload (Milestone E2, 2026-07-23) —
-				// same pattern as this method's other call site (~line 1340).
-				ITextFormat bridgedStringFormat = graph.ResourceFactory.CreateTextFormat();
-				bridgedStringFormat.Alignment = stringFormat.Alignment;
-				bridgedStringFormat.LineAlignment = stringFormat.LineAlignment;
-				bridgedStringFormat.FormatFlags = stringFormat.FormatFlags;
-				bridgedStringFormat.Trimming = stringFormat.Trimming;
-				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont((axis.autoLabelFont == null) ? font : axis.autoLabelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedStringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
+				graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, axis.autoLabelFont ?? graph.ResourceFactory.WrapFont(Font), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, stringFormat, (axis.autoLabelAngle < -90) ? fontAngle : axis.autoLabelAngle, (!TruncatedLabels || customLabel.RowIndex > 0) ? RectangleF.Empty : rectangleF2, customLabel, truncatedLeft, truncatedRight);
 				graph.StopAnimation();
 				axis.ScaleSegments.EnforceSegment(null);
 				axis.ScaleSegments.AllowOutOfScaleValues = false;
@@ -805,7 +801,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 		}
 
-		private RectangleF GetAllLabelsRect(ChartArea area, AxisPosition position, ref StringFormat stringFormat)
+		private RectangleF GetAllLabelsRect(ChartArea area, AxisPosition position, ref ITextFormat stringFormat)
 		{
 			Axis axis = null;
 			Axis[] axes = area.Axes;
@@ -929,7 +925,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void Paint3D(ChartGraphics graph, bool backElements)
 		{
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			this.axis.PlotAreaPosition.ToRectangleF();
 			SizeF relativeSize = graph.GetRelativeSize(new SizeF(1f, 1f));
@@ -1316,7 +1312,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							}
 						}
 					}
-					StringFormat stringFormat2 = null;
+					ITextFormat stringFormat2 = null;
 					if (customLabel.RowIndex == 0 && num6 == 0 && this.axis.groupingLabelSizes != null && this.axis.groupingLabelSizes.Length != 0 && this.axis.AxisPosition == AxisPosition.Bottom && labelsPosition == AxisPosition.Bottom && !((this.axis.autoLabelOffset == -1) ? OffsetLabels : (this.axis.autoLabelOffset == 1)))
 					{
 						if (num2 == -1f)
@@ -1330,7 +1326,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 							num2 = ((num7 > 0f) ? num7 : position.Height);
 						}
 						position.Height = num2;
-						stringFormat2 = (StringFormat)stringFormat.Clone();
+						stringFormat2 = stringFormat.Clone();
 						if ((stringFormat.FormatFlags & StringFormatFlags.LineLimit) == 0)
 						{
 							stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
@@ -1338,13 +1334,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					InitAnimation(graph, this.axis.CustomLabels.Count, num3);
 					graph.StartAnimation();
-					Font labelFont = (this.axis.autoLabelFont == null) ? font : this.axis.autoLabelFont;
-					ITextFormat bridgedLabelFormat = graph.ResourceFactory.CreateTextFormat();
-					bridgedLabelFormat.Alignment = stringFormat.Alignment;
-					bridgedLabelFormat.LineAlignment = stringFormat.LineAlignment;
-					bridgedLabelFormat.FormatFlags = stringFormat.FormatFlags;
-					bridgedLabelFormat.Trimming = stringFormat.Trimming;
-					graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, graph.ResourceFactory.WrapFont(labelFont), graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, bridgedLabelFormat, num6, (!TruncatedLabels || customLabel.Row > LabelRow.First) ? RectangleF.Empty : rectangleF, customLabel, truncatedLeft, truncatedRight);
+					IChartFont labelFont = this.axis.autoLabelFont ?? graph.ResourceFactory.WrapFont(Font);
+					graph.DrawLabelStringRel(axis, customLabel.RowIndex, customLabel.LabelMark, customLabel.MarkColor, customLabel.Text, customLabel.Image, customLabel.ImageTransparentColor, labelFont, graph.ResourceFactory.CreateSolidBrush(customLabel.TextColor.IsEmpty ? fontColor : customLabel.TextColor), position, stringFormat, num6, (!TruncatedLabels || customLabel.Row > LabelRow.First) ? RectangleF.Empty : rectangleF, customLabel, truncatedLeft, truncatedRight);
 					graph.StopAnimation();
 					if (stringFormat2 != null)
 					{

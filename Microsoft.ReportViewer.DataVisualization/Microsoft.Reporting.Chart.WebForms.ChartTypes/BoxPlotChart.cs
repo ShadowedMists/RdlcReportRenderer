@@ -439,7 +439,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			SizeF labelSize = SizeF.Empty;
 			if (ser.SmartLabels.Enabled)
 			{
-				labelSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+				labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 				position = area.smartLabels.AdjustSmartLabelPosition(common, graph, area, ser.SmartLabels, position, labelSize, ref format, position, markerSize, LabelAlignmentTypes.Top);
 				angle = 0;
 			}
@@ -447,7 +447,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				if (labelSize.IsEmpty)
 				{
-					labelSize = graph.GetRelativeSize(graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic)));
+					labelSize = graph.GetRelativeSize(graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat()));
 				}
 				RectangleF empty = RectangleF.Empty;
 				SizeF size = new SizeF(labelSize.Width, labelSize.Height);

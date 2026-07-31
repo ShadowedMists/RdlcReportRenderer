@@ -1,9 +1,11 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
+using System.Numerics;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -878,46 +880,51 @@ namespace Microsoft.Reporting.Map.WebForms
 				{
 					g.SmoothingMode = SmoothingMode.None;
 				}
-				using (GraphicsPath graphicsPath = new GraphicsPath())
+				using (IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath())
 				{
 					graphicsPath.AddLine(location, pt);
 					int num5 = (legendItem.shadowOffset > 3) ? 3 : legendItem.shadowOffset;
 					if (num5 > 0)
 					{
-						using (Pen pen = Path.GetColorPen(g.GetShadowColor(), legendItem.PathWidth, legendItem.BorderWidth))
+						using (Pen nativePen = Path.GetColorPen(g.GetShadowColor(), legendItem.PathWidth, legendItem.BorderWidth))
 						{
-							if (pen != null)
+							if (nativePen != null)
 							{
-								Matrix matrix = new Matrix();
-								matrix.Translate(num5, num5, MatrixOrder.Append);
-								graphicsPath.Transform(matrix);
-								g.DrawPath(pen, graphicsPath);
-								matrix.Reset();
-								matrix.Translate(-num5, -num5, MatrixOrder.Append);
-								graphicsPath.Transform(matrix);
+								using (IPen pen = g.ResourceFactory.WrapPen(nativePen))
+								{
+									graphicsPath.Transform(Matrix3x2.CreateTranslation(num5, num5));
+									g.DrawPath(pen, graphicsPath);
+									graphicsPath.Transform(Matrix3x2.CreateTranslation(-num5, -num5));
+								}
 							}
 						}
 					}
 					if (legendItem.BorderWidth > 0)
 					{
-						using (Pen pen2 = Path.GetColorPen(legendItem.BorderColor, legendItem.PathWidth, legendItem.BorderWidth))
+						using (Pen nativePen2 = Path.GetColorPen(legendItem.BorderColor, legendItem.PathWidth, legendItem.BorderWidth))
 						{
-							if (pen2 != null)
+							if (nativePen2 != null)
 							{
-								g.DrawPath(pen2, graphicsPath);
+								using (IPen pen2 = g.ResourceFactory.WrapPen(nativePen2))
+								{
+									g.DrawPath(pen2, graphicsPath);
+								}
 							}
 						}
 					}
 					RectangleF bounds = graphicsPath.GetBounds();
 					bounds.Inflate((float)legendItem.PathWidth / 2f, (float)legendItem.PathWidth / 2f);
-					using (Pen pen3 = Path.GetFillPen(g, graphicsPath, bounds, legendItem.PathWidth, legendItem.PathLineStyle, legendItem.Color, legendItem.SecondaryColor, legendItem.GradientType, legendItem.HatchStyle))
+					using (Pen nativePen3 = Path.GetFillPen(g, null, bounds, legendItem.PathWidth, legendItem.PathLineStyle, legendItem.Color, legendItem.SecondaryColor, legendItem.GradientType, legendItem.HatchStyle))
 					{
-						if (pen3 != null)
+						if (nativePen3 != null)
 						{
-							g.DrawPath(pen3, graphicsPath);
-							if (pen3.Brush != null)
+							using (IPen pen3 = g.ResourceFactory.WrapPen(nativePen3))
 							{
-								pen3.Brush.Dispose();
+								g.DrawPath(pen3, graphicsPath);
+							}
+							if (nativePen3.Brush != null)
+							{
+								nativePen3.Brush.Dispose();
 							}
 						}
 					}

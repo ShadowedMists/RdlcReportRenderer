@@ -1754,13 +1754,14 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		private void RenderAxisLabelFont(ChartAxis chartAxis, Microsoft.Reporting.Chart.WebForms.Axis axis)
 		{
 			Style style = chartAxis.Style;
-			if (style == null)
+			// GetDefaultFont()/GetFont() return null where System.Drawing.Font can't be
+			// constructed at all (Linux under .NET 10) - leave the property at its own default
+			// rather than assigning null, which would still trip the property setter's side
+			// effects (see Legend.Font's AutoFitText=false, for the analogous case).
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, chartAxis.Instance.Style);
+			if (font != null)
 			{
-				axis.LabelStyle.Font = GetDefaultFont();
-			}
-			else
-			{
-				axis.LabelStyle.Font = GetFont(style, chartAxis.Instance.Style);
+				axis.LabelStyle.Font = font;
 			}
 		}
 
@@ -2167,13 +2168,12 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		private void RenderAxisTitleFont(ChartAxisTitle axisTitle, Microsoft.Reporting.Chart.WebForms.Axis axis)
 		{
 			Style style = axisTitle.Style;
-			if (style == null)
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform.
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, axisTitle.Instance.Style);
+			if (font != null)
 			{
-				axis.TitleFont = GetDefaultFont();
-			}
-			else
-			{
-				axis.TitleFont = GetFont(style, axisTitle.Instance.Style);
+				axis.TitleFont = font;
 			}
 		}
 
@@ -4926,76 +4926,74 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		private void RenderDataLabelFont(ChartDataLabel chartDataLabel, DataPointAttributes dataPointAttributes, bool dataPoint)
 		{
 			Style style = chartDataLabel.Style;
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform.
+			Font font;
 			if (style == null)
 			{
-				if (dataPoint)
-				{
-					dataPointAttributes.Font = GetDefaultFontFromCache(m_coreChart.Series.Count);
-				}
-				else
-				{
-					dataPointAttributes.Font = GetDefaultFont();
-				}
+				font = dataPoint ? GetDefaultFontFromCache(m_coreChart.Series.Count) : GetDefaultFont();
 			}
 			else if (dataPoint)
 			{
-				dataPointAttributes.Font = GetFontFromCache(m_coreChart.Series.Count, style, chartDataLabel.Instance.Style);
+				font = GetFontFromCache(m_coreChart.Series.Count, style, chartDataLabel.Instance.Style);
 			}
 			else
 			{
-				dataPointAttributes.Font = GetFont(style, chartDataLabel.Instance.Style);
+				font = GetFont(style, chartDataLabel.Instance.Style);
+			}
+			if (font != null)
+			{
+				dataPointAttributes.Font = font;
 			}
 		}
 
 		private void RenderTitleFont(ChartTitle chartTitle, Title title)
 		{
 			Style style = chartTitle.Style;
-			if (style == null)
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform.
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, chartTitle.Instance.Style);
+			if (font != null)
 			{
-				title.Font = GetDefaultFont();
-			}
-			else
-			{
-				title.Font = GetFont(style, chartTitle.Instance.Style);
+				title.Font = font;
 			}
 		}
 
 		private void RenderLegendTitleFont(ChartLegendTitle chartLegendTitle, Microsoft.Reporting.Chart.WebForms.Legend legend)
 		{
 			Style style = chartLegendTitle.Style;
-			if (style == null)
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform.
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, chartLegendTitle.Instance.Style);
+			if (font != null)
 			{
-				legend.TitleFont = GetDefaultFont();
-			}
-			else
-			{
-				legend.TitleFont = GetFont(style, chartLegendTitle.Instance.Style);
+				legend.TitleFont = font;
 			}
 		}
 
 		private void RenderLegendFont(ChartLegend chartLegend, Microsoft.Reporting.Chart.WebForms.Legend legend)
 		{
 			Style style = chartLegend.Style;
-			if (style == null)
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform - Legend.Font's own
+			// setter has a side effect (AutoFitText = false) that must not fire for a font that
+			// was never actually resolved.
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, chartLegend.Instance.Style);
+			if (font != null)
 			{
-				legend.Font = GetDefaultFont();
-			}
-			else
-			{
-				legend.Font = GetFont(style, chartLegend.Instance.Style);
+				legend.Font = font;
 			}
 		}
 
 		private void RenderStripLineFont(ChartStripLine chartStripLine, StripLine stripLine)
 		{
 			Style style = chartStripLine.Style;
-			if (style == null)
+			// See RenderAxisLabelFont's comment: skip the assignment (rather than assigning
+			// null) where Font construction isn't possible on this platform.
+			Font font = (style == null) ? GetDefaultFont() : GetFont(style, chartStripLine.Instance.Style);
+			if (font != null)
 			{
-				stripLine.TitleFont = GetDefaultFont();
-			}
-			else
-			{
-				stripLine.TitleFont = GetFont(style, chartStripLine.Instance.Style);
+				stripLine.TitleFont = font;
 			}
 		}
 

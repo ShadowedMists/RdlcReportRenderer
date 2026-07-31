@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -165,9 +166,9 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 				if (drawText)
 				{
 					string text = (array[i] * 100f).ToString(CultureInfo.InvariantCulture) + " %";
-					StringFormat stringFormat = new StringFormat();
+					ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 					stringFormat.Alignment = StringAlignment.Center;
-					graph.DrawStringRel(text, textFont, new SolidBrush(textColor), graph.GetRelativePoint(new PointF(secondPoint.X, secondPoint.Y + num * array[i])), stringFormat, 0);
+					graph.DrawStringRel(text, graph.ResourceFactory.WrapFont(textFont), graph.ResourceFactory.CreateSolidBrush(textColor), graph.GetRelativePoint(new PointF(secondPoint.X, secondPoint.Y + num * array[i])), stringFormat, 0);
 				}
 			}
 		}
@@ -181,7 +182,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 				0.618f,
 				1f
 			};
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Far;
 			if (secondPoint.X == firstPoint.X)
 			{
@@ -202,10 +203,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 					string text = (array[i] * 100f).ToString(CultureInfo.InvariantCulture) + " %";
 					if (axesSwitched)
 					{
-						graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(firstPoint.X - (firstPoint.X - secondPoint.X) * array[i], secondPoint.Y)), text: text, font: textFont, brush: new SolidBrush(textColor), format: stringFormat, angle: 270 - (int)(Math.Atan(array[i] / num) / 3.1400001049041748 * 180.0));
+						graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(firstPoint.X - (firstPoint.X - secondPoint.X) * array[i], secondPoint.Y)), text: text, font: graph.ResourceFactory.WrapFont(textFont), brush: graph.ResourceFactory.CreateSolidBrush(textColor), format: stringFormat, angle: 270 - (int)(Math.Atan(array[i] / num) / 3.1400001049041748 * 180.0));
 						continue;
 					}
-					graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(secondPoint.X, firstPoint.Y - (firstPoint.Y - secondPoint.Y) * array[i])), text: text, font: textFont, brush: new SolidBrush(textColor), format: stringFormat, angle: (int)(Math.Atan(num * array[i]) / 3.1400001049041748 * 180.0));
+					graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(secondPoint.X, firstPoint.Y - (firstPoint.Y - secondPoint.Y) * array[i])), text: text, font: graph.ResourceFactory.WrapFont(textFont), brush: graph.ResourceFactory.CreateSolidBrush(textColor), format: stringFormat, angle: (int)(Math.Atan(num * array[i]) / 3.1400001049041748 * 180.0));
 				}
 			}
 		}
@@ -218,7 +219,7 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 				0.666f,
 				1f
 			};
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Far;
 			if (secondPoint.X == firstPoint.X)
 			{
@@ -239,10 +240,10 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 					string text = (array[i] * 100f).ToString(CultureInfo.InvariantCulture) + " %";
 					if (axesSwitched)
 					{
-						graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(firstPoint.X - (firstPoint.X - secondPoint.X) * array[i], secondPoint.Y)), text: text, font: textFont, brush: new SolidBrush(textColor), format: stringFormat, angle: 270 - (int)(Math.Atan(array[i] / num) / 3.1400001049041748 * 180.0));
+						graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(firstPoint.X - (firstPoint.X - secondPoint.X) * array[i], secondPoint.Y)), text: text, font: graph.ResourceFactory.WrapFont(textFont), brush: graph.ResourceFactory.CreateSolidBrush(textColor), format: stringFormat, angle: 270 - (int)(Math.Atan(array[i] / num) / 3.1400001049041748 * 180.0));
 						continue;
 					}
-					graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(secondPoint.X, firstPoint.Y - (firstPoint.Y - secondPoint.Y) * array[i])), text: text, font: textFont, brush: new SolidBrush(textColor), format: stringFormat, angle: (int)(Math.Atan(num * array[i]) / 3.1400001049041748 * 180.0));
+					graph.DrawStringRel(position: graph.GetRelativePoint(new PointF(secondPoint.X, firstPoint.Y - (firstPoint.Y - secondPoint.Y) * array[i])), text: text, font: graph.ResourceFactory.WrapFont(textFont), brush: graph.ResourceFactory.CreateSolidBrush(textColor), format: stringFormat, angle: (int)(Math.Atan(num * array[i]) / 3.1400001049041748 * 180.0));
 				}
 			}
 		}
@@ -295,15 +296,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 				if (drawText)
 				{
 					string text = (array[i] * 100f).ToString(CultureInfo.InvariantCulture) + " %";
-					StringFormat stringFormat = new StringFormat();
+					ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 					stringFormat.Alignment = StringAlignment.Center;
 					if (axesSwitched)
 					{
-						graph.DrawStringRel(text, textFont, new SolidBrush(textColor), graph.GetRelativePoint(new PointF(pt.X, (firstPoint.Y + secondPoint.Y) / 2f)), stringFormat, 90);
+						graph.DrawStringRel(text, graph.ResourceFactory.WrapFont(textFont), graph.ResourceFactory.CreateSolidBrush(textColor), graph.GetRelativePoint(new PointF(pt.X, (firstPoint.Y + secondPoint.Y) / 2f)), stringFormat, 90);
 					}
 					else
 					{
-						graph.DrawStringRel(text, textFont, new SolidBrush(textColor), graph.GetRelativePoint(new PointF((firstPoint.X + secondPoint.X) / 2f, pt.Y)), stringFormat, 0);
+						graph.DrawStringRel(text, graph.ResourceFactory.WrapFont(textFont), graph.ResourceFactory.CreateSolidBrush(textColor), graph.GetRelativePoint(new PointF((firstPoint.X + secondPoint.X) / 2f, pt.Y)), stringFormat, 0);
 					}
 				}
 				if (num > absoluteRectangle.Bottom || num < absoluteRectangle.Top)
@@ -358,15 +359,15 @@ namespace Microsoft.Reporting.Chart.WebForms.Formulas
 				if (drawText)
 				{
 					string text = (array[i] * 100f).ToString(CultureInfo.InvariantCulture) + " %";
-					StringFormat stringFormat = new StringFormat();
+					ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 					stringFormat.Alignment = StringAlignment.Center;
 					if (axesSwitched)
 					{
-						graph.DrawStringRel(text, textFont, new SolidBrush(textColor), graph.GetRelativePoint(new PointF(pt.X, (firstPoint.Y + secondPoint.Y) / 2f)), stringFormat, 90);
+						graph.DrawStringRel(text, graph.ResourceFactory.WrapFont(textFont), graph.ResourceFactory.CreateSolidBrush(textColor), graph.GetRelativePoint(new PointF(pt.X, (firstPoint.Y + secondPoint.Y) / 2f)), stringFormat, 90);
 					}
 					else
 					{
-						graph.DrawStringRel(text, textFont, new SolidBrush(textColor), graph.GetRelativePoint(new PointF((firstPoint.X + secondPoint.X) / 2f, pt.Y)), stringFormat, 0);
+						graph.DrawStringRel(text, graph.ResourceFactory.WrapFont(textFont), graph.ResourceFactory.CreateSolidBrush(textColor), graph.GetRelativePoint(new PointF((firstPoint.X + secondPoint.X) / 2f, pt.Y)), stringFormat, 0);
 					}
 				}
 				if (num > absoluteRectangle.Bottom || num < absoluteRectangle.Top)

@@ -46,7 +46,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private ChartDashStyle borderStyle;
 
-		private Font font = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font font;
 
 		private Color fontColor = Color.Black;
 
@@ -78,7 +78,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private SizeF itemCellSize = SizeF.Empty;
 
-		internal Font autofitFont;
+		internal IChartFont autofitFont;
 
 		private bool equallySpacedItems;
 
@@ -106,7 +106,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private Color titleBackColor = Color.Empty;
 
-		private Font titleFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
+		private Font titleFont;
 
 		private StringAlignment titleAlignment = StringAlignment.Center;
 
@@ -315,7 +315,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 			set
 			{
 				autoFitText = value;
-				if (autoFitText)
+				// Font construction is impossible on Linux under .NET 10, even with libgdiplus
+				// installed (docs/platform-support.md's Phase 0 finding). This eager resize is
+				// only a starting-point seed for the real auto-fit algorithm, which runs later
+				// at render time through the portable GetBaseFontResource/ResizeFontResource
+				// bridge (works fine with `font` left at its prior value, including null) - so
+				// it's safe to skip entirely on platforms where it can't succeed anyway.
+				if (autoFitText && OperatingSystem.IsWindows())
 				{
 					if (this.font != null)
 					{
@@ -732,7 +738,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return font;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return font ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -740,6 +747,44 @@ namespace Microsoft.Reporting.Chart.WebForms
 				font = value;
 				Invalidate(invalidateLegendOnly: false);
 			}
+		}
+
+		/// <summary>
+		/// Returns an IChartFont for this legend's base font, without ever constructing a
+		/// System.Drawing.Font when nothing was explicitly set - GDI+ cannot construct Font
+		/// at all on Linux under .NET 10, even with libgdiplus installed
+		/// (docs/platform-support.md's Phase 0 finding), so the common "legend font left at
+		/// its default" case must never touch the concrete Font property (whose getter would
+		/// otherwise construct one). Only when a real Font was explicitly set (the backing
+		/// `font` field is non-null) do we bridge through WrapFont, since that Font object
+		/// already exists and was already successfully constructed by whoever set it -
+		/// tasks/chart-default-font-cross-platform.md's remaining scope (the "was it
+		/// explicitly set" case, e.g. via ChartMapper from RDL style data) is not addressed
+		/// here.
+		/// </summary>
+		private IChartFont GetBaseFontResource(ChartGraphics chartGraph)
+		{
+			if (font != null)
+			{
+				return chartGraph.ResourceFactory.WrapFont(font);
+			}
+			return chartGraph.ResourceFactory.CreateFont(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		}
+
+		/// <summary>Resizes an IChartFont built by <see cref="GetBaseFontResource"/> to a new point size, without ever constructing a System.Drawing.Font - see that method's remarks.</summary>
+		private static IChartFont ResizeFontResource(ChartGraphics chartGraph, IChartFont baseFont, float newSizeInPoints)
+		{
+			return chartGraph.ResourceFactory.CreateFont(baseFont.FontFamilyName, newSizeInPoints, baseFont.Style, baseFont.Unit);
+		}
+
+		/// <summary>Same reasoning as <see cref="GetBaseFontResource"/>, for the separate bold Title-text font.</summary>
+		private IChartFont GetTitleFontResource(ChartGraphics chartGraph)
+		{
+			if (titleFont != null)
+			{
+				return chartGraph.ResourceFactory.WrapFont(titleFont);
+			}
+			return chartGraph.ResourceFactory.CreateFont(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
 		}
 
 		[Browsable(false)]
@@ -1017,7 +1062,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return titleFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return titleFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
 			}
 			set
 			{
@@ -1134,8 +1180,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			RectangleF relative = position.ToRectangleF();
 			Rectangle rectangle = Rectangle.Round(chartGraph.GetAbsoluteRectangle(relative));
-			singleWCharacterSize = chartGraph.MeasureStringAbs("W", Font);
-			Size size = chartGraph.MeasureStringAbs("WW", Font);
+			IChartFont baseFontForRecalc = GetBaseFontResource(chartGraph);
+			singleWCharacterSize = chartGraph.MeasureStringAbs("W", baseFontForRecalc);
+			Size size = chartGraph.MeasureStringAbs("WW", baseFontForRecalc);
 			singleWCharacterSize.Width = size.Width - singleWCharacterSize.Width;
 			offset.Width = (int)Math.Ceiling((float)singleWCharacterSize.Width / 2f);
 			offset.Height = (int)Math.Ceiling((float)singleWCharacterSize.Width / 3f);
@@ -1183,25 +1230,23 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				flag = false;
 			}
-			autofitFont = new Font(Font, Font.Style);
+			autofitFont = GetBaseFontResource(chartGraph);
+			float baseFontSizeInPoints = autofitFont.SizeInPoints;
 			if (!flag)
 			{
 				do
 				{
-					if (AutoFitText && Font.Size - (float)autoFitFontSizeAdjustment > (float)autoFitMinFontSize)
+					if (AutoFitText && baseFontSizeInPoints - (float)autoFitFontSizeAdjustment > (float)autoFitMinFontSize)
 					{
 						autoFitFontSizeAdjustment++;
-						int num2 = (int)Math.Round(Font.Size - (float)autoFitFontSizeAdjustment);
+						int num2 = (int)Math.Round(baseFontSizeInPoints - (float)autoFitFontSizeAdjustment);
 						if (num2 < 1)
 						{
 							num2 = 1;
 						}
-						if (autofitFont != null)
-						{
-							autofitFont.Dispose();
-							autofitFont = null;
-						}
-						autofitFont = new Font(Font.FontFamily, num2, Font.Style, Font.Unit);
+						IChartFont resizedFont = ResizeFontResource(chartGraph, autofitFont, num2);
+						autofitFont.Dispose();
+						autofitFont = resizedFont;
 						GetNumberOfRowsAndColumns(chartGraph, legendItemsAreaPosition.Size, -1, out numberOfRowsPerColumn, out itemColumns, out horizontalSpaceLeft, out verticalSpaceLeft);
 						flag = (horizontalSpaceLeft >= 0 && verticalSpaceLeft >= 0);
 						num = 0;
@@ -1288,11 +1333,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 								cellPosition.Width += cellPosition2.Right - cellPosition.Right;
 							}
 							num6++;
-							legendItem.Cells[num5 + l].SetCellPosition(chartGraph, num3, num4, Rectangle.Empty, autoFitFontSizeAdjustment, (autofitFont == null) ? Font : autofitFont, singleWCharacterSize);
+							legendItem.Cells[num5 + l].SetCellPosition(chartGraph, num3, num4, Rectangle.Empty, autoFitFontSizeAdjustment, autofitFont ?? GetBaseFontResource(chartGraph), singleWCharacterSize);
 						}
 					}
 					cellPosition.Intersect(legendItemsAreaPosition);
-					legendCell.SetCellPosition(chartGraph, num3, num4, cellPosition, autoFitFontSizeAdjustment, (autofitFont == null) ? Font : autofitFont, singleWCharacterSize);
+					legendCell.SetCellPosition(chartGraph, num3, num4, cellPosition, autoFitFontSizeAdjustment, autofitFont ?? GetBaseFontResource(chartGraph), singleWCharacterSize);
 					num5 += num6;
 				}
 				num4++;
@@ -1370,8 +1415,9 @@ namespace Microsoft.Reporting.Chart.WebForms
 				base.Common.EventsManager.OnCustomizeLegend(legendItems, Name);
 				if (legendItems.Count > 0)
 				{
-					singleWCharacterSize = chartGraph.MeasureStringAbs("W", Font);
-					Size size2 = chartGraph.MeasureStringAbs("WW", Font);
+					autofitFont = GetBaseFontResource(chartGraph);
+					singleWCharacterSize = chartGraph.MeasureStringAbs("W", autofitFont);
+					Size size2 = chartGraph.MeasureStringAbs("WW", autofitFont);
 					singleWCharacterSize.Width = size2.Width - singleWCharacterSize.Width;
 					offset.Width = (int)Math.Ceiling((float)singleWCharacterSize.Width / 2f);
 					offset.Height = (int)Math.Ceiling((float)singleWCharacterSize.Width / 3f);
@@ -1399,7 +1445,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					legendSize.Height -= size3.Height;
 					legendSize.Height -= empty2.Height;
 					autoFitFontSizeAdjustment = 0;
-					autofitFont = new Font(Font, Font.Style);
+					float baseFontSizeInPoints2 = autofitFont.SizeInPoints;
 					int vertSpaceLeft = 0;
 					int horSpaceLeft = 0;
 					bool flag = AutoFitText;
@@ -1417,20 +1463,17 @@ namespace Microsoft.Reporting.Chart.WebForms
 						{
 							continue;
 						}
-						if (Font.Size - (float)autoFitFontSizeAdjustment > (float)autoFitMinFontSize)
+						if (baseFontSizeInPoints2 - (float)autoFitFontSizeAdjustment > (float)autoFitMinFontSize)
 						{
 							autoFitFontSizeAdjustment++;
-							int num2 = (int)Math.Round(Font.Size - (float)autoFitFontSizeAdjustment);
+							int num2 = (int)Math.Round(baseFontSizeInPoints2 - (float)autoFitFontSizeAdjustment);
 							if (num2 < 1)
 							{
 								num2 = 1;
 							}
-							if (autofitFont != null)
-							{
-								autofitFont.Dispose();
-								autofitFont = null;
-							}
-							autofitFont = new Font(Font.FontFamily, num2, Font.Style, Font.Unit);
+							IChartFont resizedFont2 = ResizeFontResource(chartGraph, autofitFont, num2);
+							autofitFont.Dispose();
+							autofitFont = resizedFont2;
 						}
 						else
 						{
@@ -1827,8 +1870,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 			int maximumNumberOfRows = GetMaximumNumberOfRows(numberOfRowsPerColumn);
 			int[,,] array = new int[numberOfColumns, maximumNumberOfRows, num];
 			cellHeights = new int[numberOfColumns, maximumNumberOfRows];
-			singleWCharacterSize = graph.MeasureStringAbs("W", (autofitFont == null) ? Font : autofitFont);
-			Size size = graph.MeasureStringAbs("WW", (autofitFont == null) ? Font : autofitFont);
+			singleWCharacterSize = graph.MeasureStringAbs("W", autofitFont ?? GetBaseFontResource(graph));
+			Size size = graph.MeasureStringAbs("WW", autofitFont ?? GetBaseFontResource(graph));
 			singleWCharacterSize.Width = size.Width - singleWCharacterSize.Width;
 			int num2 = 0;
 			int num3 = 0;
@@ -1854,7 +1897,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						num4 = legendCell.CellSpan - 1;
 					}
-					Size size2 = legendCell.MeasureCell(graph, fontSizeReducedBy, (autofitFont == null) ? Font : autofitFont, singleWCharacterSize);
+					Size size2 = legendCell.MeasureCell(graph, fontSizeReducedBy, autofitFont ?? GetBaseFontResource(graph), singleWCharacterSize);
 					if (legendCellColumn != null)
 					{
 						if (legendCellColumn.MinimumWidth >= 0)
@@ -2342,7 +2385,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (Title.Length > 0)
 			{
 				titleMaxSize.Width -= GetBorderSize() * 2 + offset.Width;
-				result = chartGraph.MeasureStringAbs(Title.Replace("\\n", "\n"), TitleFont, titleMaxSize, new StringFormat());
+				result = chartGraph.MeasureStringAbs(Title.Replace("\\n", "\n"), GetTitleFontResource(chartGraph), titleMaxSize, chartGraph.ResourceFactory.CreateTextFormat());
 				result.Height += offset.Height;
 				result.Width += offset.Width;
 				result.Height += GetSeparatorSize(chartGraph, TitleSeparator).Height;
@@ -2542,7 +2585,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					r2.Width -= GetBorderSize() * 2 + offset.Width;
 					chartGraph.StartAnimation();
 					r2.Intersect(rect);
-					IChartFont bridgedTitleFont = chartGraph.ResourceFactory.WrapFont(TitleFont);
+					IChartFont bridgedTitleFont = GetTitleFontResource(chartGraph);
 					chartGraph.DrawStringRel(Title.Replace("\\n", "\n"), bridgedTitleFont, brush, chartGraph.GetRelativeRectangle(r2), stringFormat);
 					chartGraph.StopAnimation();
 				}

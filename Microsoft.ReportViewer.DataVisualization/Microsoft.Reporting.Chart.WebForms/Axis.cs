@@ -23,7 +23,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private string name = "";
 
-		private Font titleFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		private Font titleFont;
 
 		private Color titleColor = Color.Black;
 
@@ -69,7 +69,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private LabelsAutoFitStyles labelsAutoFitStyle = LabelsAutoFitStyles.IncreaseFont | LabelsAutoFitStyles.DecreaseFont | LabelsAutoFitStyles.OffsetLabels | LabelsAutoFitStyles.LabelsAngleStep30 | LabelsAutoFitStyles.WordWrap;
 
-		internal Font autoLabelFont;
+		internal IChartFont autoLabelFont;
 
 		internal int autoLabelAngle = -1000;
 
@@ -505,7 +505,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return titleFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return titleFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f);
 			}
 			set
 			{
@@ -1011,7 +1012,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				num2 = 0f;
 			}
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = TitleAlignment;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags |= StringFormatFlags.FitBlackBox;
@@ -1112,12 +1113,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				stringFormat.LineAlignment = StringAlignment.Center;
 			}
 			IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
-			ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
-			bridgedTitleFormat.Alignment = stringFormat.Alignment;
-			bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
-			bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
-			bridgedTitleFormat.Trimming = stringFormat.Trimming;
-			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), titlePosition, bridgedTitleFormat, GetTextOrientation());
+			graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), titlePosition, stringFormat, GetTextOrientation());
 			if (base.Common.ProcessModeRegions)
 			{
 				RectangleF absoluteRectangle = graph.GetAbsoluteRectangle(titlePosition);
@@ -1278,11 +1274,12 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			PointF pointF = PointF.Empty;
 			int num = 0;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = TitleAlignment;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
-			SizeF sizeF = graph.MeasureString(text.Replace("\\n", "\n"), TitleFont, new SizeF(10000f, 10000f), stringFormat, GetTextOrientation());
+			IChartFont measureTitleFont = graph.ResourceFactory.WrapFont(TitleFont);
+			SizeF sizeF = graph.MeasureString(text.Replace("\\n", "\n"), measureTitleFont, new SizeF(10000f, 10000f), stringFormat, GetTextOrientation());
 			SizeF sizeF2 = SizeF.Empty;
 			if (stringFormat.Alignment != StringAlignment.Center)
 			{
@@ -1442,12 +1439,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (!pointF.IsEmpty && !float.IsNaN(pointF.X) && !float.IsNaN(pointF.Y))
 			{
 				IChartFont bridgedTitleFont = graph.ResourceFactory.CreateFont(TitleFont.FontFamily.Name, TitleFont.Size, TitleFont.Style, TitleFont.Unit);
-				ITextFormat bridgedTitleFormat = graph.ResourceFactory.CreateTextFormat();
-				bridgedTitleFormat.Alignment = stringFormat.Alignment;
-				bridgedTitleFormat.LineAlignment = stringFormat.LineAlignment;
-				bridgedTitleFormat.FormatFlags = stringFormat.FormatFlags;
-				bridgedTitleFormat.Trimming = stringFormat.Trimming;
-				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, bridgedTitleFormat, num, GetTextOrientation());
+				graph.DrawStringRel(text.Replace("\\n", "\n"), bridgedTitleFont, graph.ResourceFactory.CreateSolidBrush(TitleColor), pointF, stringFormat, num, GetTextOrientation());
 				if (base.Common.ProcessModeRegions)
 				{
 					using IGraphicsPath tranformedTextRectPath = graph.GetTranformedTextRectPath(pointF, sizeF, num);
@@ -1888,6 +1880,29 @@ namespace Microsoft.Reporting.Chart.WebForms
 			storeValuesEnabled = true;
 		}
 
+		/// <summary>
+		/// Returns an IChartFont for this axis's LabelStyle font, without ever constructing a
+		/// System.Drawing.Font when nothing was explicitly set - GDI+ cannot construct Font at
+		/// all on Linux under .NET 10, even with libgdiplus installed
+		/// (docs/platform-support.md's Phase 0 finding). Reads LabelStyle's raw backing field
+		/// directly (not the Font property, whose getter would otherwise construct one) -
+		/// same pattern as Legend.GetBaseFontResource (tasks/chart-default-font-cross-platform.md).
+		/// </summary>
+		internal IChartFont GetLabelStyleFontResource(ChartGraphics chartGraph)
+		{
+			if (base.LabelStyle.font != null)
+			{
+				return chartGraph.ResourceFactory.WrapFont(base.LabelStyle.font);
+			}
+			return chartGraph.ResourceFactory.CreateFont(ChartPicture.GetDefaultFontFamilyName(), 8f);
+		}
+
+		/// <summary>Resizes an IChartFont (from <see cref="GetLabelStyleFontResource"/> or another <c>autoLabelFont</c>) to a new point size, without ever constructing a System.Drawing.Font - see that method's remarks.</summary>
+		internal static IChartFont ResizeAutoLabelFont(ChartGraphics chartGraph, IChartFont baseFont, float newSizeInPoints, GraphicsUnit unit)
+		{
+			return chartGraph.ResourceFactory.CreateFont(baseFont.FontFamilyName, newSizeInPoints, baseFont.Style, unit);
+		}
+
 		internal virtual void Resize(ChartGraphics chartGraph, ElementPosition chartAreaPosition, RectangleF plotArea, float axesNumber, bool autoPlotPosition)
 		{
 			base.PlotAreaPosition = chartAreaPosition;
@@ -1895,7 +1910,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			titleSize = 0f;
 			if (Title.Length > 0)
 			{
-				SizeF sizeF = chartGraph.MeasureStringRel(Title.Replace("\\n", "\n"), TitleFont, new SizeF(10000f, 10000f), new StringFormat(), GetTextOrientation());
+				SizeF sizeF = chartGraph.MeasureStringRel(Title.Replace("\\n", "\n"), chartGraph.ResourceFactory.WrapFont(TitleFont), new SizeF(10000f, 10000f), chartGraph.ResourceFactory.CreateTextFormat(), GetTextOrientation());
 				float num = 0f;
 				if (AxisPosition == AxisPosition.Bottom || AxisPosition == AxisPosition.Top)
 				{
@@ -2107,7 +2122,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					num4 += 1f;
 				}
-				autoLabelFont = new Font(base.LabelStyle.Font.FontFamily, base.LabelStyle.Font.Size + num4, base.LabelStyle.Font.Style, GraphicsUnit.Point);
+				IChartFont labelStyleFontForAngle = GetLabelStyleFontResource(chartGraph);
+				autoLabelFont = ResizeAutoLabelFont(chartGraph, labelStyleFontForAngle, labelStyleFontForAngle.SizeInPoints + num4, GraphicsUnit.Point);
 				autoLabelAngle = base.LabelStyle.FontAngle;
 				autoLabelOffset = (base.LabelStyle.OffsetLabels ? 1 : 0);
 				AdjustIntervalToFitLabels(chartGraph, autoPlotPosition, onlyIncreaseInterval: false);
@@ -2130,10 +2146,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					num5 = Math.Min(num5, chartArea.axesAutoFontSize);
 				}
-				autoLabelFont = new Font(base.LabelStyle.Font.FontFamily, num5, base.LabelStyle.Font.Style, GraphicsUnit.Point);
+				IChartFont labelStyleFontForFit = GetLabelStyleFontResource(chartGraph);
+				autoLabelFont = ResizeAutoLabelFont(chartGraph, labelStyleFontForFit, num5, GraphicsUnit.Point);
 				if ((LabelsAutoFitStyle & LabelsAutoFitStyles.IncreaseFont) != LabelsAutoFitStyles.IncreaseFont)
 				{
-					autoLabelFont = (Font)base.LabelStyle.Font.Clone();
+					autoLabelFont = ResizeAutoLabelFont(chartGraph, labelStyleFontForFit, labelStyleFontForFit.SizeInPoints, GraphicsUnit.Point);
 				}
 				float num6 = 0f;
 				while (!flag)
@@ -2148,7 +2165,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					{
 						if (autoLabelFont.SizeInPoints >= aveLabelFontSize && (LabelsAutoFitStyle & LabelsAutoFitStyles.DecreaseFont) == LabelsAutoFitStyles.DecreaseFont)
 						{
-							autoLabelFont = new Font(autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 0.5f, autoLabelFont.Style, GraphicsUnit.Point);
+							autoLabelFont = ResizeAutoLabelFont(chartGraph, autoLabelFont, autoLabelFont.SizeInPoints - 0.5f, GraphicsUnit.Point);
 							continue;
 						}
 						if (!chartArea.Area3DStyle.Enable3D && !chartArea.chartAreaIsCurcular && customLabelsCollection == null && autoLabelAngle == 0 && autoLabelOffset == 0 && (LabelsAutoFitStyle & LabelsAutoFitStyles.OffsetLabels) == LabelsAutoFitStyles.OffsetLabels)
@@ -2234,7 +2251,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						if (autoLabelFont.SizeInPoints > minLabelFontSize && (LabelsAutoFitStyle & LabelsAutoFitStyles.DecreaseFont) == LabelsAutoFitStyles.DecreaseFont)
 						{
 							autoLabelAngle = 0;
-							autoLabelFont = new Font(autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 0.5f, autoLabelFont.Style, GraphicsUnit.Point);
+							autoLabelFont = ResizeAutoLabelFont(chartGraph, autoLabelFont, autoLabelFont.SizeInPoints - 0.5f, GraphicsUnit.Point);
 							continue;
 						}
 						if ((LabelsAutoFitStyle & LabelsAutoFitStyles.LabelsAngleStep30) == LabelsAutoFitStyles.LabelsAngleStep30 || (LabelsAutoFitStyle & LabelsAutoFitStyles.LabelsAngleStep45) == LabelsAutoFitStyles.LabelsAngleStep45 || (LabelsAutoFitStyle & LabelsAutoFitStyles.LabelsAngleStep90) == LabelsAutoFitStyles.LabelsAngleStep90)
@@ -2256,7 +2273,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 					}
 					else if (chartArea.Area3DStyle.Enable3D && !chartArea.chartAreaIsCurcular && autoLabelFont.SizeInPoints > minLabelFontSize)
 					{
-						autoLabelFont = new Font(autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 0.5f, autoLabelFont.Style, GraphicsUnit.Point);
+						autoLabelFont = ResizeAutoLabelFont(chartGraph, autoLabelFont, autoLabelFont.SizeInPoints - 0.5f, GraphicsUnit.Point);
 					}
 				}
 				if ((AxisPosition == AxisPosition.Bottom || AxisPosition == AxisPosition.Top) && autoLabelAngle == 90)
@@ -2783,17 +2800,18 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal void GetCircularAxisLabelsAutoFitFont(ChartGraphics graph, ArrayList axisList, CircularAxisLabelsStyle labelsStyle, RectangleF plotAreaRectAbs, RectangleF areaRectAbs, float labelsSizeEstimate)
 		{
-			autoLabelFont.Dispose();
+			autoLabelFont?.Dispose();
 			autoLabelFont = null;
 			if (!LabelsAutoFit || LabelsAutoFitStyle == LabelsAutoFitStyles.None || !base.LabelStyle.Enabled)
 			{
 				return;
 			}
 			minLabelFontSize = Math.Min(LabelsAutoFitMinFontSize, LabelsAutoFitMaxFontSize);
-			autoLabelFont = new Font(base.LabelStyle.Font.FontFamily, Math.Max(LabelsAutoFitMaxFontSize, LabelsAutoFitMinFontSize), base.LabelStyle.Font.Style, GraphicsUnit.Point);
+			IChartFont labelStyleFontForCircular = GetLabelStyleFontResource(graph);
+			autoLabelFont = ResizeAutoLabelFont(graph, labelStyleFontForCircular, Math.Max(LabelsAutoFitMaxFontSize, LabelsAutoFitMinFontSize), GraphicsUnit.Point);
 			if ((LabelsAutoFitStyle & LabelsAutoFitStyles.IncreaseFont) != LabelsAutoFitStyles.IncreaseFont)
 			{
-				autoLabelFont = (Font)base.LabelStyle.Font.Clone();
+				autoLabelFont = ResizeAutoLabelFont(graph, labelStyleFontForCircular, labelStyleFontForCircular.SizeInPoints, GraphicsUnit.Point);
 			}
 			bool flag = false;
 			while (!flag)
@@ -2803,7 +2821,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 				{
 					if (autoLabelFont.SizeInPoints > minLabelFontSize && (LabelsAutoFitStyle & LabelsAutoFitStyles.DecreaseFont) == LabelsAutoFitStyles.DecreaseFont)
 					{
-						autoLabelFont = new Font(autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 1f, autoLabelFont.Style, GraphicsUnit.Point);
+						autoLabelFont = ResizeAutoLabelFont(graph, autoLabelFont, autoLabelFont.SizeInPoints - 1f, GraphicsUnit.Point);
 						continue;
 					}
 					autoLabelAngle = 0;
@@ -2908,7 +2926,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			{
 				if (autoLabelFont == null)
 				{
-					autoLabelFont = base.LabelStyle.Font;
+					autoLabelFont = GetLabelStyleFontResource(chartGraph);
 				}
 				if (autoLabelAngle < 0)
 				{
@@ -2931,7 +2949,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			bool flag = false;
 			if (autoLabelFont == null)
 			{
-				autoLabelFont = base.LabelStyle.Font;
+				autoLabelFont = GetLabelStyleFontResource(chartGraph);
 			}
 			float num = totlaGroupingLabelsSize;
 			while (!flag)
@@ -2950,13 +2968,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 						{
 							if (axis.enabled && axis.LabelsAutoFit && axis.autoLabelFont != null)
 							{
-								axis.autoLabelFont = new Font(axis.autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 1f, axis.autoLabelFont.Style, GraphicsUnit.Point);
+								axis.autoLabelFont = ResizeAutoLabelFont(chartGraph, axis.autoLabelFont, autoLabelFont.SizeInPoints - 1f, GraphicsUnit.Point);
 							}
 						}
 					}
 					else if ((LabelsAutoFitStyle & LabelsAutoFitStyles.DecreaseFont) == LabelsAutoFitStyles.DecreaseFont)
 					{
-						autoLabelFont = new Font(autoLabelFont.FontFamily, autoLabelFont.SizeInPoints - 1f, autoLabelFont.Style, GraphicsUnit.Point);
+						autoLabelFont = ResizeAutoLabelFont(chartGraph, autoLabelFont, autoLabelFont.SizeInPoints - 1f, GraphicsUnit.Point);
 					}
 					else
 					{
@@ -2988,7 +3006,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private bool CheckLabelsFit(ChartGraphics chartGraph, float otherElementsSize, bool autoPlotPosition, bool checkLabelsFirstRowOnly, bool secondPass, bool checkWidth, bool checkHeight, ArrayList labelPositions)
 		{
 			labelPositions?.Clear();
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			RectangleF empty = RectangleF.Empty;
@@ -3307,7 +3325,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			float num2 = (autoLabelAngle < -90) ? base.LabelStyle.FontAngle : autoLabelAngle;
 			labelNearOffset = float.MaxValue;
 			labelFarOffset = float.MinValue;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = chartGraph.ResourceFactory.CreateTextFormat();
 			stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 			stringFormat.Trimming = StringTrimming.EllipsisCharacter;
 			RectangleF rectangleF = chartArea.Position.ToRectangleF();
@@ -3353,11 +3371,11 @@ namespace Microsoft.Reporting.Chart.WebForms
 				}
 				rectangleF2.Width = (float)Math.Ceiling(rectangleF2.Width);
 				rectangleF2.Height = (float)Math.Ceiling(rectangleF2.Height);
-				SizeF sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), (autoLabelFont != null) ? autoLabelFont : base.LabelStyle.Font, rectangleF2.Size, stringFormat);
+				SizeF sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), autoLabelFont ?? GetLabelStyleFontResource(chartGraph), rectangleF2.Size, stringFormat);
 				if (sizeF.Width == 0f || sizeF.Height == 0f)
 				{
 					stringFormat.FormatFlags ^= StringFormatFlags.LineLimit;
-					sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), (autoLabelFont != null) ? autoLabelFont : base.LabelStyle.Font, rectangleF2.Size, stringFormat);
+					sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), autoLabelFont ?? GetLabelStyleFontResource(chartGraph), rectangleF2.Size, stringFormat);
 					stringFormat.FormatFlags |= StringFormatFlags.LineLimit;
 				}
 				if (customLabel.Image.Length > 0)
@@ -3514,7 +3532,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 						{
 							continue;
 						}
-						SizeF sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), (autoLabelFont != null) ? autoLabelFont : base.LabelStyle.Font);
+						SizeF sizeF = chartGraph.MeasureStringRel(customLabel.Text.Replace("\\n", "\n"), autoLabelFont ?? GetLabelStyleFontResource(chartGraph));
 						sizeF.Width = (float)Math.Ceiling(sizeF.Width);
 						sizeF.Height = (float)Math.Ceiling(sizeF.Height);
 						if (customLabel.Image.Length > 0)

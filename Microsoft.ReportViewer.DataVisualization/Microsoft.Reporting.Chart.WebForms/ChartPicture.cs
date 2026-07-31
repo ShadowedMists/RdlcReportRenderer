@@ -37,7 +37,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		internal static FontCache fontCache = new FontCache();
 
-		private Font titleFont = new Font(GetDefaultFontFamilyName(), 8f);
+		private Font titleFont;
 
 		internal CommonElements common;
 
@@ -984,7 +984,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 		private void DrawTitle(ChartGraphics graph, bool selectionMode, int x, int y, out object obj)
 		{
 			obj = null;
-			StringFormat stringFormat = new StringFormat();
+			ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 			stringFormat.Alignment = StringAlignment.Center;
 			stringFormat.LineAlignment = StringAlignment.Center;
 			if (selectionMode)
@@ -998,7 +998,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 			}
 			else
 			{
-				graph.DrawStringRel(Title.Replace("\\n", "\n"), TitleFont, new SolidBrush(TitleFontColor), titlePosition, stringFormat);
+				graph.DrawStringRel(Title.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(TitleFont), graph.ResourceFactory.CreateSolidBrush(TitleFontColor), titlePosition, stringFormat);
 			}
 		}
 
@@ -1434,23 +1434,34 @@ namespace Microsoft.Reporting.Chart.WebForms
 			if (defaultFontFamilyName.Length == 0)
 			{
 				defaultFontFamilyName = "Microsoft Sans Serif";
-				bool flag = false;
-				FontFamily[] families = FontFamily.Families;
-				for (int i = 0; i < families.Length; i++)
+				// FontFamily.Families/FontFamily.GenericSansSerif both require GDI+, which
+				// cannot construct anything at all on Linux under .NET 10, even with
+				// libgdiplus installed (docs/platform-support.md's Phase 0 finding) - skip
+				// the installed-font lookup entirely on non-Windows rather than crash. The
+				// exact name doesn't need to resolve to a real installed font here: every
+				// non-Windows consumer of this name eventually reaches SkiaCachedFont's
+				// constructor, which already falls back to SKTypeface.Default when the
+				// requested family can't be resolved.
+				if (OperatingSystem.IsWindows())
 				{
-					if (families[i].Name == defaultFontFamilyName)
+					bool flag = false;
+					FontFamily[] families = FontFamily.Families;
+					for (int i = 0; i < families.Length; i++)
 					{
-						flag = true;
+						if (families[i].Name == defaultFontFamilyName)
+						{
+							flag = true;
+						}
 					}
-				}
-				if (!flag)
-				{
-					try
+					if (!flag)
 					{
-						defaultFontFamilyName = FontFamily.GenericSansSerif.Name;
-					}
-					catch
-					{
+						try
+						{
+							defaultFontFamilyName = FontFamily.GenericSansSerif.Name;
+						}
+						catch
+						{
+						}
 					}
 				}
 			}

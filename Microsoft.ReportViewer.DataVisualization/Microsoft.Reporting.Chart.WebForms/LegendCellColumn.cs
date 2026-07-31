@@ -43,7 +43,7 @@ namespace Microsoft.Reporting.Chart.WebForms
 
 		private Color headerBackColor = Color.Empty;
 
-		private Font headerFont = new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
+		private Font headerFont;
 
 		private int minimumCellWidth = -1;
 
@@ -321,7 +321,8 @@ namespace Microsoft.Reporting.Chart.WebForms
 		{
 			get
 			{
-				return headerFont;
+				// Lazily constructed - see Title.Font's remarks (GDI+/Phase 0 finding).
+				return headerFont ??= new Font(ChartPicture.GetDefaultFontFamilyName(), 8f, FontStyle.Bold);
 			}
 			set
 			{

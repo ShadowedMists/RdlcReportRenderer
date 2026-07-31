@@ -471,7 +471,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 			}
 			SizeF size = new SizeF(markerSize, markerSize);
-			SizeF size2 = graph.MeasureString(text, point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic));
+			SizeF size2 = graph.MeasureString(text, graph.ResourceFactory.WrapFont(point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat());
 			SizeF sizeF = new SizeF(size2.Width, size2.Height);
 			sizeF.Height += sizeF.Height / 2f;
 			sizeF.Width += sizeF.Width / (float)text.Length;

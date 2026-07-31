@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using Microsoft.Reporting.Rendering;
 
 namespace Microsoft.Reporting.Map.WebForms
 {
@@ -481,7 +482,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				{
 					return;
 				}
-				using (Pen pen = new Pen(BorderColor, BorderWidth))
+				using (IPen pen = g.ResourceFactory.CreatePen(BorderColor, BorderWidth))
 				{
 					pen.DashStyle = MapGraphics.GetPenStyle(BorderStyle);
 					pen.Alignment = PenAlignment.Inset;
@@ -518,9 +519,9 @@ namespace Microsoft.Reporting.Map.WebForms
 				{
 					RectangleF rect = rectangleF;
 					rect.Offset(BackShadowOffset, BackShadowOffset);
-					g.FillRectangle(g.GetShadowBrush(), rect);
+					g.FillRectangle(g.ResourceFactory.WrapBrush(g.GetShadowBrush()), rect);
 				}
-				using (Brush brush = g.CreateBrush(rectangleF, BackColor, BackHatchStyle, "", MapImageWrapMode.Unscaled, Color.Empty, MapImageAlign.Center, BackGradientType, BackSecondaryColor))
+				using (IBrush brush = g.ResourceFactory.WrapBrush(g.CreateBrush(rectangleF, BackColor, BackHatchStyle, "", MapImageWrapMode.Unscaled, Color.Empty, MapImageAlign.Center, BackGradientType, BackSecondaryColor)))
 				{
 					g.FillRectangle(brush, rectangleF);
 				}
