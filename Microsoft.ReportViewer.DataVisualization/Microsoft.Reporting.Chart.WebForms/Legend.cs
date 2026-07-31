@@ -315,7 +315,13 @@ namespace Microsoft.Reporting.Chart.WebForms
 			set
 			{
 				autoFitText = value;
-				if (autoFitText)
+				// Font construction is impossible on Linux under .NET 10, even with libgdiplus
+				// installed (docs/platform-support.md's Phase 0 finding). This eager resize is
+				// only a starting-point seed for the real auto-fit algorithm, which runs later
+				// at render time through the portable GetBaseFontResource/ResizeFontResource
+				// bridge (works fine with `font` left at its prior value, including null) - so
+				// it's safe to skip entirely on platforms where it can't succeed anyway.
+				if (autoFitText && OperatingSystem.IsWindows())
 				{
 					if (this.font != null)
 					{
