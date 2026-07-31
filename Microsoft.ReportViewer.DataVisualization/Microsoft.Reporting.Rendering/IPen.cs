@@ -25,6 +25,9 @@ namespace Microsoft.Reporting.Rendering
 
 		PenAlignment Alignment { get; set; }
 
+		/// <summary>Abstracts <c>Pen.MiterLimit</c> — the maximum ratio between miter length and line width before a miter join is clipped to a bevel.</summary>
+		float MiterLimit { get; set; }
+
 		/// <summary>Abstracts <c>Pen.DashPattern</c> — a custom on/off dash sequence, used when <see cref="DashStyle"/> alone (e.g. GDI+'s built-in <c>Dot</c> spacing) isn't the desired cadence.</summary>
 		float[] DashPattern { get; set; }
 

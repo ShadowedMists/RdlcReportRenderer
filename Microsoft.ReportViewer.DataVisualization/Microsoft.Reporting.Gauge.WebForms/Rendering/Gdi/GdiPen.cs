@@ -61,6 +61,12 @@ namespace Microsoft.Reporting.Gauge.WebForms.Rendering.Gdi
 			set => NativePen.Alignment = value;
 		}
 
+		public float MiterLimit
+		{
+			get => NativePen.MiterLimit;
+			set => NativePen.MiterLimit = value;
+		}
+
 		public float[] DashPattern
 		{
 			get => NativePen.DashPattern;

@@ -108,6 +108,12 @@ namespace Microsoft.Reporting.Chart.WebForms.Rendering.Skia
 		// kept as a plain property so callers that only set/read it don't need special-casing per backend.
 		public PenAlignment Alignment { get; set; }
 
+		public float MiterLimit
+		{
+			get => NativePaint.StrokeMiter;
+			set => NativePaint.StrokeMiter = value;
+		}
+
 		public float[] DashPattern { get; set; }
 
 		private CustomLineCap customStartCap;
