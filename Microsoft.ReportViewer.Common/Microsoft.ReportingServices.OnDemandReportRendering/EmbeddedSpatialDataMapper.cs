@@ -50,6 +50,26 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		private void AddSpatialElement(MapSpatialElement embeddedElement)
 		{
+			// Only POINT geometry is wired up so far -- see tasks/map-spatial-data-population-gap.md.
+			// LINESTRING/POLYGON (Path/Shape) support is a follow-up; leaving embeddedElement unprocessed
+			// for those (matching this method's prior always-no-op behavior) rather than half-handling it.
+			if (!WktGeometryParser.TryParsePoint(embeddedElement.VectorData, out Microsoft.Reporting.Map.WebForms.MapPoint point))
+			{
+				return;
+			}
+			ISpatialElement spatialElement = m_spatialElementManager.CreateSpatialElement();
+			if (!(spatialElement is Microsoft.Reporting.Map.WebForms.Symbol symbol))
+			{
+				return;
+			}
+			symbol.SetPoints(new Microsoft.Reporting.Map.WebForms.MapPoint[] { point });
+			ProcessNonSpatialFields(embeddedElement, spatialElement);
+			m_spatialElementManager.AddSpatialElement(spatialElement);
+			OnSpatialElementAdded(new SpatialElementInfo
+			{
+				CoreSpatialElement = spatialElement,
+				MapSpatialElement = embeddedElement
+			});
 		}
 
 		private void ProcessNonSpatialFields(MapSpatialElement embeddedElement, ISpatialElement spatialElement)

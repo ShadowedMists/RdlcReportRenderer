@@ -13,10 +13,7 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 		internal PointLayerMapper(MapPointLayer mapPointLayer, MapControl coreMap, MapMapper mapMapper)
 			: base(mapPointLayer, coreMap, mapMapper)
 		{
-			if (mapPointLayer.MapPointTemplate != null)
-			{
-				m_pointTemplateMapper = CreatePointTemplateMapper();
-			}
+			m_pointTemplateMapper = CreatePointTemplateMapper();
 		}
 
 		protected override CoreSpatialElementManager GetSpatialElementManager()

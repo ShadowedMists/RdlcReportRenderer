@@ -517,7 +517,10 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			{
 				RenderDockableSubItem(m_map.MapColorScale, m_coreMap.ColorSwatchPanel);
 				SetColorScaleProperties();
-				RenderColorScaleTitle();
+				if (m_map.MapColorScale.MapColorScaleTitle != null)
+				{
+					RenderColorScaleTitle();
+				}
 			}
 		}
 

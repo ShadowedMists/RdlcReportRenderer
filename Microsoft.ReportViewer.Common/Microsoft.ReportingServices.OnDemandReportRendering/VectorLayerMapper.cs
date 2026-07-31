@@ -421,7 +421,12 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 			{
 				return MarkerStyle.None;
 			}
-			return MapMapper.GetMarkerStyle(MapMapper.GetMarkerStyle(((MapMarkerTemplate)GetMapPointTemplate()).MapMarker, hasScope: false));
+			MapPointTemplate mapPointTemplate = GetMapPointTemplate();
+			if (mapPointTemplate == null)
+			{
+				return MarkerStyle.None;
+			}
+			return MapMapper.GetMarkerStyle(MapMapper.GetMarkerStyle(((MapMarkerTemplate)mapPointTemplate).MapMarker, hasScope: false));
 		}
 
 		protected virtual void RenderSymbolTemplate(MapSpatialElement mapSpatialElement, Symbol coreSymbol, bool hasScope)

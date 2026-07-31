@@ -79,6 +79,10 @@ namespace Microsoft.ReportingServices.OnDemandReportRendering
 
 		internal int GetSize(MapPointTemplate mapPointTemplate, bool hasScope)
 		{
+			if (mapPointTemplate == null)
+			{
+				return GetDefaultSymbolSize(m_mapMapper.DpiX);
+			}
 			ReportSizeProperty size = mapPointTemplate.Size;
 			if (size != null)
 			{
