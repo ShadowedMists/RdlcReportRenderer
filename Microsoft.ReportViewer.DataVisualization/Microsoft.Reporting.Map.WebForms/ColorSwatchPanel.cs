@@ -1,4 +1,6 @@
+using Microsoft.Reporting.Rendering;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -438,9 +440,9 @@ namespace Microsoft.Reporting.Map.WebForms
 				float num2 = 0f;
 				if (LabelInterval > 0 && ShowEndLabels)
 				{
-					firstCaptionSize = g.MeasureString(GetLabelCaption(0, getFromValue: true, swatchLabelType), Font, absoluteRectangle.Size, StringFormat.GenericTypographic);
+					firstCaptionSize = g.MeasureString(GetLabelCaption(0, getFromValue: true, swatchLabelType), g.ResourceFactory.WrapFont(Font), absoluteRectangle.Size, g.ResourceFactory.CreateTypographicTextFormat());
 					firstCaptionSize.Width += TrimmingProtector;
-					lastCaptionSize = g.MeasureString(GetLabelCaption(Colors.Count - 1, getFromValue: false, swatchLabelType), Font, absoluteRectangle.Size, StringFormat.GenericTypographic);
+					lastCaptionSize = g.MeasureString(GetLabelCaption(Colors.Count - 1, getFromValue: false, swatchLabelType), g.ResourceFactory.WrapFont(Font), absoluteRectangle.Size, g.ResourceFactory.CreateTypographicTextFormat());
 					lastCaptionSize.Width += TrimmingProtector;
 					num2 = Math.Max(firstCaptionSize.Width, lastCaptionSize.Width);
 				}
@@ -448,7 +450,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				RectangleF layoutRectangle = absoluteRectangle;
 				if (flag2)
 				{
-					float num4 = layoutRectangle.Height = Math.Min(absoluteRectangle.Height, g.MeasureString(Title, TitleFont, layoutRectangle.Size, StringFormat.GenericTypographic).Height + (float)TitleSeparatorSize);
+					float num4 = layoutRectangle.Height = Math.Min(absoluteRectangle.Height, g.MeasureString(Title, g.ResourceFactory.WrapFont(TitleFont), layoutRectangle.Size, g.ResourceFactory.CreateTypographicTextFormat()).Height + (float)TitleSeparatorSize);
 					absoluteRectangle.Y += num4;
 					absoluteRectangle.Height -= num4;
 					titlePosition = layoutRectangle;
@@ -475,23 +477,27 @@ namespace Microsoft.Reporting.Map.WebForms
 				try
 				{
 					g.AntiAliasing = AntiAliasing.None;
-					CreateColorBarPath(absoluteRectangle, colorBarBounds, colorsRef, swatchLabelType, out GraphicsPath outlinePath, out GraphicsPath fillPath);
-					GraphicsPathIterator graphicsPathIterator = new GraphicsPathIterator(fillPath);
-					GraphicsPath graphicsPath = new GraphicsPath();
-					Pen pen = new Pen(OutlineColor);
+					CreateColorBarPath(g, absoluteRectangle, colorBarBounds, colorsRef, swatchLabelType, out IGraphicsPath outlinePath, out IGraphicsPath fillPath);
+					IPen pen = g.ResourceFactory.CreatePen(OutlineColor, 1f);
 					try
 					{
-						int[] array = colorsRef;
-						foreach (int colorIndex in array)
+						using (IEnumerator<(IGraphicsPath Path, bool IsClosed)> subpaths = SplitBySubpath(g, fillPath).GetEnumerator())
 						{
-							graphicsPath.Reset();
-							graphicsPathIterator.NextSubpath(graphicsPath, out bool isClosed);
-							if (isClosed)
+							int[] array = colorsRef;
+							foreach (int colorIndex in array)
 							{
-								using (Brush brush = CreateColorBoxBrush(g, graphicsPath.GetBounds(), colorIndex))
+								if (!subpaths.MoveNext())
 								{
-									g.FillPath(brush, graphicsPath);
+									break;
 								}
+								if (subpaths.Current.IsClosed)
+								{
+									using (IBrush brush = CreateColorBoxBrush(g, subpaths.Current.Path.GetBounds(), colorIndex))
+									{
+										g.FillPath(brush, subpaths.Current.Path);
+									}
+								}
+								subpaths.Current.Path.Dispose();
 							}
 						}
 						g.DrawPath(pen, outlinePath);
@@ -500,8 +506,6 @@ namespace Microsoft.Reporting.Map.WebForms
 					{
 						outlinePath.Dispose();
 						fillPath.Dispose();
-						graphicsPathIterator.Dispose();
-						graphicsPath.Dispose();
 						pen.Dispose();
 					}
 				}
@@ -511,30 +515,29 @@ namespace Microsoft.Reporting.Map.WebForms
 				}
 				if (flag2)
 				{
-					using (Brush brush2 = new SolidBrush(TitleColor))
+					using (IBrush brush2 = g.ResourceFactory.CreateSolidBrush(TitleColor))
 					{
-						using (StringFormat stringFormat = (StringFormat)StringFormat.GenericTypographic.Clone())
-						{
-							stringFormat.Alignment = TitleAlignment;
-							stringFormat.LineAlignment = StringAlignment.Near;
-							stringFormat.Trimming = StringTrimming.EllipsisCharacter;
-							stringFormat.FormatFlags = StringFormatFlags.NoWrap;
-							g.DrawString(Title, TitleFont, brush2, layoutRectangle, stringFormat);
-						}
+						ITextFormat stringFormat = g.ResourceFactory.CreateTypographicTextFormat();
+						stringFormat.Alignment = TitleAlignment;
+						stringFormat.LineAlignment = StringAlignment.Near;
+						stringFormat.Trimming = StringTrimming.EllipsisCharacter;
+						stringFormat.FormatFlags = StringFormatFlags.NoWrap;
+						g.DrawString(Title, g.ResourceFactory.WrapFont(TitleFont), brush2, layoutRectangle, stringFormat);
 					}
 				}
 				if (Colors.Count == 0 || LabelInterval == 0)
 				{
 					return;
 				}
-				using (StringFormat stringFormat2 = (StringFormat)StringFormat.GenericTypographic.Clone())
 				{
+					ITextFormat stringFormat2 = g.ResourceFactory.CreateTypographicTextFormat();
 					stringFormat2.Alignment = StringAlignment.Center;
 					stringFormat2.LineAlignment = StringAlignment.Near;
 					stringFormat2.Trimming = StringTrimming.EllipsisCharacter;
 					stringFormat2.FormatFlags = StringFormatFlags.NoWrap;
-					using (Brush brush3 = new SolidBrush(LabelColor))
+					using (IBrush brush3 = g.ResourceFactory.CreateSolidBrush(LabelColor))
 					{
+						IChartFont bridgedLabelFont = g.ResourceFactory.WrapFont(Font);
 						bool flag3 = LabelAlignment != LabelAlignment.Top;
 						if (swatchLabelType == SwatchLabelType.ShowMiddleValue)
 						{
@@ -554,7 +557,7 @@ namespace Microsoft.Reporting.Map.WebForms
 										labelBounds.Offset(0f, 1f);
 									}
 									stringFormat2.Alignment = horizontalAlignemnt;
-									g.DrawString(labelCaption, Font, brush3, labelBounds, stringFormat2);
+									g.DrawString(labelCaption, bridgedLabelFont, brush3, labelBounds, stringFormat2);
 								}
 								flag3 = ((LabelAlignment == LabelAlignment.Alternate) ? (!flag3) : flag3);
 							}
@@ -575,7 +578,7 @@ namespace Microsoft.Reporting.Map.WebForms
 										labelBounds2.Offset(0f, 1f);
 									}
 									stringFormat2.Alignment = horizontalAlignemnt2;
-									g.DrawString(labelCaption2, Font, brush3, labelBounds2, stringFormat2);
+									g.DrawString(labelCaption2, bridgedLabelFont, brush3, labelBounds2, stringFormat2);
 								}
 								flag3 = ((LabelAlignment == LabelAlignment.Alternate) ? (!flag3) : flag3);
 							}
@@ -592,7 +595,7 @@ namespace Microsoft.Reporting.Map.WebForms
 									labelBounds2.Offset(0f, 1f);
 								}
 								stringFormat2.Alignment = horizontalAlignemnt3;
-								g.DrawString(labelCaption2, Font, brush3, labelBounds2, stringFormat2);
+								g.DrawString(labelCaption2, bridgedLabelFont, brush3, labelBounds2, stringFormat2);
 							}
 							flag3 = ((LabelAlignment == LabelAlignment.Alternate) ? (!flag3) : flag3);
 						}
@@ -621,13 +624,13 @@ namespace Microsoft.Reporting.Map.WebForms
 			return PanelDockStyle.Bottom;
 		}
 
-		private void CreateColorBarPath(RectangleF panelBounds, RectangleF colorBarBounds, int[] colorsRef, SwatchLabelType currentLabelType, out GraphicsPath outlinePath, out GraphicsPath fillPath)
+		private void CreateColorBarPath(MapGraphics g, RectangleF panelBounds, RectangleF colorBarBounds, int[] colorsRef, SwatchLabelType currentLabelType, out IGraphicsPath outlinePath, out IGraphicsPath fillPath)
 		{
 			colorBarBounds = Rectangle.Round(colorBarBounds);
 			float width = colorBarBounds.Width / (float)colorsRef.Length;
 			RectangleF rect = new RectangleF(colorBarBounds.X, colorBarBounds.Y, width, colorBarBounds.Height);
-			outlinePath = new GraphicsPath();
-			fillPath = new GraphicsPath();
+			outlinePath = g.ResourceFactory.CreatePath();
+			fillPath = g.ResourceFactory.CreatePath();
 			PointF pointF = new PointF(colorBarBounds.Left, colorBarBounds.Bottom);
 			PointF pointF2 = new PointF(colorBarBounds.Left, colorBarBounds.Top);
 			float num = Math.Min(TickMarkLength + 1, panelBounds.Bottom - pointF.Y);
@@ -892,16 +895,18 @@ namespace Microsoft.Reporting.Map.WebForms
 		{
 			float num = 0f;
 			float num2 = 0f;
+			IChartFont bridgedFont = g.ResourceFactory.WrapFont(Font);
+			ITextFormat typographicFormat = g.ResourceFactory.CreateTypographicTextFormat();
 			for (int i = 0; i < Colors.Count; i++)
 			{
 				string labelCaption = GetLabelCaption(i, getFromValue: true, currentLabelType);
-				SizeF sizeF = g.MeasureString(labelCaption, Font, layoutArea, StringFormat.GenericTypographic);
+				SizeF sizeF = g.MeasureString(labelCaption, bridgedFont, layoutArea, typographicFormat);
 				num = Math.Max(num, sizeF.Height);
 				num2 = Math.Max(num2, sizeF.Width + TrimmingProtector);
 				if (currentLabelType == SwatchLabelType.ShowBorderValue)
 				{
 					labelCaption = GetLabelCaption(i, getFromValue: false, currentLabelType);
-					sizeF = g.MeasureString(labelCaption, Font, layoutArea, StringFormat.GenericTypographic);
+					sizeF = g.MeasureString(labelCaption, bridgedFont, layoutArea, typographicFormat);
 					num = Math.Max(num, sizeF.Height);
 					num2 = Math.Max(num2, sizeF.Width + TrimmingProtector);
 				}
@@ -951,11 +956,11 @@ namespace Microsoft.Reporting.Map.WebForms
 			return true;
 		}
 
-		private Brush CreateColorBoxBrush(MapGraphics g, RectangleF colorBoxBoundsAbs, int colorIndex)
+		private IBrush CreateColorBoxBrush(MapGraphics g, RectangleF colorBoxBoundsAbs, int colorIndex)
 		{
 			if (colorIndex < 0)
 			{
-				return new SolidBrush(RangeGapColor);
+				return g.ResourceFactory.CreateSolidBrush(RangeGapColor);
 			}
 			SwatchColor swatchColor = Colors[colorIndex];
 			Color color = swatchColor.Color;
@@ -964,26 +969,28 @@ namespace Microsoft.Reporting.Map.WebForms
 			MapHatchStyle hatchStyle = swatchColor.HatchStyle;
 			if (hatchStyle != 0)
 			{
-				return MapGraphics.GetHatchBrush(hatchStyle, color, secondaryColor);
+				return g.ResourceFactory.WrapBrush(MapGraphics.GetHatchBrush(hatchStyle, color, secondaryColor));
 			}
 			if (gradientType != 0)
 			{
-				return g.GetGradientBrush(colorBoxBoundsAbs, color, secondaryColor, gradientType);
+				return g.ResourceFactory.WrapBrush(g.GetGradientBrush(colorBoxBoundsAbs, color, secondaryColor, gradientType));
 			}
-			return new SolidBrush(color);
+			return g.ResourceFactory.CreateSolidBrush(color);
 		}
 
 		private void CalculateFontDependentData(MapGraphics g, SizeF layoutSize)
 		{
-			SizeF sizeF = g.MeasureString("M", Font, layoutSize, StringFormat.GenericTypographic);
-			SizeF sizeF2 = g.MeasureString("MM", Font, layoutSize, StringFormat.GenericTypographic);
+			IChartFont bridgedFont = g.ResourceFactory.WrapFont(Font);
+			ITextFormat typographicFormat = g.ResourceFactory.CreateTypographicTextFormat();
+			SizeF sizeF = g.MeasureString("M", bridgedFont, layoutSize, typographicFormat);
+			SizeF sizeF2 = g.MeasureString("MM", bridgedFont, layoutSize, typographicFormat);
 			float height = sizeF.Height;
 			_ = sizeF2.Width;
 			_ = sizeF.Width;
 			PanelPadding = (int)Math.Round(height);
 			TitleSeparatorSize = (int)Math.Round((double)height * 0.4);
 			TickMarkLabelGapSize = (int)Math.Round((double)height * 0.1);
-			TrimmingProtector = g.MeasureString("..", Font, layoutSize, StringFormat.GenericTypographic).Width;
+			TrimmingProtector = g.MeasureString("..", bridgedFont, layoutSize, typographicFormat).Width;
 		}
 
 		private void PopulateDummyData()
@@ -1023,9 +1030,9 @@ namespace Microsoft.Reporting.Map.WebForms
 				float num2 = 0f;
 				if (LabelInterval > 0 && ShowEndLabels)
 				{
-					sizeF = g.MeasureString(GetLabelCaption(0, getFromValue: true, swatchLabelType), Font, maxSizeAbs, StringFormat.GenericTypographic);
+					sizeF = g.MeasureString(GetLabelCaption(0, getFromValue: true, swatchLabelType), g.ResourceFactory.WrapFont(Font), maxSizeAbs, g.ResourceFactory.CreateTypographicTextFormat());
 					sizeF.Width += TrimmingProtector;
-					sizeF2 = g.MeasureString(GetLabelCaption(Colors.Count - 1, getFromValue: false, swatchLabelType), Font, maxSizeAbs, StringFormat.GenericTypographic);
+					sizeF2 = g.MeasureString(GetLabelCaption(Colors.Count - 1, getFromValue: false, swatchLabelType), g.ResourceFactory.WrapFont(Font), maxSizeAbs, g.ResourceFactory.CreateTypographicTextFormat());
 					sizeF2.Width += TrimmingProtector;
 					num2 = (float)Math.Round(Math.Max(sizeF.Width, sizeF2.Width));
 				}
@@ -1037,7 +1044,7 @@ namespace Microsoft.Reporting.Map.WebForms
 				num += height + (float)num3 * (labelMaxSize.Height + (float)TickMarkLength + (float)TickMarkLabelGapSize);
 				if (!string.IsNullOrEmpty(Title))
 				{
-					SizeF sizeF3 = g.MeasureString(Title, TitleFont, maxSizeAbs, StringFormat.GenericTypographic);
+					SizeF sizeF3 = g.MeasureString(Title, g.ResourceFactory.WrapFont(TitleFont), maxSizeAbs, g.ResourceFactory.CreateTypographicTextFormat());
 					num += sizeF3.Height + (float)TitleSeparatorSize;
 					val = sizeF3.Width + TrimmingProtector;
 				}
@@ -1063,6 +1070,39 @@ namespace Microsoft.Reporting.Map.WebForms
 					Colors.Clear();
 				}
 			}
+		}
+
+		// Splits a path into its individual subpaths (each figure delimited by a PathPointTypeStart
+		// point), mirroring GraphicsPathIterator.NextSubpath's behavior without depending on the
+		// GDI+-only GraphicsPathIterator type. Distinct from the PathMarker-based SplitAtMarkers helper
+		// used elsewhere (HotRegionsList.cs/MapAreasCollection.cs) - this splits by figure boundary, not
+		// by an explicit marker bit, since CreateColorBarPath builds fillPath from StartFigure/AddRectangle
+		// per swatch rather than SetMarkers.
+		private static IEnumerable<(IGraphicsPath Path, bool IsClosed)> SplitBySubpath(MapGraphics graph, IGraphicsPath path)
+		{
+			const byte PathTypeMask = 0x07;
+			const byte PathTypeStart = 0x00;
+			const byte CloseSubpath = 0x80;
+			PointF[] points = path.PathPoints;
+			byte[] types = path.PathTypes;
+			int start = 0;
+			for (int i = 1; i <= points.Length; i++)
+			{
+				bool atNextStart = i < points.Length && (types[i] & PathTypeMask) == PathTypeStart;
+				if (atNextStart || i == points.Length)
+				{
+					bool isClosed = (types[i - 1] & CloseSubpath) != 0;
+					yield return (graph.ResourceFactory.CreatePath(CopySegment(points, start, i), CopySegment(types, start, i)), isClosed);
+					start = i;
+				}
+			}
+		}
+
+		private static T[] CopySegment<T>(T[] source, int start, int endExclusive)
+		{
+			T[] array = new T[endExclusive - start];
+			Array.Copy(source, start, array, 0, array.Length);
+			return array;
 		}
 	}
 }
