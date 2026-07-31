@@ -20,7 +20,7 @@
                 </MapPoints>
                 <MapPointRules>
                   <MapColorRangeRule>
-                    <DataValue>50</DataValue>
+                    <DataValue>=50</DataValue>
                     <DistributionType>EqualInterval</DistributionType>
                     <BucketCount>5</BucketCount>
                     <StartValue>0</StartValue>
@@ -34,10 +34,7 @@
               </MapPointLayer>
             </MapLayers>
             <MapViewport>
-              <MapSize>
-                <Width>3</Width>
-                <Height>3</Height>
-              </MapSize>
+              <MapCoordinateSystem>Planar</MapCoordinateSystem>
             </MapViewport>
             <MapColorScale Name="ColorScale1" />
             <Top>0in</Top>

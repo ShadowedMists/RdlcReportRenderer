@@ -40,14 +40,15 @@ namespace Microsoft.ReportViewer.Chart.Rdl.Tests
         /// <summary>
         /// Exercises the static-MapPoints-plus-MapColorRangeRule path fixed in
         /// EmbeddedSpatialDataMapper.AddSpatialElement (see tasks/map-spatial-data-population-gap.md).
-        /// This is a smoke test only, matching GaugeRdlTests/SimpleMap_RendersToImage's own pattern (no
-        /// pixel-content assertion, no visual baseline) -- it confirms the report no longer throws and
-        /// still produces a well-formed PNG. It does NOT confirm the color-scale legend actually renders
-        /// visibly: manual inspection during development found a marker appears at the first static point
-        /// on Windows, the same fixture renders fully blank on WSL (a real, distinct, not-yet-root-caused
-        /// cross-platform gap), and the ColorSwatchPanel itself was not confirmed to draw anything on
-        /// either platform. See the task file's "What's still not proven" section before treating this
-        /// test as evidence the legend works.
+        /// This is a smoke test only (no pixel-content assertion, no visual baseline, matching
+        /// GaugeRdlTests/SimpleMap_RendersToImage's own pattern) -- it confirms the report renders to a
+        /// well-formed PNG without throwing. Manual visual inspection (see the task file's "Resolved,
+        /// 2026-07-31" section) has separately confirmed the color-scale legend and all 3 markers do
+        /// render correctly on Windows. On WSL/Linux the same fixture still renders fully blank -- this is
+        /// a confirmed, pre-existing, architectural gap (Map has no Skia backend; System.Drawing/GDI+
+        /// cannot construct even a bare Font/Pen/Bitmap on Linux under .NET 10, so MapCore.Paint fails
+        /// silently and both DynamicImageInstance.GetImage's and CreateExceptionImage's own catch blocks
+        /// swallow it), not something introduced by or specific to this fixture.
         /// </summary>
         [TestMethod]
         public void MapWithStaticPointsAndColorScale_RendersToImage()
