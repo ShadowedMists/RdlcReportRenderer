@@ -1,3 +1,4 @@
+using Microsoft.Reporting.Rendering;
 using System;
 using System.ComponentModel;
 using System.Drawing;
@@ -168,32 +169,32 @@ namespace Microsoft.Reporting.Map.WebForms
 					num2 = num4;
 					num3 = num4;
 				}
-				using (GraphicsPath path = CreateScalePath(absoluteRectangle, (int)num2, (int)num3))
+				using (IGraphicsPath path = CreateScalePath(g, absoluteRectangle, (int)num2, (int)num3))
 				{
-					using (Brush brush = new SolidBrush(ScaleForeColor))
+					using (IBrush brush = g.ResourceFactory.CreateSolidBrush(ScaleForeColor))
 					{
 						g.FillPath(brush, path);
 					}
-					using (Pen pen = new Pen(ScaleBorderColor, 1f))
+					using (IPen pen = g.ResourceFactory.CreatePen(ScaleBorderColor, 1f))
 					{
 						pen.Alignment = PenAlignment.Center;
 						pen.MiterLimit = 0f;
 						g.DrawPath(pen, path);
 					}
-					StringFormat stringFormat = (StringFormat)StringFormat.GenericTypographic.Clone();
+					ITextFormat stringFormat = g.ResourceFactory.CreateTypographicTextFormat();
 					stringFormat.FormatFlags = StringFormatFlags.NoWrap;
-					using (Brush brush2 = new SolidBrush(LabelColor))
+					using (IBrush brush2 = g.ResourceFactory.CreateSolidBrush(LabelColor))
 					{
 						RectangleF textBounds = new RectangleF(absoluteRectangle.Left + 3f, absoluteRectangle.Top, num2, absoluteRectangle.Height / 2f - 3f);
 						string text = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg, measurementUnit.ToString());
-						SizeF textClipSize = g.MeasureString(text, Font, textBounds.Size, stringFormat);
+						SizeF textClipSize = g.MeasureString(text, g.ResourceFactory.WrapFont(Font), textBounds.Size, stringFormat);
 						RectangleF layoutRectangle = CreateTextClip(textBounds, textClipSize);
-						g.DrawString(text, Font, brush2, layoutRectangle, stringFormat);
+						g.DrawString(text, g.ResourceFactory.WrapFont(Font), brush2, layoutRectangle, stringFormat);
 						RectangleF textBounds2 = new RectangleF(absoluteRectangle.Left + 3f, absoluteRectangle.Top + absoluteRectangle.Height / 2f + 3f, num3, absoluteRectangle.Height / 2f - 3f);
 						string text2 = string.Format(CultureInfo.CurrentCulture, "{0} {1}", arg2, measurementUnit2.ToString());
-						SizeF textClipSize2 = g.MeasureString(text2, Font, textBounds2.Size, stringFormat);
+						SizeF textClipSize2 = g.MeasureString(text2, g.ResourceFactory.WrapFont(Font), textBounds2.Size, stringFormat);
 						RectangleF layoutRectangle2 = CreateTextClip(textBounds2, textClipSize2);
-						g.DrawString(text2, Font, brush2, layoutRectangle2, stringFormat);
+						g.DrawString(text2, g.ResourceFactory.WrapFont(Font), brush2, layoutRectangle2, stringFormat);
 					}
 				}
 			}
@@ -259,9 +260,9 @@ namespace Microsoft.Reporting.Map.WebForms
 			return result;
 		}
 
-		private GraphicsPath CreateScalePath(RectangleF drawingBounds, int metricScaleWidth, int imperialScaleWidth)
+		private IGraphicsPath CreateScalePath(MapGraphics g, RectangleF drawingBounds, int metricScaleWidth, int imperialScaleWidth)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = g.ResourceFactory.CreatePath();
 			Rectangle rectangle = Rectangle.Truncate(drawingBounds);
 			rectangle.Inflate(0, -(rectangle.Height - 9) / 2);
 			bool flag = metricScaleWidth > imperialScaleWidth;
@@ -273,7 +274,7 @@ namespace Microsoft.Reporting.Map.WebForms
 			Point point2 = new Point(rectangle.X + 6 + metricScaleWidth, flag ? num4 : num3);
 			Point point3 = new Point(rectangle.X + 3 + imperialScaleWidth, num4);
 			Point point4 = new Point(rectangle.X + 6 + imperialScaleWidth, flag ? num4 : num3);
-			graphicsPath.AddPolygon(new Point[14]
+			graphicsPath.AddPolygon(new PointF[14]
 			{
 				new Point(rectangle.Left, rectangle.Top + num2),
 				new Point(rectangle.Left + 3, rectangle.Top + num2),
