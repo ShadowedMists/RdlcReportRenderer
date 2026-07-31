@@ -294,7 +294,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			return width;
 		}
 
-		private static bool CanFitInResizedArea(string text, Font textFont, SizeF relativeSize, PointF sliceCenterRelative, ChartGraphics graph, IGraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle, float radiusAbsolute, out RectangleF resizedRect)
+		private static bool CanFitInResizedArea(string text, IChartFont textFont, SizeF relativeSize, PointF sliceCenterRelative, ChartGraphics graph, IGraphicsPath sliceGraphicsPath, RectangleF labelRelativeRect, int labelRotationAngle, float radiusAbsolute, out RectangleF resizedRect)
 		{
 			float num = relativeSize.Width / (float)text.Length;
 			float num2 = relativeSize.Height / 8f;
@@ -312,7 +312,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					labelRelativeRect.Width = FindOptimalWidth(width, graph, sliceGraphicsPath, labelRelativeRect, labelRotationAngle);
 					ITextFormat stringFormat = graph.ResourceFactory.CreateTypographicTextFormat();
 					stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.NoClip;
-					graph.MeasureString(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(textFont), labelRelativeRect.Size, stringFormat, out int charactersFitted, out int _);
+					graph.MeasureString(text.Replace("\\n", "\n"), textFont, labelRelativeRect.Size, stringFormat, out int charactersFitted, out int _);
 					if (charactersFitted == text.Length)
 					{
 						resizedRect = labelRelativeRect;
@@ -329,7 +329,8 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			{
 				return;
 			}
-			SizeF size = graph.MeasureString(text.Replace("\\n", "\n"), graph.ResourceFactory.WrapFont(dataPointAttributes.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat());
+			IChartFont bridgedDataPointAttributesFont = dataPointAttributes.GetFontResource(graph);
+			SizeF size = graph.MeasureString(text.Replace("\\n", "\n"), bridgedDataPointAttributesFont, new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat());
 			SizeF relativeSize = graph.GetRelativeSize(size);
 			float num = relativeSize.Width / (float)text.Length;
 			float num2 = relativeSize.Width + num;
@@ -343,7 +344,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				return;
 			}
 			int num4 = (int)labelAngle + dataPointAttributes.FontAngle;
-			if (graph.CanLabelFitInSlice(sliceGraphicsPath, resizedRect, num4) || CanFitInResizedArea(text, dataPointAttributes.Font, relativeSize, sliceCenterRelative, graph, sliceGraphicsPath, resizedRect, num4, radiusAbsolute, out resizedRect))
+			if (graph.CanLabelFitInSlice(sliceGraphicsPath, resizedRect, num4) || CanFitInResizedArea(text, bridgedDataPointAttributesFont, relativeSize, sliceCenterRelative, graph, sliceGraphicsPath, resizedRect, num4, radiusAbsolute, out resizedRect))
 			{
 				ITextFormat bridgedFormat = graph.ResourceFactory.CreateTextFormat();
 				bridgedFormat.Alignment = StringAlignment.Center;
@@ -352,14 +353,13 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				bridgedFormat.Trimming = StringTrimming.None;
 				if (dataPoint != null)
 				{
-					IChartFont bridgedFont = graph.ResourceFactory.CreateFont(dataPoint.Font.FontFamily.Name, dataPoint.Font.Size, dataPoint.Font.Style, dataPoint.Font.Unit);
+					IChartFont bridgedFont = dataPoint.GetFontResource(graph);
 					graph.DrawPointLabelStringRel(common, text, bridgedFont, graph.ResourceFactory.CreateSolidBrush(dataPoint.FontColor), resizedRect, bridgedFormat, (int)labelAngle + dataPoint.FontAngle, resizedRect, dataPoint.LabelBackColor, dataPoint.LabelBorderColor, dataPoint.LabelBorderWidth, dataPoint.LabelBorderStyle, dataPoint.series, dataPoint, dataPointIndex);
 					return;
 				}
 				graph.DrawLabelBackground(num4, sliceCenterRelative, resizedRect, dataPointAttributes.LabelBackColor, dataPointAttributes.LabelBorderColor, dataPointAttributes.LabelBorderWidth, dataPointAttributes.LabelBorderStyle);
 				graph.MapCategoryNodeLabel(common, node, resizedRect);
-				IChartFont bridgedFont2 = graph.ResourceFactory.CreateFont(dataPointAttributes.Font.FontFamily.Name, dataPointAttributes.Font.Size, dataPointAttributes.Font.Style, dataPointAttributes.Font.Unit);
-				graph.DrawStringRel(text, bridgedFont2, graph.ResourceFactory.CreateSolidBrush(dataPointAttributes.FontColor), resizedRect, bridgedFormat, num4);
+				graph.DrawStringRel(text, bridgedDataPointAttributesFont, graph.ResourceFactory.CreateSolidBrush(dataPointAttributes.FontColor), resizedRect, bridgedFormat, num4);
 			}
 		}
 
