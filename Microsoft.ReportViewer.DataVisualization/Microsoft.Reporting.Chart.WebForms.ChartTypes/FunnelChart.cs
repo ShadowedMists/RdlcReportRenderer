@@ -362,7 +362,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 			float num5 = absoluteRectangle.X + absoluteRectangle.Width / 2f;
 			graph.StartHotRegion(point);
 			graph.StartAnimation();
-			GraphicsPath graphicsPath = new GraphicsPath();
+			IGraphicsPath graphicsPath = graph.ResourceFactory.CreatePath();
 			if (startWidth > 0f)
 			{
 				if (area.Area3DStyle.Enable3D)
@@ -374,7 +374,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						new PointF(num5 - startWidth / 2f, location),
 						new PointF(num5, location - num3)
 					};
-					GraphicsPath graphicsPath2 = new GraphicsPath();
+					IGraphicsPath graphicsPath2 = graph.ResourceFactory.CreatePath();
 					graphicsPath2.AddClosedCurve(points, tension);
 					graphicsPath2.Flatten();
 					graphicsPath2.Reverse();
@@ -407,11 +407,11 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						new PointF(num5 - endWidth / 2f, location + height),
 						new PointF(num5, location + height - num4)
 					};
-					GraphicsPath graphicsPath3 = new GraphicsPath();
+					IGraphicsPath graphicsPath3 = graph.ResourceFactory.CreatePath();
 					graphicsPath3.AddClosedCurve(points2, tension);
 					graphicsPath3.Flatten();
 					graphicsPath3.Reverse();
-					GraphicsPath graphicsPath4 = new GraphicsPath();
+					IGraphicsPath graphicsPath4 = graph.ResourceFactory.CreatePath();
 					graph.AddEllipseSegment(graphicsPath4, graphicsPath3, null, veticalOrientation: true, 0f, out leftSideLinePoint, out rightSideLinePoint);
 					graphicsPath4.Reverse();
 					if (graphicsPath4.PointCount > 0)
@@ -450,6 +450,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 					{
 						bounds.Height = 1f;
 					}
+					using (GraphicsPath nativePath = new GraphicsPath(graphicsPath.PathPoints, graphicsPath.PathTypes))
 					using (LinearGradientBrush linearGradientBrush = new LinearGradientBrush(bounds, gradientColor, gradientColor2, 0f))
 					{
 						ColorBlend colorBlend = new ColorBlend(5);
@@ -464,7 +465,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						colorBlend.Positions[3] = 1f;
 						colorBlend.Positions[4] = 1f;
 						linearGradientBrush.InterpolationColors = colorBlend;
-						graph.Graphics.FillPath(linearGradientBrush, graphicsPath);
+						graph.Graphics.FillPath(linearGradientBrush, nativePath);
 						Pen pen = new Pen(point.BorderColor, point.BorderWidth);
 						pen.DashStyle = graph.GetPenStyle(point.BorderStyle);
 						if (point.BorderWidth == 0 || point.BorderStyle == ChartDashStyle.NotSet || point.BorderColor == Color.Empty)
@@ -475,7 +476,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 						pen.StartCap = LineCap.Round;
 						pen.EndCap = LineCap.Round;
 						pen.LineJoin = LineJoin.Bevel;
-						graph.DrawPath(pen, graphicsPath);
+						graph.DrawPath(pen, nativePath);
 						pen.Dispose();
 					}
 				}
@@ -653,7 +654,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				}
 				graph.StartHotRegion(labelInfo.Point);
 				graph.StartAnimation();
-				SizeF sizeF = graph.MeasureString("W", labelInfo.Point.Font, new SizeF(1000f, 1000f), new StringFormat(StringFormat.GenericTypographic));
+				SizeF sizeF = graph.MeasureString("W", graph.ResourceFactory.WrapFont(labelInfo.Point.Font), new SizeF(1000f, 1000f), graph.ResourceFactory.CreateTypographicTextFormat());
 				if (!labelInfo.CalloutPoint1.IsEmpty && !labelInfo.CalloutPoint2.IsEmpty && !float.IsNaN(labelInfo.CalloutPoint1.X) && !float.IsNaN(labelInfo.CalloutPoint1.Y) && !float.IsNaN(labelInfo.CalloutPoint2.X) && !float.IsNaN(labelInfo.CalloutPoint2.Y))
 				{
 					if (labelInfo.OutsidePlacement == FunnelLabelPlacement.Right)
@@ -672,10 +673,10 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 				RectangleF position = labelInfo.Position;
 				position.Inflate(sizeF.Width / 2f, sizeF.Height / 8f);
 				position = graph.GetRelativeRectangle(position);
-				StringFormat stringFormat = (StringFormat)labelInfo.Format.Clone();
+				ITextFormat stringFormat = graph.ResourceFactory.CreateTextFormat();
 				stringFormat.Alignment = StringAlignment.Center;
 				stringFormat.LineAlignment = StringAlignment.Center;
-				graph.DrawPointLabelStringRel(common, labelInfo.Text, labelInfo.Point.Font, new SolidBrush(labelInfo.Point.FontColor), position, stringFormat, labelInfo.Point.FontAngle, position, labelInfo.Point.LabelBackColor, labelInfo.Point.LabelBorderColor, labelInfo.Point.LabelBorderWidth, labelInfo.Point.LabelBorderStyle, labelInfo.Point.series, labelInfo.Point, labelInfo.PointIndex);
+				graph.DrawPointLabelStringRel(common, labelInfo.Text, graph.ResourceFactory.WrapFont(labelInfo.Point.Font), graph.ResourceFactory.CreateSolidBrush(labelInfo.Point.FontColor), position, stringFormat, labelInfo.Point.FontAngle, position, labelInfo.Point.LabelBackColor, labelInfo.Point.LabelBorderColor, labelInfo.Point.LabelBorderWidth, labelInfo.Point.LabelBorderStyle, labelInfo.Point.series, labelInfo.Point, labelInfo.PointIndex);
 				graph.StopAnimation();
 				graph.EndHotRegion();
 			}
@@ -717,7 +718,7 @@ namespace Microsoft.Reporting.Chart.WebForms.ChartTypes
 								{
 									funnelPointLabelInfo.OutsidePlacement = GetOutsideLabelPlacement(point);
 								}
-								funnelPointLabelInfo.Size = graph.MeasureString(funnelPointLabelInfo.Text, point.Font, absoluteRectangle.Size, new StringFormat(StringFormat.GenericTypographic));
+								funnelPointLabelInfo.Size = graph.MeasureString(funnelPointLabelInfo.Text, graph.ResourceFactory.WrapFont(point.Font), absoluteRectangle.Size, graph.ResourceFactory.CreateTypographicTextFormat());
 								if (funnelPointLabelInfo.Text.Length > 0 && funnelPointLabelInfo.Style != FunnelLabelStyle.Disabled)
 								{
 									arrayList.Add(funnelPointLabelInfo);
